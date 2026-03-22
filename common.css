@@ -1,0 +1,2316 @@
+/* Coffee Note — NYT 에디토리얼 / 건조한 뉴트럴 */
+
+:root {
+  --bg: #f4f3f0;
+  --surface: #ffffff;
+  --text: #121212;
+  --text-sub: #888888;
+  --accent: #121212;
+  --accent-warm: #8c7355;
+  --border: #e0e0e0;
+  --divider: #121212;
+  --nav-h: 56px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0 auto;
+  max-width: 480px;
+  padding: 0 20px 100px 20px;
+  background: var(--bg);
+  font-family: "Pretendard Variable", Pretendard, -apple-system, sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.2px;
+  animation: pageFade 0.35s ease;
+}
+
+@keyframes pageFade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.wrap {
+  width: 100%;
+  padding-top: 0;
+  padding-bottom: 100px;
+}
+
+/* 규칙선 */
+.thick-rule {
+  border: none;
+  border-top: 3px solid var(--divider);
+  margin: 0 0 16px;
+  height: 0;
+  padding: 0;
+}
+
+.thin-rule {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 16px 0;
+  height: 0;
+  padding: 0;
+}
+
+/* 메인 로고 (index) */
+.logo-area {
+  padding: 20px 0 28px;
+}
+
+.logo {
+  font-family: "Playfair Display", serif;
+  font-size: 72px;
+  font-weight: 900;
+  letter-spacing: -4px;
+  line-height: 0.9;
+  color: var(--text);
+  margin: 16px 0 0;
+}
+
+/* 타이포 */
+.title {
+  margin: 0 0 8px;
+  font-family: "Pretendard Variable", sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.section-heading {
+  font-family: "Pretendard Variable", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-sub);
+  margin: 32px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.subtitle {
+  margin: 0 0 20px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-sub);
+  line-height: 1.65;
+}
+
+.card-title {
+  margin: 0;
+  font-family: "Pretendard Variable", sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--text);
+}
+
+.caption,
+.text-sub,
+.gridLabel,
+.statCard .label {
+  font-family: "Pretendard Variable", sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-sub);
+}
+
+/* 카드 */
+.card,
+.searchCard,
+.coffeeCard,
+.favPanel,
+.statCard,
+.panel,
+.summaryCard,
+.listCard,
+.form-card {
+  background: var(--surface);
+  border: none;
+  border-radius: 2px;
+  padding: 20px;
+  margin-bottom: 1px;
+  box-shadow: none;
+}
+
+.coffeeCard {
+  position: relative;
+  transition: opacity 0.2s ease;
+}
+
+.searchCard {
+  padding: 0;
+  margin-bottom: 16px;
+  overflow: hidden;
+  border-radius: 0;
+}
+
+.empty {
+  background: var(--surface);
+  border: none;
+  border-radius: 2px;
+  padding: 20px;
+  margin-bottom: 1px;
+  color: var(--text-sub);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+/* 검색 바 */
+.search-bar-wrap {
+  margin-bottom: 16px;
+}
+
+.search-bar {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--text);
+  outline: none;
+  min-width: 0;
+  padding: 14px 16px;
+}
+
+.search-input::placeholder {
+  color: var(--text-sub);
+  font-weight: 400;
+}
+
+.search-btn {
+  background: var(--text);
+  border: none;
+  border-radius: 0;
+  padding: 14px 20px;
+  color: #fff;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+.search-btn:active {
+  opacity: 0.7;
+}
+
+.camera-btn {
+  background: none;
+  border: none;
+  border-left: 1px solid var(--border);
+  padding: 14px 14px;
+  cursor: pointer;
+  color: var(--text-sub);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.camera-btn svg {
+  color: inherit;
+}
+
+/* 입력 */
+input:not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  padding: 14px 16px;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--text);
+  width: 100%;
+  transition: border-color 0.12s, border-width 0.12s;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-sub);
+  font-weight: 400;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--text);
+  border-width: 2px;
+}
+
+.inp {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  padding: 14px 16px;
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--text);
+  width: 100%;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+}
+
+.inp:focus {
+  outline: none;
+  border-color: var(--text);
+  border-width: 2px;
+}
+
+/* 버튼 */
+.btn-primary,
+.btnPrimary {
+  background: var(--text);
+  color: #ffffff;
+  border: none;
+  border-radius: 0;
+  padding: 16px;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.2px;
+  width: 100%;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btn-primary:active,
+.btnPrimary:active {
+  opacity: 0.7;
+}
+
+.btn-secondary,
+.btnGhost {
+  background: transparent;
+  color: var(--text);
+  border: 1.5px solid var(--text);
+  border-radius: 0;
+  padding: 16px;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+  width: 100%;
+  cursor: pointer;
+}
+
+.btn-secondary.inline,
+.register-hint .btn-secondary {
+  width: auto;
+  display: inline-block;
+  padding: 14px 22px;
+}
+
+.actionRow .btn-primary,
+.actionRow .btn-secondary,
+.actionRow .btnPrimary,
+.actionRow .btnGhost {
+  width: 100%;
+}
+
+/* 칩 / 태그 */
+.chip {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 0;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.chip.selected,
+.chip.active,
+.methodBtn.selected,
+.methodBtn.active {
+  background: var(--text);
+  color: #ffffff;
+  border-color: var(--text);
+}
+
+.tag {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  background: rgba(140, 115, 85, 0.08);
+  color: var(--accent-warm);
+  border: 1px solid rgba(140, 115, 85, 0.2);
+}
+
+.tagWrap,
+.chipWrap,
+.methodWrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.methodBtn {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 0;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+/* 레거시 tone — 컵노트와 동일 톤 */
+.t1,
+.t2,
+.t3,
+.t4,
+.t5 {
+  background: rgba(140, 115, 85, 0.08);
+  color: var(--accent-warm);
+  border: 1px solid rgba(140, 115, 85, 0.2);
+}
+
+/* 섹션 라벨 (인라인/보조) */
+.sectionTitle {
+  margin: 20px 0 10px;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-sub);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.register-hint {
+  text-align: center;
+  color: var(--text-sub);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.6;
+  margin-top: 8px;
+  margin-bottom: 24px;
+}
+
+.register-hint .btn-secondary {
+  margin-top: 12px;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* NYT 검색 결과 카드 */
+.result-card {
+  background: var(--surface);
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  cursor: pointer;
+  position: relative;
+  margin-bottom: 0;
+}
+
+.results > .result-card:first-child,
+.results > .empty:first-child {
+  border-top: 3px solid var(--divider);
+}
+
+.summary {
+  cursor: pointer;
+  padding-right: 48px;
+}
+
+.name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  color: var(--text);
+}
+
+.meta {
+  margin-top: 8px;
+  color: var(--text-sub);
+  font-size: 13px;
+  font-weight: 400;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.favBtn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--surface);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--text);
+}
+
+.favBtn svg {
+  display: block;
+}
+
+.details {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease;
+}
+
+.coffeeCard.expanded .details {
+  max-height: 2200px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.detailName {
+  margin: 0;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+
+.detailRoaster {
+  margin-top: 8px;
+  color: var(--text-sub);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.rating {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stars-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stars-row svg {
+  flex-shrink: 0;
+  display: block;
+}
+
+.star-filled polygon {
+  fill: var(--accent-warm);
+  stroke: none;
+}
+
+.star-empty polygon {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+
+.rating-num {
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--text);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+.gridItem {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 14px 16px;
+}
+
+.gridValue {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text);
+}
+
+.mapBox {
+  margin-top: 8px;
+  border-radius: 0;
+  background: var(--surface);
+  padding: 14px 16px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-sub);
+  border: 1px solid var(--border);
+}
+
+.links {
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.links a {
+  color: var(--text);
+  text-decoration: underline;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.actionRow {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* 하단 네비 */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  height: var(--nav-h);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 1000;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.bottom-nav .nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-decoration: none;
+  color: var(--text-sub);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 12px;
+}
+
+.bottom-nav .nav-item.active {
+  color: var(--text);
+}
+
+.bottom-nav .nav-item svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.5;
+}
+
+.bottom-nav .nav-item.active svg {
+  stroke: var(--text);
+  color: var(--text);
+}
+
+.bottom-nav .nav-label {
+  line-height: 1.2;
+}
+
+/* Bottom sheet */
+.sheetOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 18, 18, 0.4);
+  z-index: 2000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.sheetOverlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sheetPanel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--surface);
+  border-radius: 0;
+  border: none;
+  border-top: 3px solid var(--divider);
+  padding: 16px 20px calc(20px + env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 0.28s ease;
+  box-shadow: none;
+}
+
+.sheetOverlay.open .sheetPanel {
+  transform: translateY(0);
+}
+
+.sheetHandle {
+  width: 40px;
+  height: 3px;
+  background: var(--border);
+  border-radius: 0;
+  margin: 0 auto 16px;
+}
+
+.sheetTitle {
+  margin: 0 0 12px;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: var(--text);
+}
+
+.sheetText {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-sub);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.sheetActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sheetActions input[type="file"] {
+  display: none;
+}
+
+.ocrLoading {
+  display: none;
+  text-align: center;
+  padding: 16px;
+  color: var(--text-sub);
+  font-size: 14px;
+}
+
+.ocrLoading.show {
+  display: block;
+}
+
+/* 토스트 */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--nav-h) + 20px);
+  transform: translateX(-50%) translateY(12px);
+  background: var(--text);
+  color: var(--surface);
+  padding: 12px 20px;
+  border-radius: 0;
+  font-size: 13px;
+  font-weight: 400;
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.25s ease;
+  z-index: 2500;
+  max-width: calc(100% - 40px);
+  text-align: center;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* 페이지 헤더 */
+.pageHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.backBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: 0;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--text);
+}
+
+.backBtn svg {
+  display: block;
+}
+
+.pageHeader .title {
+  margin: 0;
+  flex: 1;
+}
+
+/* 슬라이더 */
+.sliderRow {
+  display: grid;
+  grid-template-columns: 72px 1fr 28px;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.sliderRow label {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text);
+}
+
+.sliderRow .val {
+  text-align: right;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text);
+}
+
+input[type="range"],
+input[type="range"].coffeeRange {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 2px;
+  background: var(--border);
+  border-radius: 0;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text);
+  cursor: pointer;
+  border: 2px solid var(--surface);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text);
+  cursor: pointer;
+  border: 2px solid var(--surface);
+}
+
+input[type="range"]::-moz-range-track {
+  height: 2px;
+  background: var(--border);
+  border-radius: 0;
+}
+
+.summaryCard {
+  padding: 20px;
+  border-radius: 2px;
+  background: var(--surface);
+  border: none;
+}
+
+.divider {
+  height: 0;
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 20px 0;
+  background: transparent;
+}
+
+/* 마이페이지 */
+.profileRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+}
+
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+}
+
+.avatar svg {
+  display: block;
+}
+
+.badge {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 400;
+  padding: 6px 12px;
+  border-radius: 0;
+  background: var(--bg);
+  color: var(--text-sub);
+  border: 1px solid var(--border);
+}
+
+.statsScroll {
+  display: flex;
+  gap: 1px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-top: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.statCard {
+  min-width: 148px;
+  padding: 20px;
+  flex-shrink: 0;
+}
+
+.statCard .value {
+  margin-top: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: var(--text);
+}
+
+.tabBar {
+  display: flex;
+  gap: 1px;
+  margin-top: 16px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.tabBtn {
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 0;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  cursor: pointer;
+  color: var(--text-sub);
+}
+
+.tabBtn.active {
+  background: var(--text);
+  color: #fff;
+  border-color: var(--text);
+}
+
+.listCard {
+  margin-bottom: 1px;
+}
+
+.miniBars {
+  display: flex;
+  gap: 4px;
+  margin-top: 10px;
+  align-items: flex-end;
+  height: 32px;
+}
+
+.miniBar {
+  width: 6px;
+  background: var(--accent-warm);
+  opacity: 0.85;
+  border-radius: 0;
+}
+
+/* 폼 */
+.formField {
+  margin-bottom: 16px;
+}
+
+.formField label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-sub);
+  margin-bottom: 8px;
+  letter-spacing: 0.02em;
+}
+
+.formField textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+#processDetailWrap {
+  display: none;
+}
+
+#processDetailWrap.is-visible {
+  display: block;
+}
+
+/* —— 테이스팅 3단계 (센서리 노트) —— */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 20px 0 28px;
+}
+
+.step-dot {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-sub);
+  border: 1.5px solid var(--border);
+  background: transparent;
+  border-radius: 0;
+}
+
+.step-dot.active {
+  background: var(--text);
+  color: var(--surface);
+  border-color: var(--text);
+}
+
+.step-dot.done {
+  background: var(--text);
+  color: var(--surface);
+  border-color: var(--text);
+}
+
+.step-line {
+  width: 40px;
+  height: 1px;
+  background: var(--border);
+}
+
+.step-section {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity 0.5s ease, max-height 0.7s ease;
+  pointer-events: none;
+  border-top: 0.001px solid transparent; /* 마진 콜랩스 방지 */
+  border-bottom: 0.001px solid transparent; /* 마진 콜랩스 방지 */
+}
+
+.step-section.revealed {
+  opacity: 1;
+  max-height: 4000px;
+  pointer-events: auto;
+}
+
+/* backward-compat (기존 tasting.html의 active alias) */
+.step-section.active {
+  opacity: 1;
+  max-height: 4000px;
+  pointer-events: auto;
+}
+
+@keyframes stepFade {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Sensory Note: 부드럽고 산뜻한 UI 스킨 */
+.sensory-note .section-heading {
+  border-bottom-color: rgba(224, 224, 224, 0.9);
+}
+
+/* SCA 플레이버 휠 */
+.sensory-note .wheel-viewport {
+  width: 100%;
+  max-width: 440px;
+  margin: 16px auto;
+  aspect-ratio: 1;
+  touch-action: none;
+  cursor: grab;
+  position: relative;
+  overflow: hidden;
+}
+
+.sensory-note .wheel-viewport.grabbing {
+  cursor: grabbing;
+}
+
+.sensory-note #wheelSvg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* tasting.html STEP1: 오른쪽 반원만 보이도록 클리핑 */
+#tastingMain.sensory-note #wheelViewport {
+  height: 440px;
+  max-width: none;
+  aspect-ratio: auto;
+  margin: 16px 0 8px;
+}
+
+#tastingMain.sensory-note #wheelSvg {
+  position: absolute;
+  width: 440px;
+  height: 440px;
+  left: -212px; /* 500 viewBox 기준: CX=240에 맞춘 근사 */
+  top: 0;
+  display: block;
+}
+
+/* 레이더(기본 감각) */
+.sensory-note .pentagon-radar {
+  width: 280px;
+  height: 280px;
+  margin: 0 auto 20px;
+  touch-action: none;
+}
+
+.sensory-note .pentagon-radar svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* 향미 강도 슬라이더 */
+.sensory-note #flavorSliders {
+  margin-top: 6px;
+}
+
+.sensory-note .flavor-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.sensory-note .flavor-slider-row:last-child {
+  border-bottom: none;
+}
+
+.sensory-note .fs-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sensory-note .fs-name {
+  font-size: 14px;
+  font-weight: 500;
+  width: 76px;
+  flex-shrink: 0;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sensory-note .fs-slider-wrap {
+  position: relative;
+  flex: 1;
+  padding: 0 2px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+}
+
+.sensory-note .fs-val {
+  font-size: 15px;
+  font-weight: 600;
+  width: 28px;
+  text-align: right;
+  color: var(--text);
+}
+
+.sensory-note .fs-input {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 20px;
+  background: transparent;
+  outline: none;
+}
+
+.sensory-note .fs-input::-webkit-slider-runnable-track {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.sensory-note .fs-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--accent-warm);
+  cursor: pointer;
+  margin-top: -9.5px; /* (thumb - track)/2 */
+  transition: border-color 0.12s ease, border-width 0.12s ease;
+}
+
+.sensory-note .fs-input:active::-webkit-slider-thumb {
+  border-color: var(--text);
+  border-width: 3px;
+}
+
+.sensory-note .fs-input::-moz-range-track {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.sensory-note .fs-input::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--accent-warm);
+  cursor: pointer;
+}
+
+.sensory-note .fs-input:active::-moz-range-thumb {
+  border-color: var(--text);
+  border-width: 3px;
+}
+
+/* tasting.html STEP2: 슬라이더 + 향미 메모(버튼/접힘 영역) */
+#tastingMain.sensory-note #flavorSliders .flavor-slider-row {
+  gap: 8px;
+  padding: 14px 0;
+  border-bottom: none; /* border는 그룹에 둡니다 */
+}
+
+#tastingMain.sensory-note #flavorSliders .flavor-slider-group {
+  border-bottom: 1px solid var(--border);
+}
+
+#tastingMain.sensory-note #flavorSliders .flavor-slider-group:last-child {
+  border-bottom: none;
+}
+
+#tastingMain.sensory-note #flavorSliders .fs-track {
+  flex: 1;
+  position: relative;
+  padding: 0 2px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+}
+
+#tastingMain.sensory-note #flavorSliders .fs-val {
+  width: 24px;
+}
+
+#tastingMain.sensory-note #flavorSliders .fs-memo-btn {
+  background: none;
+  border: none;
+  color: var(--text-sub);
+  cursor: pointer;
+  padding: 4px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+  line-height: 1;
+}
+
+#tastingMain.sensory-note #flavorSliders .fs-memo-btn:hover,
+#tastingMain.sensory-note #flavorSliders .fs-memo-btn.has-memo {
+  color: var(--accent-warm);
+}
+
+#tastingMain.sensory-note #flavorSliders .fs-memo-area {
+  padding: 0 0 12px 90px; /* 왼쪽 여백: 색 + 이름 */
+}
+
+#tastingMain.sensory-note #flavorSliders .fs-memo-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  color: var(--text);
+  resize: vertical;
+}
+
+#tastingMain.sensory-note #flavorSliders .fs-memo-input::placeholder {
+  color: var(--text-sub);
+}
+
+#tastingMain.sensory-note #flavorSliders .fs-memo-input:focus {
+  outline: none;
+  border-color: var(--text);
+}
+
+/* 커뮤니티 평균 마커(슬라이더) */
+.sensory-note .community-marker {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 6px solid var(--text-sub);
+  top: 50%;
+  transform: translate(-50%, -50%);
+  transition: left 0.2s ease, opacity 0.2s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sensory-note .community-marker.show {
+  opacity: 1;
+}
+
+/* 센서리 노트: 선택 태그를 더 산뜻하게 */
+.sensory-note .flavor-tag {
+  transition: opacity 0.15s ease;
+}
+
+.sensory-note .flavor-color {
+  border-radius: 50%;
+}
+
+.sensory-note .empty-flavors {
+  padding: 16px 0;
+}
+
+.step-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.step-desc {
+  font-size: 14px;
+  color: var(--text-sub);
+  margin: -8px 0 16px;
+  line-height: 1.5;
+}
+
+.picker-container {
+  background: var(--surface);
+  padding: 0;
+  margin: 16px 0;
+  position: relative;
+  border-top: 3px solid var(--text);
+}
+
+.picker-labels {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+}
+
+.picker-label {
+  background: var(--surface);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-sub);
+  letter-spacing: 0.5px;
+  text-align: center;
+  padding: 10px 0;
+}
+
+.picker-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  height: 240px;
+}
+
+.picker-column {
+  background: var(--surface);
+  overflow: hidden;
+  position: relative;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+}
+
+.picker-column.grabbing {
+  cursor: grabbing;
+}
+
+.picker-list {
+  position: absolute;
+  width: 100%;
+  left: 0;
+  top: 0;
+  transition: transform 0.15s ease-out;
+  will-change: transform;
+}
+
+.picker-item {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--text-sub);
+  transition: all 0.15s;
+  padding: 0 8px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.picker-item.center {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  transform: scale(1.05);
+}
+
+.picker-item.near {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-sub);
+  opacity: 0.6;
+}
+
+.picker-item.far {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-sub);
+  opacity: 0.25;
+}
+
+.picker-highlight {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 48px;
+  border-top: 1px solid var(--text);
+  border-bottom: 1px solid var(--text);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.picker-column::before,
+.picker-column::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 60px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.picker-column::before {
+  top: 0;
+  background: linear-gradient(to bottom, var(--surface) 0%, transparent 100%);
+}
+
+.picker-column::after {
+  bottom: 0;
+  background: linear-gradient(to top, var(--surface) 0%, transparent 100%);
+}
+
+.selected-flavors {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 40px;
+}
+
+.flavor-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  border-radius: 0;
+}
+
+.flavor-color {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+}
+
+.flavor-remove {
+  background: none;
+  border: none;
+  color: var(--text-sub);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 0 0 4px;
+  line-height: 1;
+}
+
+.empty-flavors {
+  color: var(--text-sub);
+  font-size: 14px;
+  width: 100%;
+  text-align: center;
+  padding: 12px 0;
+}
+
+.radar-container {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto 20px;
+  aspect-ratio: 1;
+  touch-action: none;
+}
+
+.radar-container svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.radar-placeholder-text {
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 13px;
+  fill: var(--text-sub);
+}
+
+.intensity-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.intensity-color {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+}
+
+.intensity-name {
+  font-size: 13px;
+  font-weight: 500;
+  width: 72px;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.intensity-bar {
+  flex: 1;
+  height: 3px;
+  background: var(--border);
+  position: relative;
+}
+
+.intensity-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: var(--text);
+  transition: width 0.15s;
+}
+
+.intensity-val {
+  font-size: 14px;
+  font-weight: 600;
+  width: 24px;
+  text-align: right;
+}
+
+.compare-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.toggle-switch {
+  width: 44px;
+  height: 24px;
+  background: var(--border);
+  border: none;
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.toggle-switch[aria-pressed="true"] {
+  background: var(--text);
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: var(--surface);
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle-switch[aria-pressed="true"] .toggle-thumb {
+  transform: translateX(20px);
+}
+
+.summary-preview {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-top: 8px;
+}
+
+.summary-preview .summary-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.summary-preview .mini-radar-wrap {
+  max-width: 200px;
+  margin: 0 auto 16px;
+  aspect-ratio: 1;
+}
+
+.summary-preview .mini-radar-wrap svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.summary-preview .summary-bars {
+  margin-top: 12px;
+}
+
+.summary-preview .summary-bar-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 22px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.summary-preview .summary-bar-track {
+  height: 3px;
+  background: var(--border);
+  position: relative;
+}
+
+.summary-preview .summary-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: var(--text);
+}
+
+.summary-preview .summary-meta {
+  font-size: 13px;
+  color: var(--text-sub);
+  margin-top: 12px;
+  line-height: 1.5;
+}
+
+.summary-preview .summary-memo {
+  font-size: 13px;
+  color: var(--text);
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  max-height: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* tasting.html STEP4: 레시피 입력 */
+#tastingMain.sensory-note .recipe-add-btn {
+  width: auto;
+  display: inline-block;
+  padding: 10px 18px;
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+#tastingMain.sensory-note .recipe-form {
+  margin-top: 12px;
+  display: grid;
+  gap: 12px;
+}
+
+#tastingMain.sensory-note .recipe-field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-sub);
+  margin-bottom: 6px;
+}
+
+#tastingMain.sensory-note .recipe-field textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+/* tasting.html STEP3: 기본 감각 메모 */
+.base-sense-list {
+  margin-top: 16px;
+}
+.base-sense-item {
+  border-bottom: 1px solid var(--border);
+}
+.base-sense-item:last-child {
+  border-bottom: none;
+}
+.bs-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+}
+.bs-name {
+  font-size: 14px;
+  font-weight: 500;
+  flex: 1;
+  color: var(--text);
+}
+.bs-val {
+  font-size: 15px;
+  font-weight: 600;
+  width: 28px;
+  text-align: right;
+  color: var(--accent-warm);
+}
+.bs-memo-btn {
+  background: none;
+  border: none;
+  color: var(--text-sub);
+  cursor: pointer;
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.bs-memo-btn svg {
+  display: block;
+}
+.bs-memo-btn.has-memo {
+  color: var(--accent-warm);
+}
+.bs-memo-area {
+  padding: 0 0 12px;
+}
+.bs-memo-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: "Pretendard Variable", sans-serif;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  color: var(--text);
+  resize: vertical;
+}
+
+/* tasting.html STEP4: 장소 입력 */
+.location-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 4px 4px 4px 14px;
+}
+.location-bar svg {
+  flex-shrink: 0;
+  color: var(--text-sub);
+}
+.location-bar input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  padding: 10px 0;
+  color: var(--text);
+  outline: none;
+}
+.location-bar input::placeholder {
+  color: var(--text-sub);
+}
+.location-hint {
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-top: 6px;
+}
+
+/* tasting.html STEP4: 사진 업로드 */
+.photo-grid {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.photo-thumb {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  position: relative;
+  background: var(--surface);
+}
+.photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.photo-thumb-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  background: var(--text);
+  color: var(--surface);
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+}
+.photo-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: 1.5px dashed var(--border);
+  color: var(--text-sub);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+}
+.photo-add-btn:hover {
+  border-color: var(--text-sub);
+}
+
+/* mypage.html: 센서리노트(노트 탭) */
+.sensory-card {
+  display: flex;
+  align-items: stretch;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: opacity 0.15s;
+  min-height: 80px;
+}
+.sensory-card:active {
+  opacity: 0.7;
+}
+.sensory-card:first-child {
+  border-top: 3px solid var(--text);
+}
+
+.sc-color-bar {
+  width: 5px;
+  flex-shrink: 0;
+}
+
+.sc-content {
+  flex: 1;
+  padding: 14px 12px;
+  min-width: 0;
+}
+.sc-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sc-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sc-flag {
+  flex-shrink: 0;
+  border-radius: 2px;
+}
+.sc-flavors {
+  font-size: 12px;
+  color: var(--accent-warm);
+  margin-top: 4px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sc-location {
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sc-date {
+  font-size: 11px;
+  color: var(--text-sub);
+  margin-top: 4px;
+}
+
+.sc-country-map {
+  width: 60px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+.sc-country-map svg {
+  width: 40px;
+  height: 40px;
+  opacity: 0.12;
+  fill: var(--text);
+}
+
+/* mypage.html: 레시피 목록 */
+.recipe-card {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  padding: 18px 20px;
+  transition: opacity 0.15s;
+}
+.recipe-card:active {
+  opacity: 0.7;
+}
+.recipe-card:first-child {
+  border-top: 3px solid var(--text);
+}
+.rc-title {
+  padding: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: var(--text);
+}
+.rc-meta {
+  padding: 6px 0 0;
+  font-size: 13px;
+  color: var(--text-sub);
+  line-height: 1.5;
+}
+.rc-date {
+  padding: 6px 0 0;
+  font-size: 11px;
+  color: var(--text-sub);
+}
+
+/* note-detail.html: 상세 화면 */
+.detail-photos {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 0 0 12px;
+  -webkit-overflow-scrolling: touch;
+}
+.detail-photo {
+  width: 200px;
+  height: 200px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+
+.detail-chart-area {
+  padding: 16px 0;
+}
+.detail-flavors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.detail-flavor-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.detail-flavor-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.detail-pentagon {
+  width: 200px;
+  height: 200px;
+  margin: 0 auto;
+}
+.detail-pentagon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.detail-links {
+  border-top: 3px solid var(--text);
+  margin-top: 16px;
+}
+.detail-link-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 16px 0;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: "Pretendard Variable", sans-serif;
+}
+.dl-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  width: 64px;
+  flex-shrink: 0;
+}
+.dl-preview {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dl-arrow {
+  flex-shrink: 0;
+  color: var(--text-sub);
+}
+
+.memoSheet textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ══════════════════════════════════════
+   TASTING: Step Section Reveal
+   ══════════════════════════════════════ */
+.step-section{opacity:0;max-height:0;overflow:hidden;transition:opacity .5s ease,max-height .7s ease;pointer-events:none;}
+.step-section.revealed{opacity:1;max-height:5000px;pointer-events:auto;}
+.step-desc{font-size:14px;color:var(--text-sub);margin:-8px 0 16px;line-height:1.5;}
+
+/* ══════════════════════════════════════
+   TASTING: Flavor Wheel (2-stage zoom)
+   ══════════════════════════════════════ */
+.wheel-viewport{width:100%;max-width:400px;aspect-ratio:1;margin:16px auto;overflow:hidden;touch-action:none;cursor:grab;position:relative;}
+.wheel-viewport.grabbing{cursor:grabbing;}
+#wheelSvg{width:100%;height:100%;}
+.wheel-group{transition:transform .4s cubic-bezier(.25,.1,.25,1);}
+.wheel-back-btn{position:absolute;top:12px;left:12px;width:36px;height:36px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .3s ease;z-index:10;}
+.wheel-back-btn.visible{opacity:1;pointer-events:auto;}
+
+/* ══════════════════════════════════════
+   TASTING: Selected Flavor Tags
+   ══════════════════════════════════════ */
+.selected-flavors{margin:16px 0;display:flex;flex-wrap:wrap;gap:8px;min-height:40px;}
+.flavor-tag{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:var(--surface);border:1px solid var(--border);font-size:13px;font-weight:500;color:var(--text);}
+.flavor-color{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.flavor-remove{background:none;border:none;color:var(--text-sub);font-size:16px;cursor:pointer;padding:0 0 0 4px;line-height:1;}
+.empty-flavors{color:var(--text-sub);font-size:14px;width:100%;text-align:center;padding:16px 0;}
+
+/* ══════════════════════════════════════
+   TASTING: Flavor Intensity Sliders
+   ══════════════════════════════════════ */
+.flavor-slider-group{border-bottom:1px solid var(--border);}
+.flavor-slider-group:last-child{border-bottom:none;}
+.flavor-slider-row{display:flex;align-items:center;gap:8px;padding:14px 0;}
+.fs-color{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.fs-name{font-size:14px;font-weight:500;width:72px;flex-shrink:0;color:var(--text);}
+.fs-track{flex:1;}
+.fs-input{-webkit-appearance:none;width:100%;height:3px;background:var(--border);border-radius:2px;outline:none;}
+.fs-input::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--surface);border:2px solid var(--accent-warm);cursor:pointer;}
+.fs-input::-webkit-slider-thumb:active{border-color:var(--text);border-width:3px;}
+.fs-input::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--surface);border:2px solid var(--accent-warm);cursor:pointer;}
+.fs-val{font-size:15px;font-weight:600;width:24px;text-align:right;color:var(--text);}
+.fs-memo-btn{background:none;border:none;color:var(--text-sub);cursor:pointer;padding:4px;flex-shrink:0;transition:color .15s;}
+.fs-memo-btn.has-memo{color:var(--accent-warm);}
+.fs-memo-area{padding:0 0 12px 90px;}
+.fs-memo-input{width:100%;min-height:44px;padding:10px 12px;font-size:13px;font-family:'Pretendard Variable',sans-serif;background:var(--bg);border:1px solid var(--border);border-radius:0;color:var(--text);resize:vertical;}
+
+/* ══════════════════════════════════════
+   TASTING: Base Sense Memos
+   ══════════════════════════════════════ */
+.base-sense-list{margin-top:16px;}
+.base-sense-item{border-bottom:1px solid var(--border);}
+.base-sense-item:last-child{border-bottom:none;}
+.bs-header{display:flex;align-items:center;gap:8px;padding:12px 0;}
+.bs-name{font-size:14px;font-weight:500;flex:1;color:var(--text);}
+.bs-val{font-size:15px;font-weight:600;width:28px;text-align:right;color:var(--accent-warm);}
+.bs-memo-btn{background:none;border:none;color:var(--text-sub);cursor:pointer;padding:4px;}
+.bs-memo-btn.has-memo{color:var(--accent-warm);}
+.bs-memo-area{padding:0 0 12px;}
+.bs-memo-input{width:100%;min-height:44px;padding:10px 12px;font-size:13px;font-family:'Pretendard Variable',sans-serif;background:var(--bg);border:1px solid var(--border);border-radius:0;color:var(--text);resize:vertical;}
+
+/* ══════════════════════════════════════
+   TASTING: Pentagon Radar
+   ══════════════════════════════════════ */
+.pentagon-radar{width:280px;height:280px;margin:0 auto 20px;touch-action:none;}
+.pentagon-radar svg{width:100%;height:100%;}
+
+/* ══════════════════════════════════════
+   TASTING: Compare Toggle
+   ══════════════════════════════════════ */
+.compare-toggle{display:flex;align-items:center;justify-content:space-between;padding:20px 0;border-top:1px solid var(--border);margin-top:20px;font-size:14px;font-weight:500;}
+.toggle-switch{width:44px;height:24px;background:var(--border);border:none;border-radius:12px;position:relative;cursor:pointer;transition:background .25s ease;padding:0;}
+.toggle-switch[aria-pressed="true"]{background:var(--accent-warm);}
+.toggle-thumb{position:absolute;top:2px;left:2px;width:20px;height:20px;background:var(--surface);border-radius:50%;transition:transform .25s ease;}
+.toggle-switch[aria-pressed="true"] .toggle-thumb{transform:translateX(20px);}
+
+/* ══════════════════════════════════════
+   TASTING: Recipe Form
+   ══════════════════════════════════════ */
+.recipe-form{margin-top:12px;display:grid;gap:12px;}
+.recipe-field label{display:block;font-size:12px;font-weight:500;color:var(--text-sub);margin-bottom:6px;}
+.recipe-field textarea{min-height:60px;resize:vertical;}
+.recipe-add-btn{width:auto;display:inline-block;padding:10px 18px;font-size:13px;}
+
+/* ══════════════════════════════════════
+   TASTING: Location
+   ══════════════════════════════════════ */
+.location-bar{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);padding:4px 4px 4px 14px;}
+.location-bar svg{flex-shrink:0;color:var(--text-sub);}
+.location-bar input{flex:1;border:none;background:transparent;font-size:15px;padding:10px 0;color:var(--text);outline:none;font-family:'Pretendard Variable',sans-serif;}
+
+/* ══════════════════════════════════════
+   TASTING: Photo Upload
+   ══════════════════════════════════════ */
+.photo-grid{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+.photo-thumb{width:80px;height:80px;position:relative;}
+.photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;border:1px solid var(--border);}
+.photo-thumb-remove{position:absolute;top:2px;right:2px;width:20px;height:20px;background:var(--text);color:var(--surface);border:none;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;}
+.photo-add-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border:1.5px dashed var(--border);color:var(--text-sub);font-size:13px;font-weight:500;cursor:pointer;}
+
+/* ══════════════════════════════════════
+   TASTING: Star Rating
+   ══════════════════════════════════════ */
+.star-rating-input{display:flex;gap:8px;justify-content:center;padding:16px 0;}
+.star-btn{cursor:pointer;transition:transform .12s ease;display:inline-block;}
+.star-btn:active{transform:scale(.9);}
+.star-btn svg{width:32px;height:32px;}
+.star-btn.filled svg,.star-btn.filled polygon{fill:var(--accent-warm);stroke:var(--accent-warm);}
+.star-btn.empty svg,.star-btn.empty polygon{fill:none;stroke:var(--border);stroke-width:1.5;}
+.star-rating-label{text-align:center;font-size:13px;color:var(--text-sub);margin-bottom:8px;}
+
+/* ══════════════════════════════════════
+   NOTES: Sensory Card List
+   ══════════════════════════════════════ */
+.sensory-card{display:flex;align-items:stretch;background:var(--surface);border-bottom:1px solid var(--border);cursor:pointer;transition:opacity .15s;min-height:80px;}
+.sensory-card:active{opacity:.7;}
+.sensory-card:first-child{border-top:3px solid var(--text);}
+.sc-color-bar{width:6px;flex-shrink:0;}
+.sc-content{flex:1;padding:14px 12px;min-width:0;}
+.sc-title-row{display:flex;align-items:center;gap:6px;}
+.sc-title{font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sc-flag{flex-shrink:0;border-radius:2px;}
+.sc-stars{display:flex;align-items:center;gap:1px;margin-top:3px;}
+.sc-stars svg{width:12px;height:12px;display:block;}
+.sc-stars .filled svg,.sc-stars .filled polygon{fill:var(--accent-warm);stroke:var(--accent-warm);}
+.sc-stars .empty svg,.sc-stars .empty polygon{fill:none;stroke:var(--border);stroke-width:1.5;}
+.sc-stars-num{font-size:12px;font-weight:500;color:var(--accent-warm);margin-left:4px;}
+.sc-flavors{font-size:12px;color:var(--accent-warm);margin-top:4px;font-weight:500;}
+.sc-location{font-size:12px;color:var(--text-sub);margin-top:2px;}
+.sc-date{font-size:11px;color:var(--text-sub);margin-top:4px;}
+.sc-country-map{width:60px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:8px;}
+.sc-country-map svg{width:40px;height:40px;opacity:.08;fill:var(--text);}
+
+/* ══════════════════════════════════════
+   NOTE DETAIL: Origin Info
+   ══════════════════════════════════════ */
+.detail-origin{padding:16px 0;}
+.detail-origin-title{font-size:20px;font-weight:700;letter-spacing:-.3px;color:var(--text);}
+.detail-origin-roaster{font-size:13px;color:var(--text-sub);margin-top:4px;}
+.detail-origin-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border);border-left:1px solid var(--border);margin-top:12px;}
+.do-cell{border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:12px 14px;}
+.do-label{display:block;font-size:11px;color:var(--text-sub);margin-bottom:4px;}
+.do-value{font-size:14px;font-weight:500;color:var(--text);}
+.detail-photos{display:flex;gap:4px;overflow-x:auto;padding:0 0 12px;-webkit-overflow-scrolling:touch;}
+.detail-photo{width:200px;height:200px;flex-shrink:0;object-fit:cover;}
+.detail-chart-area{padding:16px 0;}
+.detail-flavors{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
+.detail-flavor-chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;color:var(--text);padding:4px 10px;border:1px solid var(--border);}
+.detail-flavor-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+.detail-pentagon{width:200px;height:200px;margin:0 auto;}
+.detail-pentagon svg{width:100%;height:100%;}
+.detail-links{border-top:3px solid var(--text);margin-top:16px;}
+.detail-link-item{display:flex;align-items:center;width:100%;padding:16px 0;border:none;border-bottom:1px solid var(--border);background:transparent;cursor:pointer;text-align:left;font-family:'Pretendard Variable',sans-serif;}
+.dl-label{font-size:13px;font-weight:600;color:var(--text);width:64px;flex-shrink:0;}
+.dl-preview{flex:1;font-size:13px;color:var(--text-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dl-arrow{flex-shrink:0;color:var(--text-sub);}
+
+/* Pentagon memo display (note-detail) */
+.penta-memo-display{background:var(--bg);padding:14px 16px;margin-top:12px;border-left:3px solid var(--accent-warm);animation:stepFade .3s ease;}
+.pm-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.pm-label{font-size:14px;font-weight:600;color:var(--text);}
+.pm-score{font-size:13px;color:var(--accent-warm);font-weight:500;}
+.pm-content{font-size:14px;color:var(--text);line-height:1.6;margin:0;}
+@keyframes stepFade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* ══════════════════════════════════════
+   RECIPE: Detail Grid
+   ══════════════════════════════════════ */
+.recipe-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border);border-left:1px solid var(--border);margin:16px 0;}
+.rd-cell{border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:12px 14px;}
+.rd-label{display:block;font-size:11px;color:var(--text-sub);margin-bottom:4px;}
+.rd-value{font-size:14px;font-weight:500;color:var(--text);}
+
+/* RECIPE: Pour Steps (display) */
+.pour-step{display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);}
+.pour-step:last-child{border-bottom:none;}
+.pour-num{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--accent-warm);border:1.5px solid var(--accent-warm);flex-shrink:0;}
+.pour-info{flex:1;}
+.pour-time{font-size:14px;font-weight:600;color:var(--text);}
+.pour-tip{font-size:13px;color:var(--text-sub);margin-top:2px;line-height:1.5;}
+
+/* RECIPE: Pour Steps (input) */
+.pour-step-input{background:var(--bg);padding:12px 14px;margin-bottom:8px;}
+.psi-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.psi-num{font-size:13px;font-weight:600;color:var(--accent-warm);}
+.psi-remove{background:none;border:none;color:var(--text-sub);font-size:18px;cursor:pointer;}
+.psi-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.psi-time,.psi-amount{padding:10px 12px;font-size:13px;border:1px solid var(--border);background:var(--surface);font-family:'Pretendard Variable',sans-serif;color:var(--text);border-radius:0;}
+.psi-tip{width:100%;min-height:36px;padding:8px 12px;font-size:13px;border:1px solid var(--border);background:var(--surface);font-family:'Pretendard Variable',sans-serif;color:var(--text);resize:vertical;border-radius:0;}
+
+/* Shop brew sub-chips */
+.shop-brew-wrap{margin-top:12px;}

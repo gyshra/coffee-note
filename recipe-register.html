@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>레시피 등록 — 커피 노트</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"/>
+  <link rel="stylesheet" href="common.css"/>
+</head>
+<body>
+  <div class="wrap">
+    <header class="pageHeader">
+      <button type="button" class="backBtn" id="btnBack" aria-label="뒤로가기">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      </button>
+      <h1 class="title">레시피 등록</h1>
+    </header>
+
+    <div class="form-card card">
+      <div class="formField">
+        <label>레시피 제목 *</label>
+        <input type="text" id="rTitle" required placeholder="예: 에티오피아 예가체프 V60 레시피"/>
+      </div>
+      <div class="formField">
+        <label>원두 (선택)</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="rCoffee" placeholder="원두 이름" style="flex:1"/>
+          <button type="button" class="btn-secondary" id="btnSearchCoffee" style="width:auto;padding:10px 14px;font-size:13px;flex-shrink:0">검색</button>
+        </div>
+      </div>
+      <div class="formField">
+        <label>추출 도구 *</label>
+        <div class="chipWrap" id="toolChips"></div>
+      </div>
+      <div class="formField"><label>물 온도</label><input type="text" id="rTemp" placeholder="예: 93°C"/></div>
+      <div class="formField"><label>물 양 (총량)</label><input type="text" id="rWater" placeholder="예: 250ml"/></div>
+      <div class="formField"><label>원두 양</label><input type="text" id="rDose" placeholder="예: 15g"/></div>
+      <div class="formField"><label>그라인딩</label><input type="text" id="rGrind" placeholder="예: 코만단테 24클릭"/></div>
+
+      <h2 class="section-heading">추출 단계</h2>
+      <p class="step-desc">각 회차의 시간, 물 양, 팁을 입력하세요</p>
+      <div id="pourSteps"></div>
+      <button type="button" class="btn-secondary" id="btnAddStep" style="margin-top:8px;width:auto;padding:8px 16px;font-size:13px">+ 단계 추가</button>
+
+      <div class="formField" style="margin-top:16px">
+        <label>추출 메모</label>
+        <textarea id="rNote" placeholder="전체적인 추출 팁이나 메모"></textarea>
+      </div>
+
+      <button type="button" class="btn-primary" id="btnSave" style="margin-top:20px">레시피 저장</button>
+    </div>
+  </div>
+  <div id="globalToast" class="toast"></div>
+  <nav id="bottomNav" class="bottom-nav">
+    <a href="home.html" class="nav-item" data-nav="home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-label">홈</span></a>
+    <a href="index.html" class="nav-item" data-nav="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><span class="nav-label">검색</span></a>
+    <a href="notes.html" class="nav-item active" data-nav="notes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg><span class="nav-label">노트</span></a>
+    <a href="#" class="nav-item" data-nav="map" onclick="CoffeeNote.openCoffeeMap();return false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg><span class="nav-label">커피맵</span></a>
+    <a href="mypage.html" class="nav-item" data-nav="mypage"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">마이</span></a>
+  </nav>
+  <script src="common.js"></script>
+  <script>
+(function(){
+  var CN=window.CoffeeNote;
+  CN.renderBottomNav("notes");
+  document.getElementById("btnBack").addEventListener("click",function(){if(history.length>1)history.back();else location.href="notes.html?tab=recipes";});
+
+  var params=new URLSearchParams(location.search);
+  var editId=params.get("edit");
+  var editRecipe=editId?CN.getRecipeById(editId):null;
+  var isEdit=!!editRecipe;
+
+  if(isEdit){
+    document.querySelector(".title").textContent="레시피 수정";
+    document.getElementById("btnSave").textContent="수정 저장";
+  }
+
+  var TOOLS=['V60','칼리타','케멕스','에어로프레스','프렌치프레스','에스프레소 머신','모카포트','콜드브루','콜드드립','클레버','하리오 스위치','사이폰','터키식'];
+  var selectedTool='';
+  var tc=document.getElementById("toolChips");
+  tc.innerHTML=TOOLS.map(function(t){return'<button type="button" class="chip" data-tool="'+t+'">'+t+'</button>';}).join("");
+  tc.querySelectorAll(".chip").forEach(function(b){b.addEventListener("click",function(){tc.querySelectorAll(".chip").forEach(function(x){x.classList.remove("selected");});b.classList.add("selected");selectedTool=b.getAttribute("data-tool");});});
+
+  // 원두 검색 버튼
+  document.getElementById("btnSearchCoffee").addEventListener("click",function(){
+    CN.openCoffeeSearch(function(result){
+      document.getElementById("rCoffee").value=result.coffee.name||"";
+    });
+  });
+
+  var stepCount=0;
+  var stepsWrap=document.getElementById("pourSteps");
+  function addStep(){
+    stepCount++;
+    var div=document.createElement("div");div.className="pour-step-input";div.setAttribute("data-step",stepCount);
+    div.innerHTML='<div class="psi-header"><span class="psi-num">'+stepCount+'회차</span><button type="button" class="psi-remove">&times;</button></div><div class="psi-row"><input type="text" class="psi-time" placeholder="시간 (예: 0:00~0:30)"/><input type="text" class="psi-amount" placeholder="물 양 (예: 50ml)"/></div><textarea class="psi-tip" placeholder="이 단계의 팁"></textarea>';
+    div.querySelector(".psi-remove").addEventListener("click",function(){div.remove();renumber();});
+    stepsWrap.appendChild(div);
+  }
+  function renumber(){
+    stepCount=0;stepsWrap.querySelectorAll(".pour-step-input").forEach(function(el){stepCount++;el.querySelector(".psi-num").textContent=stepCount+"회차";});
+  }
+
+  // 수정 모드: 기존 데이터 프리필
+  if(isEdit){
+    document.getElementById("rTitle").value=editRecipe.title||"";
+    document.getElementById("rCoffee").value=editRecipe.coffeeName||"";
+    document.getElementById("rTemp").value=editRecipe.temp||"";
+    document.getElementById("rWater").value=editRecipe.water||"";
+    document.getElementById("rDose").value=editRecipe.dose||"";
+    document.getElementById("rGrind").value=editRecipe.grind||"";
+    document.getElementById("rNote").value=editRecipe.note||"";
+    // 도구 선택
+    if(editRecipe.tool){var tc2=document.querySelector('[data-tool="'+editRecipe.tool+'"]');if(tc2){tc2.classList.add("selected");selectedTool=editRecipe.tool;}}
+    // 단계 프리필
+    if(editRecipe.steps&&editRecipe.steps.length){
+      editRecipe.steps.forEach(function(s){
+        addStep();
+        var last=stepsWrap.querySelector(".pour-step-input:last-child");
+        if(last){last.querySelector(".psi-time").value=s.time||"";last.querySelector(".psi-amount").value=s.amount||"";last.querySelector(".psi-tip").value=s.tip||"";}
+      });
+    } else { addStep(); }
+  } else {
+    addStep(); // 신규: 1회차 기본
+  }
+
+  document.getElementById("btnAddStep").addEventListener("click",function(){if(stepCount<10)addStep();else CN.showToast("최대 10단계");});
+
+  document.getElementById("btnSave").addEventListener("click",function(){
+    var title=document.getElementById("rTitle").value.trim();
+    if(!title){CN.showToast("제목을 입력하세요");return;}
+    if(!selectedTool){CN.showToast("추출 도구를 선택하세요");return;}
+    var steps=[];
+    stepsWrap.querySelectorAll(".pour-step-input").forEach(function(el){
+      steps.push({time:el.querySelector(".psi-time").value.trim(),amount:el.querySelector(".psi-amount").value.trim(),tip:el.querySelector(".psi-tip").value.trim()});
+    });
+    var data={
+      title:title,
+      coffeeName:document.getElementById("rCoffee").value.trim(),
+      tool:selectedTool,
+      temp:document.getElementById("rTemp").value.trim(),
+      water:document.getElementById("rWater").value.trim(),
+      dose:document.getElementById("rDose").value.trim(),
+      grind:document.getElementById("rGrind").value.trim(),
+      steps:steps,
+      note:document.getElementById("rNote").value.trim(),
+      source:"user_recipe"
+    };
+    if(isEdit){
+      CN.updateRecipe(editId,data);
+      CN.showToast("레시피가 수정되었습니다!");
+    } else {
+      CN.addRecipe(data);
+      CN.showToast("레시피가 저장되었습니다!");
+    }
+    setTimeout(function(){location.href="notes.html?tab=recipes";},600);
+  });
+})();
+  </script>
+</body>
+</html>

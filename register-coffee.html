@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>원두 직접 등록 — 커피 노트</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+    <link rel="stylesheet" href="common.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="pageHeader">
+        <button type="button" class="backBtn" id="btnBack" aria-label="뒤로가기">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+        </button>
+        <h1 class="title" id="pageTitle">원두 직접 등록</h1>
+      </header>
+
+      <form id="form" class="form-card card">
+        <div class="formField">
+          <label for="fName">원두 이름 <span style="color: var(--text)">*</span></label>
+          <input type="text" id="fName" required placeholder="예: 에티오피아 예가체프 OO" />
+        </div>
+        <div class="formField">
+          <label for="fRoaster">로스터리</label>
+          <input type="text" id="fRoaster" placeholder="로스터리 이름" />
+        </div>
+        <div class="formField">
+          <label for="fCountry">국가</label>
+          <select id="fCountry">
+            <option value="에티오피아">에티오피아</option>
+            <option value="케냐">케냐</option>
+            <option value="콜롬비아">콜롬비아</option>
+            <option value="파나마">파나마</option>
+            <option value="과테말라">과테말라</option>
+            <option value="브라질">브라질</option>
+            <option value="코스타리카">코스타리카</option>
+            <option value="인도네시아">인도네시아</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+        <div class="formField">
+          <label for="fRegion">지역</label>
+          <input type="text" id="fRegion" placeholder="예: 예가체프" />
+        </div>
+        <div class="formField">
+          <label for="fFarm">농장/워싱스테이션</label>
+          <input type="text" id="fFarm" />
+        </div>
+        <div class="formField">
+          <label for="fAlt">고도</label>
+          <input type="text" id="fAlt" placeholder="예: 1,800-2,200m" />
+        </div>
+        <div class="formField">
+          <label for="fProcessCategory">가공방식</label>
+          <select id="fProcessCategory">
+            <option value="워시드">워시드 (Washed)</option>
+            <option value="내추럴">내추럴 (Natural)</option>
+            <option value="허니">허니 (Honey)</option>
+            <option value="무산소 발효">무산소 발효 (Anaerobic)</option>
+            <option value="카보닉 매서레이션">카보닉 매서레이션 (CM)</option>
+            <option value="더블 발효">더블 발효 (Double Fermentation)</option>
+            <option value="웻 헐">웻 헐 (Wet Hulled)</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+        <div class="formField" id="processDetailWrap">
+          <label for="fProcessDetail">상세 가공 정보</label>
+          <input
+            type="text"
+            id="fProcessDetail"
+            placeholder="상세 가공 정보 (예: CM 무산소 내추럴 72시간)"
+          />
+        </div>
+        <div class="formField">
+          <label for="fVariety">품종</label>
+          <input type="text" id="fVariety" placeholder="예: Heirloom" />
+        </div>
+        <div class="formField">
+          <label for="fNotes">컵노트 (쉼표로 구분)</label>
+          <input type="text" id="fNotes" placeholder="블루베리, 자스민, 꿀" />
+        </div>
+        <div class="formField">
+          <label for="fPrice">가격</label>
+          <input type="text" id="fPrice" placeholder="예: 18,000원 / 200g" />
+        </div>
+        <div class="formField">
+          <label for="fMemo">메모</label>
+          <textarea id="fMemo" placeholder="추가 정보를 적어 주세요"></textarea>
+        </div>
+        <button type="submit" class="btn-primary" id="btnSubmit">등록하기</button>
+      </form>
+    </div>
+
+    <div id="globalToast" class="toast"></div>
+
+      <nav id="bottomNav" class="bottom-nav">
+    <a href="home.html" class="nav-item" data-nav="home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-label">홈</span></a>
+    <a href="index.html" class="nav-item" data-nav="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><span class="nav-label">검색</span></a>
+    <a href="notes.html" class="nav-item" data-nav="notes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg><span class="nav-label">노트</span></a>
+    <a href="#" class="nav-item" data-nav="map" onclick="CoffeeNote.openCoffeeMap();return false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg><span class="nav-label">커피맵</span></a>
+    <a href="mypage.html" class="nav-item" data-nav="mypage"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">마이</span></a>
+  </nav>
+
+    <script src="common.js"></script>
+    <script>
+      // TODO: Supabase 연동 시 원두 등록 API 호출
+      (function () {
+        var CN = window.CoffeeNote;
+        CN.renderBottomNav(null);
+
+        var detailWrap = document.getElementById("processDetailWrap");
+        var catSelect = document.getElementById("fProcessCategory");
+
+        function syncProcessDetailVisibility() {
+          if (catSelect.value) {
+            detailWrap.classList.add("is-visible");
+          } else {
+            detailWrap.classList.remove("is-visible");
+          }
+        }
+
+        catSelect.addEventListener("change", syncProcessDetailVisibility);
+        syncProcessDetailVisibility();
+
+        document.getElementById("btnBack").addEventListener("click", function () {
+          if (history.length > 1) history.back();
+          else location.href = "index.html";
+        });
+
+        var params = new URLSearchParams(location.search);
+        var editIdx = params.get("edit");
+        var editIndex = editIdx !== null && editIdx !== "" ? Number(editIdx) : NaN;
+        var editing = Number.isInteger(editIndex) && CN.getCoffeeByIndex(editIndex);
+
+        if (editing) {
+          document.getElementById("pageTitle").textContent = "원두 수정";
+          document.getElementById("btnSubmit").textContent = "수정 저장";
+          var c = CN.getCoffeeByIndex(editIndex);
+          document.getElementById("fName").value = c.name || "";
+          document.getElementById("fRoaster").value = c.roaster || "";
+          document.getElementById("fCountry").value = c.country || "에티오피아";
+          document.getElementById("fRegion").value = c.region || "";
+          document.getElementById("fFarm").value = c.farm || "";
+          document.getElementById("fAlt").value = c.altitude || "";
+          var cat = c.processCategory || CN.resolveProcessCategory(c);
+          var opts = catSelect.querySelectorAll("option");
+          var found = false;
+          for (var oi = 0; oi < opts.length; oi++) {
+            if (opts[oi].value === cat) {
+              catSelect.value = cat;
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            catSelect.value = "기타";
+          }
+          document.getElementById("fProcessDetail").value = (c.processDetail || "").trim();
+          document.getElementById("fVariety").value = c.variety || "";
+          document.getElementById("fNotes").value = (c.notes || []).join(", ");
+          document.getElementById("fPrice").value = c.price || "";
+          document.getElementById("fMemo").value = c.memo || "";
+          syncProcessDetailVisibility();
+        }
+
+        document.getElementById("form").addEventListener("submit", function (e) {
+          e.preventDefault();
+          var name = document.getElementById("fName").value.trim();
+          if (!name) {
+            CN.showToast("원두 이름을 입력해 주세요.");
+            return;
+          }
+          var country = document.getElementById("fCountry").value;
+          var region = document.getElementById("fRegion").value.trim();
+          var processCategory = document.getElementById("fProcessCategory").value;
+          var processDetail = document.getElementById("fProcessDetail").value.trim();
+          var notesStr = document.getElementById("fNotes").value;
+          var notes = notesStr
+            .split(",")
+            .map(function (s) {
+              return s.trim();
+            })
+            .filter(Boolean);
+          var keywords = notes.concat(name.split(/\s+/), region, country, processCategory, processDetail).filter(Boolean);
+
+          var draft = {
+            processCategory: processCategory,
+            processDetail: processDetail,
+          };
+          var obj = {
+            name: name,
+            roaster: document.getElementById("fRoaster").value.trim(),
+            country: country,
+            region: region,
+            farm: document.getElementById("fFarm").value.trim(),
+            altitude: document.getElementById("fAlt").value.trim(),
+            processCategory: processCategory,
+            processDetail: processDetail,
+            process: CN.formatProcessDisplay(draft),
+            variety: document.getElementById("fVariety").value.trim(),
+            notes: notes,
+            keywords: keywords,
+            price: document.getElementById("fPrice").value.trim(),
+            memo: document.getElementById("fMemo").value.trim(),
+            rating: 4.0,
+            mapText: (region || country) + ", " + country + " | 지도 연동 예정",
+            source: "user_created",
+          };
+
+          var newIndex;
+          if (editing) {
+            CN.updateCoffee(editIndex, obj);
+            newIndex = editIndex;
+            CN.showToast("수정되었습니다.");
+          } else {
+            newIndex = CN.addCoffee(obj);
+            CN.showToast("등록되었습니다.");
+          }
+          setTimeout(function () {
+            location.href = "index.html?coffeeId=" + newIndex + "&expand=1";
+          }, 400);
+        });
+      })();
+    </script>
+  </body>
+</html>
