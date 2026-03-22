@@ -10,63 +10,124 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"/>
   <link rel="stylesheet" href="common.css"/>
   <style>
-    .hero{display:flex;flex-direction:column;align-items:center;padding:32px 0 24px;text-align:center;}
-    .hero-logo{font-family:'Playfair Display',serif;font-weight:900;font-size:36px;letter-spacing:-2px;line-height:1;color:var(--text);margin-bottom:6px;}
-    .hero-sub{font-size:13px;color:var(--text-sub);margin-bottom:28px;}
-    .cam-ring{width:120px;height:120px;border-radius:50%;border:3px solid var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .15s ease,border-color .15s ease;position:relative;}
-    .cam-ring:active{transform:scale(.93);border-color:var(--accent-warm);}
-    .cam-ring svg{color:var(--text);}
-    .cam-ring input{position:absolute;inset:0;opacity:0;cursor:pointer;}
-    .cam-label{font-size:14px;font-weight:500;color:var(--text);margin-top:14px;}
-    .cam-or{font-size:12px;color:var(--text-sub);margin-top:8px;}
-    .cam-or a{color:var(--accent-warm);text-decoration:underline;}
-    .recent-section{margin-top:28px;}
-    .recent-scroll{display:flex;gap:10px;overflow-x:auto;padding:0 0 8px;-webkit-overflow-scrolling:touch;}
-    .recent-card{flex-shrink:0;width:130px;height:170px;position:relative;overflow:hidden;cursor:pointer;}
-    .rc-bg{position:absolute;inset:0;opacity:.85;}
-    .rc-content{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;color:#fff;}
-    .rc-name{font-size:12px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-    .rc-date{font-size:10px;opacity:.7;margin-top:4px;}
-    .rc-star{font-size:10px;margin-top:2px;color:#EF9F27;}
-    .cal-mini{margin-top:20px;}
-    .cal-mini-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
-    .cal-mini-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
-    .cm-day{font-size:9px;text-align:center;color:var(--text-sub);padding:2px 0;}
-    .cm-cell{aspect-ratio:1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-sub);}
-    .cm-cell.has{color:#fff;font-weight:500;}
-    .cm-cell.today{outline:1.5px solid var(--text);outline-offset:-1px;}
-    .cm-cell.empty{opacity:0;}
-    .cm-dot{position:absolute;inset:2px;border-radius:3px;}
+    .home-logo-area{padding:32px 0 8px;text-align:center;}
+    .home-logo{font-family:'Playfair Display',serif;font-weight:900;font-size:32px;letter-spacing:-2px;color:var(--text);line-height:1;}
+    .home-date{font-size:12px;color:var(--text-sub);margin-top:6px;font-weight:400;}
+
+    /* ── 오늘의 커피는? 카드 ── */
+    .finder-card{background:#1a1812;color:#F4F3F0;padding:28px 24px 24px;margin:20px 0 0;position:relative;overflow:hidden;}
+    .finder-bg{position:absolute;top:-30px;right:-30px;width:180px;height:180px;border-radius:50%;border:1.5px solid rgba(140,115,85,0.15);pointer-events:none;}
+    .finder-bg2{position:absolute;top:-10px;right:-10px;width:120px;height:120px;border-radius:50%;border:1px solid rgba(140,115,85,0.08);pointer-events:none;}
+    .finder-question{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;letter-spacing:-0.5px;line-height:1.3;position:relative;}
+    .finder-sub{font-size:13px;color:rgba(244,243,240,0.5);margin-top:6px;position:relative;}
+    .finder-actions{display:flex;gap:10px;margin-top:20px;position:relative;}
+    .finder-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 8px;border:1px solid rgba(244,243,240,0.12);background:rgba(244,243,240,0.04);cursor:pointer;transition:background .15s ease,border-color .15s ease;}
+    .finder-btn:active{background:rgba(244,243,240,0.1);border-color:rgba(140,115,85,0.4);}
+    .finder-btn svg{color:rgba(244,243,240,0.7);}
+    .finder-btn-label{font-size:11px;font-weight:500;color:rgba(244,243,240,0.6);}
+    .finder-btn input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+    .finder-btn{position:relative;}
+
+    /* ── 미니 센서리 카드 ── */
+    .cards-section{margin-top:28px;}
+    .cards-scroll{display:flex;gap:10px;overflow-x:auto;padding:4px 0 12px;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;}
+    .cards-scroll::-webkit-scrollbar{display:none;}
+    .mini-card{flex-shrink:0;width:140px;height:190px;background:#1a1812;position:relative;overflow:hidden;cursor:pointer;scroll-snap-align:start;transition:transform .12s ease;}
+    .mini-card:active{transform:scale(.96);}
+    .mc-wheel-ring{position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:.15;pointer-events:none;}
+    .mc-content{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;justify-content:space-between;padding:14px 12px;}
+    .mc-top{display:flex;justify-content:space-between;align-items:flex-start;}
+    .mc-date{font-size:9px;color:rgba(244,243,240,0.4);}
+    .mc-stars{display:flex;gap:1px;}
+    .mc-star{width:8px;height:8px;}
+    .mc-star polygon{fill:#8C7355;stroke:#8C7355;}
+    .mc-bottom{}
+    .mc-flavors{display:flex;gap:3px;margin-bottom:6px;}
+    .mc-fdot{width:6px;height:6px;border-radius:50%;}
+    .mc-name{font-size:12px;font-weight:600;color:#F4F3F0;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+    .mc-roaster{font-size:9px;color:rgba(244,243,240,0.4);margin-top:3px;}
+
+    /* 빈 카드 */
+    .empty-card{flex-shrink:0;width:140px;height:190px;border:1.5px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:border-color .15s;}
+    .empty-card:active{border-color:var(--accent-warm);}
+    .empty-card svg{color:var(--text-sub);}
+    .empty-card-label{font-size:11px;color:var(--text-sub);text-align:center;line-height:1.4;}
+
+    /* ── 달력 ── */
+    .cal-section{margin-top:24px;padding-bottom:8px;}
+    .cal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+    .cal-month-nav{display:flex;align-items:center;gap:12px;}
+    .cal-month-btn{background:none;border:none;color:var(--text-sub);cursor:pointer;padding:4px;display:flex;}
+    .cal-month-label{font-size:15px;font-weight:600;color:var(--text);min-width:90px;text-align:center;}
+    .cal-cup-count{font-size:12px;color:var(--accent-warm);font-weight:500;}
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+    .cal-day-label{font-size:10px;text-align:center;color:var(--text-sub);padding:4px 0;font-weight:500;}
+    .cal-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-sub);position:relative;border-radius:4px;}
+    .cal-cell.empty{opacity:0;}
+    .cal-cell.has-record{color:#fff;font-weight:600;font-size:10px;}
+    .cal-cell.today{box-shadow:inset 0 0 0 1.5px var(--text);}
+    .cal-dna{margin-top:14px;}
+    .cal-dna-bar{display:flex;height:6px;border-radius:3px;overflow:hidden;}
+    .cal-dna-seg{height:100%;}
+    .cal-dna-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+    .cal-dna-item{display:flex;align-items:center;gap:3px;font-size:10px;color:var(--text-sub);}
+    .cal-dna-dot{width:6px;height:6px;border-radius:50%;}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="hero">
-      <div class="hero-logo">Coffee Note.</div>
-      <div class="hero-sub" id="welcomeMsg">커피 한 잔의 감각을 기록하세요</div>
-
-      <div class="cam-ring" id="camRing">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
-          <circle cx="12" cy="13" r="4"/>
-        </svg>
-        <input type="file" accept="image/*" capture="environment" id="camInput"/>
-      </div>
-      <div class="cam-label">커피를 촬영하세요</div>
-      <div class="cam-or"><a href="index.html">직접 검색</a> 또는 <a href="tasting.html">바로 기록</a></div>
+    <!-- 1. 로고 -->
+    <div class="home-logo-area">
+      <div class="home-logo">Coffee Note.</div>
+      <div class="home-date" id="todayDate"></div>
     </div>
 
-    <div class="recent-section" id="recentSection" style="display:none">
-      <p class="section-heading">최근 기록</p>
-      <div class="recent-scroll" id="recentScroll"></div>
+    <!-- 2. 오늘의 커피는? -->
+    <div class="finder-card">
+      <div class="finder-bg"></div>
+      <div class="finder-bg2"></div>
+      <div class="finder-question">오늘의 커피는<br/>어떤 맛인가요?</div>
+      <div class="finder-sub">사진 한 장이면 충분해요</div>
+      <div class="finder-actions">
+        <div class="finder-btn" id="btnCamera">
+          <input type="file" accept="image/*" capture="environment" id="camInput"/>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span class="finder-btn-label">촬영</span>
+        </div>
+        <div class="finder-btn" id="btnGallery">
+          <input type="file" accept="image/*" id="galInput"/>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span class="finder-btn-label">갤러리</span>
+        </div>
+        <div class="finder-btn" onclick="location.href='tasting.html'">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          <span class="finder-btn-label">직접 기록</span>
+        </div>
+        <div class="finder-btn" onclick="location.href='index.html'">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+          <span class="finder-btn-label">검색</span>
+        </div>
+      </div>
     </div>
 
-    <div class="cal-mini" id="calMini">
-      <div class="cal-mini-header">
-        <p class="section-heading" id="calMonth"></p>
-        <a href="notes.html" style="font-size:12px;color:var(--accent-warm);text-decoration:none">전체보기</a>
+    <!-- 3. 나의 커피카드 -->
+    <div class="cards-section">
+      <p class="section-heading">나의 커피카드</p>
+      <div class="cards-scroll" id="cardsScroll"></div>
+    </div>
+
+    <!-- 4. 캘린더 -->
+    <div class="cal-section">
+      <div class="cal-header">
+        <div class="cal-month-nav">
+          <button class="cal-month-btn" id="calPrev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <span class="cal-month-label" id="calMonthLabel"></span>
+          <button class="cal-month-btn" id="calNext"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+        <span class="cal-cup-count" id="calCupCount"></span>
       </div>
-      <div class="cal-mini-grid" id="calGrid"></div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-dna" id="calDna"></div>
     </div>
   </div>
 
@@ -84,89 +145,127 @@
 (function(){
   var CN=window.CoffeeNote;
   CN.renderBottomNav("home");
+  function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 
-  // 환영 메시지
-  var nick=CN.getNickname();
-  if(nick) document.getElementById("welcomeMsg").textContent=nick+"님, 오늘의 커피를 기록하세요";
+  // 오늘 날짜
+  var now=new Date();
+  var days=["일","월","화","수","목","금","토"];
+  document.getElementById("todayDate").textContent=
+    now.getFullYear()+"년 "+(now.getMonth()+1)+"월 "+now.getDate()+"일 "+days[now.getDay()]+"요일";
 
-  // 카메라 촬영 → tasting 흐름
-  document.getElementById("camInput").addEventListener("change",function(){
-    var file=this.files&&this.files[0];
-    if(!file) return;
-    // 사진을 sessionStorage에 임시 저장 → tasting에서 사용
+  // 카메라/갤러리
+  function handlePhoto(file){
+    if(!file)return;
     var reader=new FileReader();
     reader.onload=function(e){
       try{sessionStorage.setItem("coffee_photo",e.target.result);}catch(ex){}
-      // TODO: AI API 연동 후 → 분석 결과 화면으로
-      // 지금은 바로 tasting으로 이동 (원두 선택 시트 열림)
       location.href="tasting.html";
     };
     reader.readAsDataURL(file);
-  });
+  }
+  document.getElementById("camInput").addEventListener("change",function(){handlePhoto(this.files[0]);});
+  document.getElementById("galInput").addEventListener("change",function(){handlePhoto(this.files[0]);});
 
-  // 최근 기록 카드
+  // 미니 커피카드
   var records=CN.getTastingRecords();
-  if(records.length){
-    document.getElementById("recentSection").style.display="block";
-    var scroll=document.getElementById("recentScroll");
-    scroll.innerHTML=records.slice(0,8).map(function(r,i){
+  var scroll=document.getElementById("cardsScroll");
+  var STAR='<svg class="mc-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>';
+
+  if(!records.length){
+    scroll.innerHTML=
+      '<div class="empty-card" onclick="location.href=\'tasting.html\'">'+
+      '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'+
+      '<span class="empty-card-label">첫 번째 커피를<br/>기록해보세요</span></div>'+
+      '<div class="empty-card" style="border-style:dotted;opacity:.5"></div>'+
+      '<div class="empty-card" style="border-style:dotted;opacity:.3"></div>';
+  } else {
+    var html=records.slice(0,10).map(function(r,i){
       var color=CN.getDominantColor(r);
       var date=r.createdAt?new Date(r.createdAt).toLocaleDateString("ko-KR",{month:"short",day:"numeric"}):"";
-      var star=r.starRating?("★ "+r.starRating):"";
-      return '<div class="recent-card" data-ri="'+i+'">'+
-        '<div class="rc-bg" style="background:'+color+'"></div>'+
-        '<div class="rc-content">'+
-        '<div class="rc-name">'+esc(r.coffeeName||"")+'</div>'+
-        '<div class="rc-star">'+star+'</div>'+
-        '<div class="rc-date">'+esc(date)+'</div>'+
-        '</div></div>';
+      var flavors=(r.flavorSelections||[]).slice(0,3);
+      var starHtml="";
+      if(r.starRating){var full=Math.floor(r.starRating);for(var s=0;s<full;s++)starHtml+=STAR;}
+      return '<div class="mini-card" data-ri="'+i+'">'+
+        '<div class="mc-wheel-ring" style="border:8px solid '+color+';border-radius:50%"></div>'+
+        '<div class="mc-content"><div class="mc-top"><div class="mc-date">'+esc(date)+'</div><div class="mc-stars">'+starHtml+'</div></div>'+
+        '<div class="mc-bottom"><div class="mc-flavors">'+flavors.map(function(f){return'<div class="mc-fdot" style="background:'+(f.color||color)+'"></div>';}).join("")+'</div>'+
+        '<div class="mc-name">'+esc(r.coffeeName)+'</div>'+
+        '</div></div></div>';
     }).join("");
+    // 끝에 + 카드
+    html+='<div class="empty-card" onclick="location.href=\'tasting.html\'" style="background:var(--bg)">'+
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'+
+      '<span class="empty-card-label">새 기록</span></div>';
+    scroll.innerHTML=html;
     scroll.querySelectorAll("[data-ri]").forEach(function(el){
-      el.addEventListener("click",function(){
-        location.href="note-detail.html?idx="+el.getAttribute("data-ri");
-      });
+      el.addEventListener("click",function(){location.href="note-detail.html?idx="+el.getAttribute("data-ri");});
     });
   }
 
-  // 달력 미니 뷰
-  var now=new Date();
-  var year=now.getFullYear(), month=now.getMonth();
-  document.getElementById("calMonth").textContent=year+". "+(month+1);
+  // 달력
+  var calYear=now.getFullYear(), calMonth=now.getMonth();
 
-  var firstDay=new Date(year,month,1).getDay(); // 0=일
-  var daysInMonth=new Date(year,month+1,0).getDate();
-  var today=now.getDate();
+  function renderCalendar(){
+    var yr=calYear, mo=calMonth;
+    document.getElementById("calMonthLabel").textContent=yr+"."+(mo<9?"0":"")+(mo+1);
+    var firstDay=new Date(yr,mo,1).getDay();
+    var daysInMonth=new Date(yr,mo+1,0).getDate();
+    var today=(yr===now.getFullYear()&&mo===now.getMonth())?now.getDate():-1;
 
-  // 기록이 있는 날 + 색상 매핑
-  var dayColors={};
-  records.forEach(function(r){
-    if(!r.createdAt) return;
-    var d=new Date(r.createdAt);
-    if(d.getFullYear()===year&&d.getMonth()===month){
-      dayColors[d.getDate()]=CN.getDominantColor(r);
+    // 해당 월 기록 색상
+    var dayColors={}, dayCount=0;
+    records.forEach(function(r){
+      if(!r.createdAt)return;
+      var d=new Date(r.createdAt);
+      if(d.getFullYear()===yr&&d.getMonth()===mo){
+        dayColors[d.getDate()]=CN.getDominantColor(r);
+        dayCount++;
+      }
+    });
+    document.getElementById("calCupCount").textContent=dayCount?dayCount+" cups":"";
+
+    var grid=document.getElementById("calGrid");
+    var dayLabels=["일","월","화","수","목","금","토"];
+    var h=dayLabels.map(function(d){return'<div class="cal-day-label">'+d+'</div>';}).join("");
+    for(var b=0;b<firstDay;b++) h+='<div class="cal-cell empty"></div>';
+    for(var d=1;d<=daysInMonth;d++){
+      var has=!!dayColors[d];
+      var cls="cal-cell"+(has?" has-record":"")+(d===today?" today":"");
+      h+='<div class="'+cls+'"'+(has?' style="background:'+dayColors[d]+'"':"")+'>'+d+'</div>';
     }
-  });
+    grid.innerHTML=h;
 
-  var grid=document.getElementById("calGrid");
-  var dayLabels=["일","월","화","수","목","금","토"];
-  var html=dayLabels.map(function(d){return '<div class="cm-day">'+d+'</div>';}).join("");
+    // Flavor DNA 바
+    var dna=document.getElementById("calDna");
+    if(!dayCount){dna.innerHTML="";return;}
+    var catCount={};
+    records.forEach(function(r){
+      if(!r.createdAt)return;
+      var d=new Date(r.createdAt);
+      if(d.getFullYear()!==yr||d.getMonth()!==mo)return;
+      var sels=r.flavorSelections||[];
+      sels.forEach(function(f){var c=f.category||"Other";catCount[c]=(catCount[c]||0)+1;});
+    });
+    var CAT_COLORS={"Fruity":"#E83D51","Floral":"#E75480","Sweet":"#F19A38","Nutty/Cocoa":"#8B6A3E","Spices":"#A0522D","Roasted":"#7B5B3A","Green/Vegetative":"#5A9E6F","Sour/Fermented":"#E8A836","Other":"#7BAFB0"};
+    var CAT_KO={"Fruity":"과일","Floral":"꽃","Sweet":"단맛","Nutty/Cocoa":"견과","Spices":"향신료","Roasted":"로스팅","Green/Vegetative":"풀","Sour/Fermented":"산미","Other":"기타"};
+    var total=0;for(var c in catCount)total+=catCount[c];
+    if(!total){dna.innerHTML="";return;}
 
-  // 빈칸
-  for(var b=0;b<firstDay;b++) html+='<div class="cm-cell cm-empty"></div>';
-
-  for(var d=1;d<=daysInMonth;d++){
-    var hasRecord=!!dayColors[d];
-    var isToday=d===today;
-    var cls="cm-cell"+(hasRecord?" has":"")+(isToday?" today":"");
-    if(hasRecord){
-      html+='<div class="'+cls+'" style="background:'+dayColors[d]+';position:relative">'+d+'</div>';
-    } else {
-      html+='<div class="'+cls+'">'+d+'</div>';
-    }
+    var sorted=Object.keys(catCount).sort(function(a,b){return catCount[b]-catCount[a];});
+    var barHtml='<div class="cal-dna-bar">'+sorted.map(function(c){
+      var pct=Math.round(catCount[c]/total*100);
+      return'<div class="cal-dna-seg" style="background:'+(CAT_COLORS[c]||"#999")+';width:'+pct+'%"></div>';
+    }).join("")+'</div>';
+    var legHtml='<div class="cal-dna-legend">'+sorted.slice(0,4).map(function(c){
+      var pct=Math.round(catCount[c]/total*100);
+      return'<span class="cal-dna-item"><span class="cal-dna-dot" style="background:'+(CAT_COLORS[c]||"#999")+'"></span>'+(CAT_KO[c]||c)+' '+pct+'%</span>';
+    }).join("")+'</div>';
+    dna.innerHTML=barHtml+legHtml;
   }
-  grid.innerHTML=html;
 
-  function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  document.getElementById("calPrev").addEventListener("click",function(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalendar();});
+  document.getElementById("calNext").addEventListener("click",function(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalendar();});
+  renderCalendar();
 })();
   </script>
 </body>
