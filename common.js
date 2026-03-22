@@ -809,11 +809,6 @@
     });
   }
 
-  /** Tesseract 로드 페이지에서 사진 한 장의 텍스트만 추출 (홈 촬영 등) */
-  function recognizeImageText(file) {
-    return loadTesseractAndRecognize(file);
-  }
-
   /** 하단 네비 스캔 — 검색 페이지가 아니면 검색으로 이동 후 시트 오픈 플래그 */
   function openCamera() {
     var path = (location.pathname || "").split("/").pop() || "index.html";
@@ -839,11 +834,11 @@
     }
   }
 
-  // SCA 카테고리 대표 색상 (플레이버 휠과 동일)
+  // SCA 원본 기준 카테고리 색상 (플레이버 휠과 동일)
   var SCA_CAT_COLORS = {
-    Fruity: "#E24B4A", Floral: "#D4537E", Sweet: "#EF9F27",
-    "Nutty/Cocoa": "#854F0B", Spices: "#993C1D", Roasted: "#5F5E5A",
-    "Green/Vegetative": "#639922", "Sour/Fermented": "#D85A30", Other: "#888888",
+    Fruity: "#E83D51", Floral: "#E75480", Sweet: "#F19A38",
+    "Nutty/Cocoa": "#8B6A3E", Spices: "#A0522D", Roasted: "#7B5B3A",
+    "Green/Vegetative": "#5A9E6F", "Sour/Fermented": "#E8A836", Other: "#7BAFB0",
   };
 
   function getDominantColor(record) {
@@ -1108,7 +1103,6 @@
     openPhotoSearchSheet: openPhotoSearchSheet,
     closePhotoSearchSheet: closePhotoSearchSheet,
     consumeScanIntent: consumeScanIntent,
-    recognizeImageText: recognizeImageText,
     normalizeTastingRecord: normalizeTastingRecord,
     getDominantColor: getDominantColor,
     getFlagUrl: getFlagUrl,
