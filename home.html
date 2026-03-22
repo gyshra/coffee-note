@@ -9,29 +9,68 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"/>
   <link rel="stylesheet" href="common.css"/>
+  <style>
+    .hero{display:flex;flex-direction:column;align-items:center;padding:32px 0 24px;text-align:center;}
+    .hero-logo{font-family:'Playfair Display',serif;font-weight:900;font-size:36px;letter-spacing:-2px;line-height:1;color:var(--text);margin-bottom:6px;}
+    .hero-sub{font-size:13px;color:var(--text-sub);margin-bottom:28px;}
+    .cam-ring{width:120px;height:120px;border-radius:50%;border:3px solid var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .15s ease,border-color .15s ease;position:relative;}
+    .cam-ring:active{transform:scale(.93);border-color:var(--accent-warm);}
+    .cam-ring svg{color:var(--text);}
+    .cam-ring input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+    .cam-label{font-size:14px;font-weight:500;color:var(--text);margin-top:14px;}
+    .cam-or{font-size:12px;color:var(--text-sub);margin-top:8px;}
+    .cam-or a{color:var(--accent-warm);text-decoration:underline;}
+    .recent-section{margin-top:28px;}
+    .recent-scroll{display:flex;gap:10px;overflow-x:auto;padding:0 0 8px;-webkit-overflow-scrolling:touch;}
+    .recent-card{flex-shrink:0;width:130px;height:170px;position:relative;overflow:hidden;cursor:pointer;}
+    .rc-bg{position:absolute;inset:0;opacity:.85;}
+    .rc-content{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;color:#fff;}
+    .rc-name{font-size:12px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+    .rc-date{font-size:10px;opacity:.7;margin-top:4px;}
+    .rc-star{font-size:10px;margin-top:2px;color:#EF9F27;}
+    .cal-mini{margin-top:20px;}
+    .cal-mini-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+    .cal-mini-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+    .cm-day{font-size:9px;text-align:center;color:var(--text-sub);padding:2px 0;}
+    .cm-cell{aspect-ratio:1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-sub);}
+    .cm-cell.has{color:#fff;font-weight:500;}
+    .cm-cell.today{outline:1.5px solid var(--text);outline-offset:-1px;}
+    .cm-cell.empty{opacity:0;}
+    .cm-dot{position:absolute;inset:2px;border-radius:3px;}
+  </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="logo-area">
-      <div class="thick-rule"></div>
-      <h1 class="logo">Coffee<br/>Note.</h1>
+    <div class="hero">
+      <div class="hero-logo">Coffee Note.</div>
+      <div class="hero-sub" id="welcomeMsg">커피 한 잔의 감각을 기록하세요</div>
+
+      <div class="cam-ring" id="camRing">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        <input type="file" accept="image/*" capture="environment" id="camInput"/>
+      </div>
+      <div class="cam-label">커피를 촬영하세요</div>
+      <div class="cam-or"><a href="index.html">직접 검색</a> 또는 <a href="tasting.html">바로 기록</a></div>
     </div>
 
-    <div id="welcomeMsg" class="subtitle"></div>
+    <div class="recent-section" id="recentSection" style="display:none">
+      <p class="section-heading">최근 기록</p>
+      <div class="recent-scroll" id="recentScroll"></div>
+    </div>
 
-    <!-- 최근 기록 -->
-    <p class="section-heading">최근 기록</p>
-    <div id="recentRecords"></div>
-
-    <!-- 퀵 액션 -->
-    <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <a href="index.html" class="btn-secondary" style="text-align:center;text-decoration:none;padding:14px">원두 검색</a>
-      <a href="notes.html" class="btn-secondary" style="text-align:center;text-decoration:none;padding:14px">내 노트</a>
+    <div class="cal-mini" id="calMini">
+      <div class="cal-mini-header">
+        <p class="section-heading" id="calMonth"></p>
+        <a href="notes.html" style="font-size:12px;color:var(--accent-warm);text-decoration:none">전체보기</a>
+      </div>
+      <div class="cal-mini-grid" id="calGrid"></div>
     </div>
   </div>
 
   <div id="globalToast" class="toast"></div>
-
   <nav id="bottomNav" class="bottom-nav">
     <a href="home.html" class="nav-item active" data-nav="home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-label">홈</span></a>
     <a href="index.html" class="nav-item" data-nav="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><span class="nav-label">검색</span></a>
@@ -46,30 +85,88 @@
   var CN=window.CoffeeNote;
   CN.renderBottomNav("home");
 
+  // 환영 메시지
   var nick=CN.getNickname();
+  if(nick) document.getElementById("welcomeMsg").textContent=nick+"님, 오늘의 커피를 기록하세요";
+
+  // 카메라 촬영 → tasting 흐름
+  document.getElementById("camInput").addEventListener("change",function(){
+    var file=this.files&&this.files[0];
+    if(!file) return;
+    // 사진을 sessionStorage에 임시 저장 → tasting에서 사용
+    var reader=new FileReader();
+    reader.onload=function(e){
+      try{sessionStorage.setItem("coffee_photo",e.target.result);}catch(ex){}
+      // TODO: AI API 연동 후 → 분석 결과 화면으로
+      // 지금은 바로 tasting으로 이동 (원두 선택 시트 열림)
+      location.href="tasting.html";
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // 최근 기록 카드
   var records=CN.getTastingRecords();
-  document.getElementById("welcomeMsg").textContent=nick?(nick+"님, 오늘도 좋은 커피 한 잔"):"커피 한 잔의 여유를 기록하세요";
-
-  function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
-
-  var recent=document.getElementById("recentRecords");
-  if(!records.length){
-    recent.innerHTML='<div class="empty">아직 기록이 없습니다.<br/>검색에서 원두를 찾고 테이스팅을 시작해보세요.</div>';
-  } else {
-    recent.innerHTML=records.slice(0,3).map(function(r,i){
-      var date=r.createdAt?new Date(r.createdAt).toLocaleDateString("ko-KR"):"";
-      var flavors=(r.tasteTags||[]).slice(0,3).join(" · ");
-      return '<div class="listCard card" style="cursor:pointer;margin-bottom:1px" data-ri="'+i+'">'+
-        '<p class="card-title" style="font-size:15px">'+esc(r.coffeeName)+'</p>'+
-        (flavors?'<p class="caption" style="margin-top:4px;color:var(--accent-warm)">'+esc(flavors)+'</p>':"")+
-        '<p class="caption" style="margin-top:2px">'+esc(date)+'</p></div>';
+  if(records.length){
+    document.getElementById("recentSection").style.display="block";
+    var scroll=document.getElementById("recentScroll");
+    scroll.innerHTML=records.slice(0,8).map(function(r,i){
+      var color=CN.getDominantColor(r);
+      var date=r.createdAt?new Date(r.createdAt).toLocaleDateString("ko-KR",{month:"short",day:"numeric"}):"";
+      var star=r.starRating?("★ "+r.starRating):"";
+      return '<div class="recent-card" data-ri="'+i+'">'+
+        '<div class="rc-bg" style="background:'+color+'"></div>'+
+        '<div class="rc-content">'+
+        '<div class="rc-name">'+esc(r.coffeeName||"")+'</div>'+
+        '<div class="rc-star">'+star+'</div>'+
+        '<div class="rc-date">'+esc(date)+'</div>'+
+        '</div></div>';
     }).join("");
-    recent.querySelectorAll("[data-ri]").forEach(function(el){
+    scroll.querySelectorAll("[data-ri]").forEach(function(el){
       el.addEventListener("click",function(){
         location.href="note-detail.html?idx="+el.getAttribute("data-ri");
       });
     });
   }
+
+  // 달력 미니 뷰
+  var now=new Date();
+  var year=now.getFullYear(), month=now.getMonth();
+  document.getElementById("calMonth").textContent=year+". "+(month+1);
+
+  var firstDay=new Date(year,month,1).getDay(); // 0=일
+  var daysInMonth=new Date(year,month+1,0).getDate();
+  var today=now.getDate();
+
+  // 기록이 있는 날 + 색상 매핑
+  var dayColors={};
+  records.forEach(function(r){
+    if(!r.createdAt) return;
+    var d=new Date(r.createdAt);
+    if(d.getFullYear()===year&&d.getMonth()===month){
+      dayColors[d.getDate()]=CN.getDominantColor(r);
+    }
+  });
+
+  var grid=document.getElementById("calGrid");
+  var dayLabels=["일","월","화","수","목","금","토"];
+  var html=dayLabels.map(function(d){return '<div class="cm-day">'+d+'</div>';}).join("");
+
+  // 빈칸
+  for(var b=0;b<firstDay;b++) html+='<div class="cm-cell cm-empty"></div>';
+
+  for(var d=1;d<=daysInMonth;d++){
+    var hasRecord=!!dayColors[d];
+    var isToday=d===today;
+    var cls="cm-cell"+(hasRecord?" has":"")+(isToday?" today":"");
+    if(hasRecord){
+      html+='<div class="'+cls+'" style="background:'+dayColors[d]+';position:relative">'+d+'</div>';
+    } else {
+      html+='<div class="'+cls+'">'+d+'</div>';
+    }
+  }
+  grid.innerHTML=html;
+
+  function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 })();
   </script>
 </body>
