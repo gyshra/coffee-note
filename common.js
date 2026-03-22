@@ -809,6 +809,11 @@
     });
   }
 
+  /** Tesseract 로드 페이지에서 사진 한 장의 텍스트만 추출 (홈 촬영 등) */
+  function recognizeImageText(file) {
+    return loadTesseractAndRecognize(file);
+  }
+
   /** 하단 네비 스캔 — 검색 페이지가 아니면 검색으로 이동 후 시트 오픈 플래그 */
   function openCamera() {
     var path = (location.pathname || "").split("/").pop() || "index.html";
@@ -1103,6 +1108,7 @@
     openPhotoSearchSheet: openPhotoSearchSheet,
     closePhotoSearchSheet: closePhotoSearchSheet,
     consumeScanIntent: consumeScanIntent,
+    recognizeImageText: recognizeImageText,
     normalizeTastingRecord: normalizeTastingRecord,
     getDominantColor: getDominantColor,
     getFlagUrl: getFlagUrl,
