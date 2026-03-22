@@ -137,7 +137,7 @@
     // 중앙 원
     stage1Group.appendChild(mkEl("circle", {
       cx: CX, cy: CY, r: R_CENTER,
-      fill: "#F4F3F0", stroke: "#E0E0E0", "stroke-width": "0.5"
+      fill: "#FFFFFF", stroke: "#E0E0E0", "stroke-width": "0.5"
     }));
     stage1Group.appendChild(mkText(CX, CY - 4, "FLAVOR", 7, 600, "#999"));
     stage1Group.appendChild(mkText(CX, CY + 6, "WHEEL", 7, 600, "#999"));
@@ -215,7 +215,7 @@
     // 중앙 라벨 원
     stage2Group.appendChild(mkEl("circle", {
       cx: CX, cy: CY, r: 48,
-      fill: "#F4F3F0", stroke: sub.color, "stroke-width": "2", cursor: "pointer"
+      fill: "#FFFFFF", stroke: sub.color, "stroke-width": "2", cursor: "pointer"
     }));
     stage2Group.querySelector("circle").addEventListener("click", closeDetail);
     stage2Group.appendChild(mkText(CX, CY - 6, cat.categoryKo, 11, 600, sub.color));
