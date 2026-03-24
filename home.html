@@ -169,7 +169,8 @@
   // 미니 커피카드
   var records=CN.getTastingRecords();
   var scroll=document.getElementById("cardsScroll");
-  var STAR='<svg class="mc-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>';
+  var cardImages={};
+  try{cardImages=JSON.parse(localStorage.getItem("cardImages")||"{}");}catch(e){}
 
   if(!records.length){
     scroll.innerHTML=
@@ -180,14 +181,16 @@
       '<div class="empty-card" style="border-style:dotted;opacity:.3"></div>';
   } else {
     var html=records.slice(0,10).map(function(r,i){
+      var hasImg=!!cardImages[i];
+      if(hasImg){
+        return '<div class="mini-card" data-ri="'+i+'" style="padding:0"><img src="'+cardImages[i]+'" style="width:100%;height:100%;object-fit:cover;display:block"/></div>';
+      }
       var color=CN.getDominantColor(r);
       var date=r.createdAt?new Date(r.createdAt).toLocaleDateString("ko-KR",{month:"short",day:"numeric"}):"";
       var flavors=(r.flavorSelections||[]).slice(0,3);
-      var starHtml="";
-      if(r.starRating){var full=Math.floor(r.starRating);for(var s=0;s<full;s++)starHtml+=STAR;}
       return '<div class="mini-card" data-ri="'+i+'">'+
         '<div class="mc-wheel-ring" style="border:8px solid '+color+';border-radius:50%"></div>'+
-        '<div class="mc-content"><div class="mc-top"><div class="mc-date">'+esc(date)+'</div><div class="mc-stars">'+starHtml+'</div></div>'+
+        '<div class="mc-content"><div class="mc-top"><div class="mc-date">'+esc(date)+'</div></div>'+
         '<div class="mc-bottom"><div class="mc-flavors">'+flavors.map(function(f){return'<div class="mc-fdot" style="background:'+(f.color||color)+'"></div>';}).join("")+'</div>'+
         '<div class="mc-name">'+esc(r.coffeeName)+'</div>'+
         '</div></div></div>';

@@ -45,6 +45,14 @@
 
   <script src="common.js"></script>
   <script src="tasting-radar.js"></script>
+  <script src="card-generator.js"></script>
+  <div id="cardOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;flex-direction:column;align-items:center;justify-content:center;padding:20px">
+    <img id="cardPreview" style="max-width:100%;max-height:70vh"/>
+    <div style="display:flex;gap:12px;margin-top:20px">
+      <button type="button" id="btnShareCard" style="padding:14px 32px;background:#fff;color:#121212;border:none;font-size:15px;font-weight:600;cursor:pointer">공유하기</button>
+      <button type="button" id="btnCloseCard" style="padding:14px 32px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:15px;cursor:pointer">닫기</button>
+    </div>
+  </div>
   <script>
 (function(){
   var CN=window.CoffeeNote;
@@ -150,6 +158,7 @@
     '<button type="button" class="detail-link-item" id="linkLocation"><span class="dl-label">장소</span><span class="dl-preview">'+esc(locationPreview)+'</span>'+arrowSvg+'</button>'+
     '</div>'+
     '<div style="display:flex;gap:10px;margin-top:24px">'+
+    '<button type="button" class="btn-primary" id="btnViewCard" style="flex:1">센서리 카드</button>'+
     '<button type="button" class="btn-secondary" id="btnEditNote" style="flex:1">수정</button>'+
     '<button type="button" id="btnDeleteNote" style="flex:0 0 auto;padding:16px 20px;background:none;border:1.5px solid #C04828;color:#C04828;font-family:Pretendard Variable,sans-serif;font-size:15px;font-weight:500;cursor:pointer">삭제</button>'+
     '</div>';
@@ -225,6 +234,16 @@
   document.getElementById("linkLocation").addEventListener("click",function(){
     if(record.location) CN.showToast("지도 연동 준비 중");
     else CN.showToast("장소 정보가 없습니다");
+  });
+
+  // 센서리 카드 보기
+  document.getElementById("btnViewCard").addEventListener("click",function(){
+    var cardUrl=CardGenerator.generate(record);
+    var overlay=document.getElementById("cardOverlay");
+    document.getElementById("cardPreview").src=cardUrl;
+    overlay.style.display="flex";
+    document.getElementById("btnShareCard").onclick=function(){CardGenerator.share(cardUrl);};
+    document.getElementById("btnCloseCard").onclick=function(){overlay.style.display="none";};
   });
 
   // 수정 → tasting.html?editIdx=N

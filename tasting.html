@@ -371,17 +371,20 @@
     var recordData={coffeeIndex:idx,coffeeName:coffee.name,createdAt:isEditMode?editRecord.createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),flavorSelections:flavors.map(function(f){return{en:f.en,ko:f.ko,category:f.category,sub:f.sub,color:f.color};}),flavorIntensities:Object.assign({},flavorIntensities),flavorMemos:Object.assign({},flavorMemos),baseScores:baseScores,baseMemos:Object.assign({},baseMemos),brewMethod:bm,shopBrewMethod:shopBrew,recipe:recipe,location:document.getElementById("locationInput").value.trim(),locationCoords:null,photos:photos.slice(),memo:document.getElementById("memo").value.trim(),starRating:starVal||null,source:"user_tasting",scores:baseScores,method:bm,tasteTags:flavors.map(function(f){return f.ko;})};
     if(isEditMode){
       var list=CN.getTastingRecords();list[editIdx]=recordData;CN.saveToStorage(CN.STORAGE_KEYS.TASTING_RECORDS,list);
+      // 수정 시에도 카드 재생성
+      try{var cu=CardGenerator.generate(recordData);var ci=JSON.parse(localStorage.getItem("cardImages")||"{}");ci[editIdx]=cu;localStorage.setItem("cardImages",JSON.stringify(ci));}catch(e){}
       CN.showToast("수정되었습니다!");
       setTimeout(function(){location.href="notes.html";},600);
     } else {
       CN.addTastingRecord(recordData);
-      // 카드 생성 + 프리뷰
       var cardUrl=CardGenerator.generate(recordData);
+      // 카드 이미지 캐싱
+      try{var recs=CN.getTastingRecords();var ci=JSON.parse(localStorage.getItem("cardImages")||"{}");ci[recs.length-1]=cardUrl;localStorage.setItem("cardImages",JSON.stringify(ci));}catch(e){}
       var overlay=document.getElementById("cardOverlay");
       document.getElementById("cardPreview").src=cardUrl;
       overlay.style.display="flex";
       document.getElementById("btnShareCard").onclick=function(){CardGenerator.share(cardUrl);};
-      document.getElementById("btnCloseCard").onclick=function(){overlay.style.display="none";location.href="notes.html";};
+      document.getElementById("btnCloseCard").onclick=function(){overlay.style.display="none";location.href="home.html";};
     }
   });
   } // end initTastingUI
