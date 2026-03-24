@@ -33,9 +33,8 @@
   }
 
   /* ── Pentagon Radar with numbered grid ── */
-  function drawRadar(ctx, cx, cy, maxR, values) {
+  function drawRadar(ctx, cx, cy, maxR, values, aiValues) {
     var axes = ["BODY","SWEETNESS","ACIDITY","FLAVOR","AROMA"];
-    var axesKr = ["바디감","단맛","산미","여운","아로마"];
     var dataKeys = ["바디감","단맛","산미","여운","아로마"];
     var n = 5;
 
@@ -109,6 +108,34 @@
       ctx.fill();
     }
 
+    // AI prediction overlay (dashed)
+    if (aiValues && Object.keys(aiValues).length) {
+      ctx.beginPath();
+      for (var i = 0; i < n; i++) {
+        var val = Math.max(1, Math.min(10, aiValues[dataKeys[i]] || 5));
+        var vr = maxR * val / 10;
+        var p = pol(vr, angle(i));
+        i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]);
+      }
+      ctx.closePath();
+      ctx.setLineDash([10, 8]);
+      ctx.strokeStyle = "rgba(255,255,255,0.4)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // AI 점 (작게)
+      for (var i = 0; i < n; i++) {
+        var val = Math.max(1, Math.min(10, aiValues[dataKeys[i]] || 5));
+        var vr = maxR * val / 10;
+        var p = pol(vr, angle(i));
+        ctx.beginPath();
+        ctx.arc(p[0], p[1], 3, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,255,255,0.4)";
+        ctx.fill();
+      }
+    }
+
     // Axis labels (outside pentagon)
     ctx.font = "600 30px 'Helvetica Neue', sans-serif";
     ctx.fillStyle = "rgba(255,255,255,0.75)";
@@ -145,6 +172,23 @@
     // 별점 기반 스코어 (5점 만점 → 100점 환산)
     var totalScore = star ? (star * 20).toFixed(1) : "—";
 
+    // AI 예측 데이터
+    var aiPred = record.aiPrediction || null;
+    var aiScores = aiPred ? aiPred.scores : null;
+    var matchScore = null;
+    if (aiScores && Object.keys(scores).length) {
+      var keys = ["아로마","산미","단맛","바디감","여운"];
+      var diff = 0, cnt = 0;
+      keys.forEach(function(k) {
+        if (scores[k] && aiScores[k]) {
+          diff += Math.abs(scores[k] - aiScores[k]);
+          cnt++;
+        }
+      });
+      if (cnt) matchScore = Math.round(100 - (diff / cnt) * 10);
+      if (matchScore < 0) matchScore = 0;
+    }
+
     // ── 1. 배경: 단색 ──
     ctx.fillStyle = mainColor;
     ctx.fillRect(0, 0, W, H);
@@ -164,8 +208,20 @@
     ctx.lineTo(W - 60, 130);
     ctx.stroke();
 
-    // ── 3. 레이더 차트 (중앙 상단) ──
-    drawRadar(ctx, W / 2, 520, 280, scores);
+    // ── 3. 레이더 차트 (AI 비교 포함) ──
+    drawRadar(ctx, W / 2, 520, 280, scores, aiScores);
+
+    // AI 일치도 (레이더 아래)
+    if (matchScore !== null) {
+      ctx.textAlign = "center";
+      ctx.font = "500 24px 'Helvetica Neue', sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.5)";
+      ctx.fillText("AI 일치도  " + matchScore + "%", W / 2, 830);
+      // 범례
+      ctx.font = "400 18px 'Helvetica Neue', sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.3)";
+      ctx.fillText("── 나의 경험    - - - AI 예측", W / 2, 860);
+    }
 
     // ── 4. 원두 이름 (대형) ──
     ctx.textAlign = "center";

@@ -72,10 +72,14 @@
     .cal-dna-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
     .cal-dna-item{display:flex;align-items:center;gap:3px;font-size:10px;color:var(--text-sub);}
     .cal-dna-dot{width:6px;height:6px;border-radius:50%;}
+    @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+    .ai-spinner{width:40px;height:40px;border:3px solid rgba(255,255,255,0.15);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto;}
   </style>
 </head>
 <body>
   <div class="wrap">
+    <!-- AI 분석 오버레이 -->
+    <div id="aiOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;flex-direction:column;align-items:center;justify-content:center;padding:20px"></div>
     <!-- 1. 로고 -->
     <div class="home-logo-area">
       <div class="home-logo">Coffee Note.</div>
@@ -153,16 +157,98 @@
   document.getElementById("todayDate").textContent=
     now.getFullYear()+"년 "+(now.getMonth()+1)+"월 "+now.getDate()+"일 "+days[now.getDay()]+"요일";
 
-  // 카메라/갤러리
+  // 카메라/갤러리 → AI 분석
+  var SUPABASE_URL = localStorage.getItem("supabase_url") || "";
+  var SUPABASE_KEY = localStorage.getItem("supabase_key") || "";
+
   function handlePhoto(file){
     if(!file)return;
     var reader=new FileReader();
     reader.onload=function(e){
-      try{sessionStorage.setItem("coffee_photo",e.target.result);}catch(ex){}
-      location.href="tasting.html";
+      var dataUrl=e.target.result;
+      try{sessionStorage.setItem("coffee_photo",dataUrl);}catch(ex){}
+
+      if(!SUPABASE_URL){
+        // API 미설정 → 바로 tasting으로
+        location.href="tasting.html";
+        return;
+      }
+
+      // AI 분석 오버레이 표시
+      showAnalyzing();
+      var base64=dataUrl.split(",")[1];
+      var mediaType=file.type||"image/jpeg";
+
+      fetch(SUPABASE_URL+"/functions/v1/analyze-coffee",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+SUPABASE_KEY},
+        body:JSON.stringify({image_base64:base64,media_type:mediaType})
+      })
+      .then(function(r){return r.json();})
+      .then(function(ai){
+        if(ai.error){
+          CN.showToast("분석 실패: "+ai.error);
+          hideAnalyzing();
+          location.href="tasting.html";
+          return;
+        }
+        sessionStorage.setItem("ai_result",JSON.stringify(ai));
+        showAiResult(ai, dataUrl);
+      })
+      .catch(function(err){
+        CN.showToast("네트워크 오류");
+        hideAnalyzing();
+        location.href="tasting.html";
+      });
     };
     reader.readAsDataURL(file);
   }
+
+  function showAnalyzing(){
+    var ol=document.getElementById("aiOverlay");
+    ol.innerHTML='<div style="text-align:center;color:#fff"><div class="ai-spinner"></div><p style="font-size:18px;font-weight:600;margin-top:20px">원두의 여정을 읽는 중...</p><p style="font-size:13px;opacity:.5;margin-top:8px">AI가 커피를 분석하고 있어요</p></div>';
+    ol.style.display="flex";
+  }
+  function hideAnalyzing(){document.getElementById("aiOverlay").style.display="none";}
+
+  function showAiResult(ai, photoUrl){
+    var flavors=(ai.predictedFlavors||[]).slice(0,5);
+    var flavorTags=flavors.map(function(f){return'<span style="display:inline-flex;align-items:center;gap:4px;font-size:14px"><span style="width:8px;height:8px;border-radius:50%;background:'+getCatColor(f.category)+'"></span>'+esc(f.ko)+'</span>';}).join("&nbsp;&nbsp;");
+    var scores=ai.predictedScores||{};
+    var scoreList=["아로마","산미","단맛","바디감","여운"].map(function(k){return'<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0"><span style="opacity:.6">'+k+'</span><span style="font-weight:600">'+(scores[k]||"—")+'</span></div>';}).join("");
+
+    var h='<div style="max-width:360px;width:100%;max-height:90vh;overflow-y:auto;background:#1a1812;color:#fff;padding:28px 24px">';
+    if(photoUrl) h+='<img src="'+photoUrl+'" style="width:100%;height:160px;object-fit:cover;margin-bottom:16px"/>';
+    h+='<p style="font-size:11px;opacity:.4;margin-bottom:4px">AI 분석 결과</p>';
+    h+='<p style="font-size:22px;font-weight:700;line-height:1.3;margin-bottom:4px">'+esc(ai.name||"알 수 없는 원두")+'</p>';
+    h+='<p style="font-size:13px;opacity:.5;margin-bottom:16px">'+esc(ai.roaster||"")+(ai.country?" · "+esc(ai.country):"")+'</p>';
+
+    if(ai.confidence) h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:16px"><div style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px"><div style="height:100%;width:'+ai.confidence+'%;background:#8C7355;border-radius:2px"></div></div><span style="font-size:11px;opacity:.5">신뢰도 '+ai.confidence+'%</span></div>';
+
+    h+='<p style="font-size:12px;opacity:.4;margin-bottom:8px;font-weight:500">AI의 맛 예측</p>';
+    h+='<div style="margin-bottom:16px">'+flavorTags+'</div>';
+    h+='<div style="margin-bottom:20px;border-top:1px solid rgba(255,255,255,0.08);padding-top:12px">'+scoreList+'</div>';
+
+    if(ai.description) h+='<p style="font-size:13px;opacity:.5;line-height:1.6;margin-bottom:20px">'+esc(ai.description)+'</p>';
+
+    h+='<div style="display:flex;gap:10px">';
+    h+='<button onclick="goTasting()" style="flex:1;padding:16px;background:#fff;color:#121212;border:none;font-size:15px;font-weight:600;cursor:pointer">마시고 기록하기</button>';
+    h+='<button onclick="hideAnalyzing()" style="padding:16px 20px;background:none;border:1px solid rgba(255,255,255,.2);color:#fff;font-size:14px;cursor:pointer">닫기</button>';
+    h+='</div></div>';
+
+    document.getElementById("aiOverlay").innerHTML=h;
+  }
+
+  function getCatColor(cat){
+    var c={"Fruity":"#E83D51","Floral":"#E75480","Sweet":"#F19A38","Nutty/Cocoa":"#8B6A3E","Spices":"#A0522D","Roasted":"#7B5B3A","Green/Vegetative":"#5A9E6F","Sour/Fermented":"#E8A836","Other":"#7BAFB0"};
+    return c[cat]||"#999";
+  }
+
+  window.goTasting=function(){
+    hideAnalyzing();
+    location.href="tasting.html";
+  };
+
   document.getElementById("camInput").addEventListener("change",function(){handlePhoto(this.files[0]);});
   document.getElementById("galInput").addEventListener("change",function(){handlePhoto(this.files[0]);});
 

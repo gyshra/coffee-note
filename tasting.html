@@ -198,11 +198,30 @@
     document.getElementById("btnSaveFinal").textContent="수정 저장";
   }
 
+  // AI 분석 결과 확인
+  var aiResult=null;
+  try{var aiStr=sessionStorage.getItem("ai_result");if(aiStr){aiResult=JSON.parse(aiStr);sessionStorage.removeItem("ai_result");}}catch(e){}
+
   if(isEditMode){
-    // 수정 모드: 기존 기록의 원두로 시작
     var editCoffee=CN.getCoffeeByIndex(editRecord.coffeeIndex);
     if(editCoffee) initWithCoffee(editCoffee, editRecord.coffeeIndex);
     else initWithCoffee({name:editRecord.coffeeName||"",source:"direct_input"}, -1);
+  } else if(aiResult && aiResult.name){
+    // AI 분석 결과로 원두 자동 생성
+    var aiCoffee={
+      name:aiResult.name, country:aiResult.country||"", region:aiResult.region||"",
+      farm:aiResult.farm||"", altitude:aiResult.altitude||"", process:aiResult.process||"",
+      variety:aiResult.variety||"", roaster:aiResult.roaster||"",
+      notes:(aiResult.cupNotes||[]), source:"ai_search"
+    };
+    var aiIdx=CN.addCoffee(aiCoffee);
+    // AI 예측 저장 (카드 비교용)
+    sessionStorage.setItem("ai_prediction",JSON.stringify({
+      scores:aiResult.predictedScores||{},
+      flavors:aiResult.predictedFlavors||[],
+      confidence:aiResult.confidence||0
+    }));
+    initWithCoffee(aiCoffee, aiIdx);
   } else if(coffee){
     initWithCoffee(coffee, idx);
   } else {
@@ -369,6 +388,8 @@
       if(t||wa||d||g||rn||steps.length)recipe={temp:t,water:wa,dose:d,grind:g,note:rn,steps:steps};
     }
     var recordData={coffeeIndex:idx,coffeeName:coffee.name,createdAt:isEditMode?editRecord.createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),flavorSelections:flavors.map(function(f){return{en:f.en,ko:f.ko,category:f.category,sub:f.sub,color:f.color};}),flavorIntensities:Object.assign({},flavorIntensities),flavorMemos:Object.assign({},flavorMemos),baseScores:baseScores,baseMemos:Object.assign({},baseMemos),brewMethod:bm,shopBrewMethod:shopBrew,recipe:recipe,location:document.getElementById("locationInput").value.trim(),locationCoords:null,photos:photos.slice(),memo:document.getElementById("memo").value.trim(),starRating:starVal||null,source:"user_tasting",scores:baseScores,method:bm,tasteTags:flavors.map(function(f){return f.ko;})};
+    // AI 예측 데이터 첨부 (있으면)
+    try{var aiPred=sessionStorage.getItem("ai_prediction");if(aiPred){recordData.aiPrediction=JSON.parse(aiPred);sessionStorage.removeItem("ai_prediction");}}catch(e){}
     if(isEditMode){
       var list=CN.getTastingRecords();list[editIdx]=recordData;CN.saveToStorage(CN.STORAGE_KEYS.TASTING_RECORDS,list);
       // 수정 시에도 카드 재생성
