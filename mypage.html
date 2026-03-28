@@ -164,7 +164,7 @@
             // 비로그인 상태: 닉네임 설정 시트 표시 (기존 동작)
             document.getElementById("profileGuest").style.display = "";
             document.getElementById("profileLoggedIn").style.display = "none";
-            if (!CN.getNickname()) {
+            if (!CN.getNickname() && !window.SupaAuth) {
               openSheet(document.getElementById("nickOverlay"));
             }
           }

@@ -15,16 +15,14 @@ const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY"; // 예: eyJhbGciOi...
 (function (global) {
   "use strict";
 
-  // Supabase SDK가 로드되지 않은 경우 경고
+  var _isConfigured = (
+    SUPABASE_URL !== "YOUR_SUPABASE_URL" &&
+    SUPABASE_ANON_KEY !== "YOUR_SUPABASE_ANON_KEY"
+  );
+
   function getClient() {
-    if (!global.supabase) {
-      console.error("[CoffeeNote] Supabase SDK가 로드되지 않았습니다.");
-      return null;
-    }
-    if (SUPABASE_URL === "YOUR_SUPABASE_URL") {
-      console.warn("[CoffeeNote] supabase.js에 Supabase URL과 Key를 입력해주세요.");
-      return null;
-    }
+    if (!_isConfigured) return null;
+    if (!global.supabase) return null;
     if (!getClient._client) {
       getClient._client = global.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }

@@ -1,31 +1,28 @@
 /**
  * Vercel Serverless Function — OCR (Claude Vision)
- * 브라우저에서 /api/ocr 로 POST 요청 → 서버에서 Claude API 호출
- * API 키는 Vercel 환경변수에만 존재 (외부 노출 없음)
+ * POST /api/ocr
  */
 module.exports = async function handler(req, res) {
-  // CORS 허용
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: "API key not configured" });
+  if (!apiKey) return res.status(500).json({ error: "ANTHROPIC_API_KEY 환경변수가 설정되지 않았습니다." });
+
+  // body 파싱 (Vercel은 자동 파싱하지만 안전하게 처리)
+  let body = req.body;
+  if (typeof body === "string") {
+    try { body = JSON.parse(body); } catch (e) { return res.status(400).json({ error: "Invalid JSON" }); }
   }
 
-  const { base64, mimeType } = req.body;
-  if (!base64) {
-    return res.status(400).json({ error: "No image data" });
-  }
+  const base64 = body && body.base64;
+  const mimeType = (body && body.mimeType) || "image/jpeg";
+
+  if (!base64) return res.status(400).json({ error: "이미지 데이터가 없습니다." });
 
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -37,38 +34,37 @@ module.exports = async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image",
-                source: {
-                  type: "base64",
-                  media_type: mimeType || "image/jpeg",
-                  data: base64,
-                },
-              },
-              {
-                type: "text",
-                text: "이 커피 봉지나 카드에서 원두 이름, 산지(국가/지역), 가공방식, 품종, 컵노트를 추출해줘. 없는 정보는 생략하고 찾은 것만 한 줄씩 알려줘. 예: 원두명: 예가체프 콩가 / 산지: 에티오피아 / 가공: 워시드",
-              },
-            ],
-          },
-        ],
+        max_tokens: 512,
+        messages: [{
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: { type: "base64", media_type: mimeType, data: base64 },
+            },
+            {
+              type: "text",
+              text: "이 커피 봉지나 카드에서 원두 이름, 산지(국가/지역), 가공방식, 품종, 컵노트를 추출해줘. 없는 정보는 생략하고 찾은 것만 한 줄씩 알려줘.\n예시 형식:\n원두명: 예가체프 콩가\n산지: 에티오피아\n가공: 워시드\n컵노트: 블루베리, 자스민",
+            },
+          ],
+        }],
       }),
     });
 
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("[OCR] Claude API 오류:", response.status, errText);
+      return res.status(500).json({ error: "Claude API 오류: " + response.status });
+    }
+
     const data = await response.json();
-    const text =
-      data.content && data.content[0] && data.content[0].text
-        ? data.content[0].text.trim()
-        : "";
+    const text = data.content && data.content[0] && data.content[0].text
+      ? data.content[0].text.trim()
+      : "";
 
     return res.status(200).json({ text });
   } catch (err) {
-    console.error("[OCR] 오류:", err);
-    return res.status(500).json({ error: "OCR 처리 중 오류가 발생했습니다." });
+    console.error("[OCR] 서버 오류:", err.message);
+    return res.status(500).json({ error: "서버 오류: " + err.message });
   }
-}
+};
