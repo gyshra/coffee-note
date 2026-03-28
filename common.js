@@ -342,6 +342,12 @@
       name: "에티오피아 예가체프 콩가 워시드",
       roaster: "Fritz Coffee Company",
       roasterUrl: "https://fritzcoffeecompany.com",
+      _community: {
+        count: 12,
+        avgRating: "4.3",
+        topFlavors: ["블루베리", "자스민", "꿀"],
+        topBrewMethods: [{method:"V60", count:7}, {method:"에어로프레스", count:3}]
+      },
       rating: 4.3,
       processCategory: "워시드",
       processDetail: "",
