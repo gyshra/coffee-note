@@ -147,7 +147,7 @@
                 cell("지역", c.region) +
                 cell("농장/워싱스테이션", c.farm) +
                 cell("고도", c.altitude) +
-                cell("가공방식", CN.formatProcessDisplay(c)) +
+                cell("가공방식", CN.formatProcessDisplay(c) + (c.processDetail ? " (" + c.processDetail + ")" : "")) +
                 cell("품종", c.variety) +
                 cell("가격대", c.price) +
                 "</div>" +

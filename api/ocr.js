@@ -1,10 +1,9 @@
 /**
- * Vercel Serverless Function — 이미지 + AI 지식 종합 분석
- * 우선순위:
- *   1. 이미지 정보 + 인터넷 지식 모두 활용
- *   2. 이미지 없으면 AI 지식만 / 정보 없으면 이미지만
- * POST /api/ocr  { base64, mimeType }
+ * Vercel Serverless Function — 이미지 분석 (Claude Vision)
+ * 이미지에서 커피 정보 추출 + Supabase 저장
  */
+const { upsertCoffee } = require("./_lib/supabase");
+
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -33,7 +32,7 @@ module.exports = async function handler(req, res) {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-sonnet-4-20250514",
         max_tokens: 1500,
         messages: [{
           role: "user",
@@ -44,45 +43,57 @@ module.exports = async function handler(req, res) {
             },
             {
               type: "text",
-              text: `이 커피 이미지를 분석하고, 이미지에서 읽은 정보와 네가 알고 있는 해당 원두에 대한 지식을 종합해서 아래 JSON으로만 답해줘.
+              text: `이 커피 이미지에서 텍스트를 정확하게 읽고, 네 지식과 종합해서 JSON으로만 답해줘.
+마크다운 없이 순수 JSON만 출력.
 
-[분석 원칙]
-- 이미지에서 직접 읽은 정보는 "image" 출처로 표시
-- 네 지식(인터넷/데이터베이스 기반)으로 보완한 정보는 "ai" 출처로 표시
-- 이미지 정보와 AI 지식이 다를 경우 이미지 정보 우선
-- 어느 쪽에도 정보가 없으면 컵노트/가공방식으로 합리적으로 추론
-- 마크다운 없이 순수 JSON만 출력
+[가공방식 분류 - 반드시 아래 중 정확히 선택]
+- "워시드" (Washed/Wet)
+- "내추럴" (Natural/Dry)
+- "허니" (Honey/Pulped Natural) - Yellow/Red/Black Honey 포함
+- "무산소 워시드" (Anaerobic Washed)
+- "무산소 내추럴" (Anaerobic Natural)
+- "CM 내추럴" (Carbonic Maceration Natural)
+- "CM 워시드" (Carbonic Maceration Washed)
+- "유산균 발효" (Lactic Fermentation)
+- "더블 퍼멘테이션" (Double Fermentation)
+- "웻 헐드" (Wet Hulled/Giling Basah)
+- "기타 실험적" (그 외 특수 가공)
+
+[이미지 텍스트 읽기 원칙]
+- 이미지의 텍스트를 그대로 정확히 읽어줘 (오타/오인식 주의)
+- 영문이면 영문 그대로, 한글이면 한글 그대로
+- 컵노트는 이미지에 있는 것 우선, 없으면 가공방식+산지로 추론
 
 {
-  "name": "원두 이름",
-  "roaster": "로스터리 이름 (모르면 빈 문자열)",
+  "name": "원두 이름 (이미지 텍스트 그대로)",
+  "roaster": "로스터리 이름",
   "country": "생산 국가 (한글)",
-  "region": "지역",
-  "farm": "농장/워싱스테이션",
-  "altitude": "고도 (예: 1700-1900m)",
-  "process": "가공방식 (워시드/내추럴/허니/무산소)",
-  "processCategory": "가공방식 (워시드/내추럴/허니/무산소)",
+  "region": "지역 (이미지 텍스트 그대로)",
+  "farm": "농장/워싱스테이션 (이미지 텍스트 그대로)",
+  "altitude": "고도",
+  "process": "위 분류에서 정확히 선택",
+  "processCategory": "위 분류에서 정확히 선택",
+  "processDetail": "가공방식 세부 설명 (예: Black Honey, CM 72hr, 무산소 120hr 등)",
   "variety": "품종",
   "notes": ["컵노트1", "컵노트2", "컵노트3"],
   "rating": 4.0,
   "price": "",
-  "description": "이 원두에 대한 종합 설명 2-3문장 (한글)",
+  "description": "이 원두 설명 2문장 (한글)",
   "sources": {
-    "name": "image 또는 ai 또는 both",
-    "region": "image 또는 ai 또는 both",
-    "notes": "image 또는 ai 또는 both",
-    "process": "image 또는 ai 또는 both",
-    "altitude": "image 또는 ai 또는 inferred"
+    "name": "image 또는 ai",
+    "region": "image 또는 ai",
+    "notes": "image 또는 ai 또는 inferred",
+    "process": "image 또는 ai 또는 inferred"
   },
   "aiPrediction": {
-    "flavorProfile": "이미지+지식 기반 예상 향미 설명 (한글, 2문장)",
-    "recommendedBrew": "최적 추출 도구 (예: V60, 에스프레소)",
-    "brewTips": "구체적 추출 팁: 물 온도, 분쇄도, 물:원두 비율 포함 (한글)",
+    "flavorProfile": "가공방식과 산지 기반 예상 향미 (한글, 2문장)",
+    "recommendedBrew": "최적 추출 도구",
+    "brewTips": "물 온도, 분쇄도, 물:원두 비율 포함한 구체적 팁 (한글)",
     "acidity": 7,
     "sweetness": 6,
     "body": 5,
     "aroma": 8,
-    "confidence": "high 또는 medium 또는 low (정보 신뢰도)"
+    "confidence": "high 또는 medium 또는 low"
   },
   "keywords": ["키워드1", "키워드2"]
 }`
@@ -100,42 +111,32 @@ module.exports = async function handler(req, res) {
 
     const data = await response.json();
     const text = data.content && data.content[0] && data.content[0].text
-      ? data.content[0].text.trim()
-      : "";
+      ? data.content[0].text.trim() : "";
 
     let coffee = null;
     try {
       const clean = text.replace(/```json|```/g, "").trim();
       coffee = JSON.parse(clean);
       coffee.source = "ocr_scan";
-      coffee.mapText = [(coffee.region || ""), (coffee.country || "")]
-        .filter(Boolean).join(", ") + " | 지도 연동 예정";
+      coffee.mapText = [(coffee.region||""), (coffee.country||"")].filter(Boolean).join(", ") + " | 지도 연동 예정";
     } catch (e) {
-      console.error("[OCR] JSON 파싱 실패:", e.message, text.slice(0, 300));
-      return res.status(200).json({ text: text, coffee: null });
+      console.error("[OCR] JSON 파싱 실패:", e.message, text.slice(0, 200));
+      return res.status(200).json({ text, coffee: null });
     }
 
-    // Supabase에 저장 (비동기, 실패해도 클라이언트엔 영향 없음)
+    // Supabase에 직접 저장
     try {
-      const baseUrl = process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : "http://localhost:3000";
-      const saved = await fetch(`${baseUrl}/api/coffee`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "upsert", coffee }),
-      });
-      const savedData = await saved.json();
-      // Supabase에서 반환된 데이터(커뮤니티 포함)로 교체
-      if (savedData.coffee) {
-        coffee = { ...coffee, ...savedData.coffee };
-        if (savedData.community) coffee._community = savedData.community;
+      const result = await upsertCoffee(coffee);
+      if (result.coffee) {
+        coffee = { ...coffee, ...result.coffee };
+        if (result.community) coffee._community = result.community;
+        if (result.recipes) coffee._recipes = result.recipes;
       }
     } catch (e) {
-      console.warn("[OCR] Supabase 저장 스킵:", e.message);
+      console.warn("[OCR] Supabase 저장 실패 (계속 진행):", e.message);
     }
 
-    return res.status(200).json({ coffee: coffee, text: coffee.name || "" });
+    return res.status(200).json({ coffee, text: coffee.name || "" });
   } catch (err) {
     console.error("[OCR] 서버 오류:", err.message);
     return res.status(500).json({ error: "서버 오류: " + err.message });
