@@ -151,6 +151,16 @@
                 cell("품종", c.variety) +
                 cell("가격대", c.price) +
                 "</div>" +
+                // AI 예측 섹션
+                (c.aiPrediction ? (
+                  '<p class="section-heading">🤖 AI 예측</p>' +
+                  '<div class="aiBox">' +
+                  (c.aiPrediction.flavorProfile ? '<div class="aiRow"><span class="aiLabel">향미 프로필</span><span>' + escapeHtml(c.aiPrediction.flavorProfile) + '</span></div>' : '') +
+                  (c.aiPrediction.recommendedBrew ? '<div class="aiRow"><span class="aiLabel">추천 추출</span><span>' + escapeHtml(c.aiPrediction.recommendedBrew) + '</span></div>' : '') +
+                  (c.aiPrediction.brewTips ? '<div class="aiRow"><span class="aiLabel">브루잉 팁</span><span>' + escapeHtml(c.aiPrediction.brewTips) + '</span></div>' : '') +
+                  '</div>'
+                ) : '') +
+                (c.description ? '<p class="section-heading">설명</p><p style="font-size:14px;line-height:1.7;color:var(--text-sub)">' + escapeHtml(c.description) + '</p>' : '') +
                 '<p class="section-heading">지도</p>' +
                 '<div class="mapBox">' +
                 escapeHtml(c.mapText || "지도 연동 예정") +
@@ -224,12 +234,49 @@
           });
         }
 
+        // ─── AI 검색 + 자동 등록 ─────────────────────────
+        var aiSearchTimer = null;
+
         function runSearch() {
           var query = $q.value.trim();
+          if (!query) return;
           CN.addSearchHistory(query);
           expandedIndex = null;
           var pairs = CN.searchCoffeePairs(query);
-          renderResults(pairs);
+          if (pairs.length > 0) {
+            renderResults(pairs);
+          } else {
+            // 로컬 DB에 없으면 AI 검색
+            runAiSearch(query);
+          }
+        }
+
+        function runAiSearch(query) {
+          $results.innerHTML = '<div class="empty" id="aiSearchStatus">🤖 AI로 원두 정보 검색 중...</div>';
+          fetch("/api/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: query })
+          })
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (data.error || !data.coffee) {
+              $results.innerHTML = '<div class="empty">검색 결과가 없습니다.<br/>직접 등록도 가능합니다.</div>';
+              return;
+            }
+            var coffee = data.coffee;
+            // DB에 자동 저장
+            CN.addCoffee(coffee);
+            var allCoffees = CN.getCoffees();
+            var newIdx = allCoffees.length - 1;
+            CN.showToast("✨ AI가 원두 정보를 찾았어요!");
+            expandedIndex = newIdx;
+            renderResults([{ coffee: coffee, index: newIdx }]);
+          })
+          .catch(function(err) {
+            $results.innerHTML = '<div class="empty">검색 중 오류가 발생했습니다. 다시 시도해주세요.</div>';
+            console.error("[AI Search]", err);
+          });
         }
 
         document.getElementById("searchBtn").addEventListener("click", runSearch);
@@ -237,26 +284,37 @@
           if (e.key === "Enter") runSearch();
         });
 
+        // ─── OCR 결과 처리 ───────────────────────────────
         document.addEventListener("coffeeNote:ocrText", function (e) {
           var text = (e.detail && e.detail.text) || "";
           if (!text) { CN.showToast("인식된 텍스트가 없습니다."); return; }
 
-          // Claude 응답에서 원두명 우선 추출
+          // OCR 텍스트에서 원두명 추출
           var coffeeName = "";
-          var lines = text.split("\n");
+          var lines = text.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
           for (var i = 0; i < lines.length; i++) {
-            var line = lines[i];
-            if (/원두명|원두\s*이름|name/i.test(line)) {
-              coffeeName = line.replace(/.*[:：]/,"").trim();
+            if (/원두명|원두\s*이름|name/i.test(lines[i])) {
+              coffeeName = lines[i].replace(/.*[:：]/, "").trim();
               break;
             }
           }
-          // 원두명 못 찾으면 전체 텍스트 첫 줄 사용
-          if (!coffeeName) coffeeName = lines[0].replace(/.*[:：]/,"").trim();
+          if (!coffeeName && lines.length > 0) {
+            coffeeName = lines[0].replace(/.*[:：]/, "").trim();
+          }
 
-          $q.value = coffeeName || text.slice(0, 50);
-          CN.showToast("📷 인식 완료! 검색어를 확인하세요.");
-          runSearch();
+          if (!coffeeName) { CN.showToast("원두 이름을 인식하지 못했어요."); return; }
+
+          $q.value = coffeeName;
+          CN.showToast("📷 인식 완료! AI로 검색 중...");
+
+          // 로컬 DB 먼저 확인, 없으면 AI 검색
+          var pairs = CN.searchCoffeePairs(coffeeName);
+          if (pairs.length > 0) {
+            expandedIndex = null;
+            renderResults(pairs);
+          } else {
+            runAiSearch(coffeeName);
+          }
         });
 
         function initFromQuery() {

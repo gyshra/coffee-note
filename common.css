@@ -596,6 +596,32 @@ textarea:focus {
   color: var(--text);
 }
 
+.aiBox {
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 14px 16px;
+}
+
+.aiRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.aiRow:last-child { margin-bottom: 0; }
+
+.aiLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-sub);
+  text-transform: uppercase;
+}
+
 .mapBox {
   margin-top: 8px;
   border-radius: 0;
