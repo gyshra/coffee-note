@@ -755,10 +755,12 @@
       if (!file) return;
       loading.classList.add("show");
       loadTesseractAndRecognize(file)
-        .then(function (text) {
+        .then(function (result) {
           loading.classList.remove("show");
           closePhotoSearchSheet();
-          var ev = new CustomEvent("coffeeNote:ocrText", { detail: { text: text || "" } });
+          // result는 { text, coffee } 또는 문자열
+          var detail = (typeof result === "object") ? result : { text: result || "", coffee: null };
+          var ev = new CustomEvent("coffeeNote:ocrText", { detail: detail });
           document.dispatchEvent(ev);
         })
         .catch(function (err) {
@@ -828,7 +830,7 @@
               })
               .then(function (data) {
                 if (data.error) { reject(new Error(data.error)); return; }
-                resolve(data.text || "");
+                resolve({ coffee: data.coffee || null, text: data.text || "" });
               })
               .catch(function (err) {
                 console.error("[OCR] fetch 오류:", err);
@@ -844,7 +846,7 @@
               body: JSON.stringify({ base64: raw, mimeType: file.type || "image/jpeg" }),
             })
               .then(function (r) { return r.json(); })
-              .then(function (d) { resolve(d.text || ""); })
+              .then(function (d) { resolve({ coffee: d.coffee || null, text: d.text || "" }); })
               .catch(reject);
           }
         };

@@ -34,14 +34,19 @@ module.exports = async function handler(req, res) {
         max_tokens: 1024,
         messages: [{
           role: "user",
-          content: `커피 원두 "${query}"에 대한 정보를 아래 JSON 형식으로만 답해줘. 마크다운이나 설명 없이 JSON만.
+          content: `커피 원두 "${query}"에 대해 네가 알고 있는 모든 정보를 종합해서 아래 JSON으로만 답해줘. 마크다운 없이 JSON만.
+
+[원칙]
+- 잘 알려진 원두(에티오피아 예가체프 등)는 신뢰도 high
+- 소규모 농장이지만 산지/가공/컵노트로 추론 가능하면 medium
+- 정보가 거의 없으면 low + 추론 기반으로 작성
 
 {
   "name": "원두 전체 이름 (한글)",
   "roaster": "로스터리 이름 (모르면 빈 문자열)",
   "country": "생산 국가 (한글)",
   "region": "지역 (한글)",
-  "farm": "농장/워싱스테이션 (한글, 모르면 빈 문자열)",
+  "farm": "농장/워싱스테이션 (모르면 빈 문자열)",
   "altitude": "고도 (예: 1700-1900m, 모르면 빈 문자열)",
   "process": "가공방식 (워시드/내추럴/허니/무산소 중 하나)",
   "processCategory": "가공방식 (워시드/내추럴/허니/무산소 중 하나)",
@@ -49,15 +54,23 @@ module.exports = async function handler(req, res) {
   "notes": ["컵노트1", "컵노트2", "컵노트3"],
   "price": "가격대 (모르면 빈 문자열)",
   "rating": 4.0,
-  "description": "이 원두에 대한 간략한 설명 (2-3문장)",
+  "description": "이 원두에 대한 설명 2-3문장 (한글)",
+  "sources": {
+    "name": "ai",
+    "region": "ai",
+    "notes": "ai 또는 inferred",
+    "process": "ai 또는 inferred",
+    "altitude": "ai 또는 inferred"
+  },
   "aiPrediction": {
-    "flavorProfile": "예상 향미 프로필 설명",
-    "brewTips": "추천 추출 방법과 팁",
-    "recommendedBrew": "가장 잘 어울리는 추출 도구 (V60/에스프레소/프렌치프레스 등)",
+    "flavorProfile": "예상 향미 프로필 설명 (한글, 2문장)",
+    "brewTips": "구체적 추출 팁: 물 온도, 분쇄도, 비율 포함 (한글)",
+    "recommendedBrew": "최적 추출 도구 (V60/에스프레소/프렌치프레스 등)",
     "acidity": 7,
     "sweetness": 6,
     "body": 5,
-    "aroma": 8
+    "aroma": 8,
+    "confidence": "high 또는 medium 또는 low"
   },
   "keywords": ["검색 키워드1", "검색 키워드2"]
 }`

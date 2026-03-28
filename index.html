@@ -155,7 +155,16 @@
                 (c.aiPrediction ? (
                   '<p class="section-heading">🤖 AI 예측</p>' +
                   '<div class="aiBox">' +
-                  (c.aiPrediction.flavorProfile ? '<div class="aiRow"><span class="aiLabel">향미 프로필</span><span>' + escapeHtml(c.aiPrediction.flavorProfile) + '</span></div>' : '') +
+                  (c.aiPrediction.confidence ? '<div style="margin-bottom:10px">' +
+                    '<span class="sourceTag ' + (c.aiPrediction.confidence === 'high' ? 'sourceHigh' : c.aiPrediction.confidence === 'medium' ? 'sourceMed' : 'sourceLow') + '">' +
+                    (c.aiPrediction.confidence === 'high' ? '✓ 높은 신뢰도' : c.aiPrediction.confidence === 'medium' ? '△ 보통 신뢰도' : '○ 추론 기반') +
+                    '</span>' +
+                    (c.sources ? '<span class="sourceTag sourceBoth" style="margin-left:6px">' +
+                      (Object.values(c.sources).some(function(v){return v==='both';}) ? '📷+🌐 이미지+지식' :
+                       Object.values(c.sources).some(function(v){return v==='image';}) ? '📷 이미지 기반' : '🌐 AI 지식 기반') +
+                    '</span>' : '') +
+                  '</div>' : '') +
+                  (c.aiPrediction.flavorProfile ? '<div class="aiRow"><span class="aiLabel">예상 향미</span><span>' + escapeHtml(c.aiPrediction.flavorProfile) + '</span></div>' : '') +
                   (c.aiPrediction.recommendedBrew ? '<div class="aiRow"><span class="aiLabel">추천 추출</span><span>' + escapeHtml(c.aiPrediction.recommendedBrew) + '</span></div>' : '') +
                   (c.aiPrediction.brewTips ? '<div class="aiRow"><span class="aiLabel">브루잉 팁</span><span>' + escapeHtml(c.aiPrediction.brewTips) + '</span></div>' : '') +
                   '</div>'
@@ -286,28 +295,45 @@
 
         // ─── OCR 결과 처리 ───────────────────────────────
         document.addEventListener("coffeeNote:ocrText", function (e) {
-          var text = (e.detail && e.detail.text) || "";
-          if (!text) { CN.showToast("인식된 텍스트가 없습니다."); return; }
+          var detail = e.detail || {};
+          var text = detail.text || "";
+          var coffee = detail.coffee || null;
 
-          // OCR 텍스트에서 원두명 추출
-          var coffeeName = "";
+          // 구조화된 커피 데이터가 있으면 바로 등록
+          if (coffee && coffee.name) {
+            // 로컬 DB에 중복 확인
+            var existing = CN.searchCoffeePairs(coffee.name);
+            if (existing.length > 0) {
+              CN.showToast("📷 이미 등록된 원두예요!");
+              expandedIndex = existing[0].index;
+              renderResults(existing);
+            } else {
+              CN.addCoffee(coffee);
+              var allCoffees = CN.getCoffees();
+              var newIdx = allCoffees.length - 1;
+              expandedIndex = newIdx;
+              $q.value = coffee.name;
+              CN.showToast("✨ 카드에서 원두 정보를 등록했어요!");
+              renderResults([{ coffee: coffee, index: newIdx }]);
+            }
+            return;
+          }
+
+          // 텍스트만 있는 경우 (fallback) — AI 검색으로
+          if (!text) { CN.showToast("인식된 텍스트가 없습니다."); return; }
           var lines = text.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
+          var coffeeName = "";
           for (var i = 0; i < lines.length; i++) {
             if (/원두명|원두\s*이름|name/i.test(lines[i])) {
               coffeeName = lines[i].replace(/.*[:：]/, "").trim();
               break;
             }
           }
-          if (!coffeeName && lines.length > 0) {
-            coffeeName = lines[0].replace(/.*[:：]/, "").trim();
-          }
-
+          if (!coffeeName && lines.length > 0) coffeeName = lines[0].replace(/.*[:：]/, "").trim();
           if (!coffeeName) { CN.showToast("원두 이름을 인식하지 못했어요."); return; }
 
           $q.value = coffeeName;
           CN.showToast("📷 인식 완료! AI로 검색 중...");
-
-          // 로컬 DB 먼저 확인, 없으면 AI 검색
           var pairs = CN.searchCoffeePairs(coffeeName);
           if (pairs.length > 0) {
             expandedIndex = null;
