@@ -140,6 +140,16 @@
           else if (!this.value.trim()) bar.style.display = "none";
         });
 
+        var aiUrls = {};
+
+        function highlightField(id) {
+          var el = document.getElementById(id);
+          if (!el) return;
+          el.style.borderColor = "#8C7355";
+          el.style.backgroundColor = "#FFF8F0";
+          el.style.color = "#5C3D1A";
+        }
+
         document.getElementById("btnAiFill").addEventListener("click", function() {
           var name = document.getElementById("fName").value.trim();
           if (!name) { CN.showToast("원두 이름을 먼저 입력해주세요."); return; }
@@ -151,20 +161,49 @@
             .then(function(data) {
               btn.textContent = "AI로 정보 채우기"; btn.disabled = false;
               var ai = data.coffee||{};
-              if (!document.getElementById("fRoaster").value && ai.roaster) document.getElementById("fRoaster").value = ai.roaster;
-              if (!document.getElementById("fRegion").value  && ai.region)  document.getElementById("fRegion").value  = ai.region;
-              if (!document.getElementById("fFarm").value    && ai.farm)    document.getElementById("fFarm").value    = ai.farm;
-              if (!document.getElementById("fAlt").value     && ai.altitude) document.getElementById("fAlt").value    = ai.altitude;
-              if (!document.getElementById("fVariety").value && ai.variety) document.getElementById("fVariety").value = ai.variety;
-              if (!document.getElementById("fNotes").value   && Array.isArray(ai.notes)) document.getElementById("fNotes").value = ai.notes.join(", ");
+              var filled = [];
+
+              var pairs = [
+                ["fRoaster", ai.roaster],["fRegion", ai.region],
+                ["fFarm", ai.farm],["fAlt", ai.altitude],["fVariety", ai.variety]
+              ];
+              pairs.forEach(function(p) {
+                if (!document.getElementById(p[0]).value && p[1]) {
+                  document.getElementById(p[0]).value = p[1];
+                  highlightField(p[0]);
+                  filled.push(p[0]);
+                }
+              });
+              if (!document.getElementById("fNotes").value && Array.isArray(ai.notes) && ai.notes.length) {
+                document.getElementById("fNotes").value = ai.notes.join(", ");
+                highlightField("fNotes");
+                filled.push("fNotes");
+              }
               if (ai.processCategory) {
                 var opts = catSelect.querySelectorAll("option");
                 for (var oi=0;oi<opts.length;oi++) { if (opts[oi].value===ai.processCategory){ catSelect.value=ai.processCategory; break; } }
                 syncProcessDetailVisibility();
               }
+
+              // URL 저장
+              if (ai.roasterUrl)  aiUrls.roasterUrl  = ai.roasterUrl;
+              if (ai.farmUrl)     aiUrls.farmUrl      = ai.farmUrl;
+              if (ai.purchaseUrl) aiUrls.purchaseUrl  = ai.purchaseUrl;
+
               document.getElementById("aiHintBar").style.display = "none";
               aiHintShown = true;
-              CN.showToast("AI 정보가 추가됐어요. 확인 후 등록하세요.");
+
+              // 결과 요약 표시
+              var bar = document.getElementById("aiHintBar");
+              bar.style.background = "#FFF8F0";
+              bar.style.borderColor = "#D4A96A";
+              bar.style.color = "#5C3D1A";
+              if (filled.length > 0) {
+                bar.innerHTML = '<strong>AI가 ' + filled.length + '개 항목 추가</strong> — 주황색 테두리가 AI가 채운 정보입니다. 확인 후 등록하세요.';
+              } else {
+                bar.innerHTML = 'AI도 추가 정보를 찾지 못했어요. <a href="https://www.google.com/search?q=' + encodeURIComponent(name + ' 커피 원두') + '" target="_blank" style="color:#8C7355">구글 검색 →</a>';
+              }
+              bar.style.display = "block";
             })
             .catch(function() { btn.textContent = "AI로 정보 채우기"; btn.disabled = false; CN.showToast("AI 검색 실패."); });
         });

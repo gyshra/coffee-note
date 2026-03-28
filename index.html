@@ -223,16 +223,19 @@
                   }).join("") +
                   '</div>'
                 ) : '') +
-                // ── 링크 + 구매 버튼 ──
+                // ── 링크 · 구매 ──
                 '<p class="section-heading">링크 · 구매</p>' +
                 '<div class="links">' +
-                (c.roasterUrl ? '<a href="' + c.roasterUrl + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">로스터리 웹사이트 →</a>' : '') +
-                (c.farmUrl    ? '<a href="' + c.farmUrl    + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">농장/생산자 웹사이트 →</a>' : '') +
-                (!c.roasterUrl && !c.farmUrl ? '<span style="font-size:13px;color:var(--text-sub)">링크 정보 없음 (AI 검색 후 표시)</span>' : '') +
+                (c.roasterUrl ? '<a href="' + c.roasterUrl + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>로스터리 웹사이트</a>' : '') +
+                (c.farmUrl    ? '<a href="' + c.farmUrl    + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>농장/생산자 웹사이트</a>' : '') +
+                (c.purchaseUrl ? '<a href="' + c.purchaseUrl + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>구매 페이지</a>' : '') +
+                '<a href="https://www.google.com/search?q=' + encodeURIComponent((c.roaster||c.name||"")+" 커피 구매") + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px;color:#4A86E8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>구글에서 검색</a>' +
                 '</div>' +
                 (c.purchaseUrl || c.roasterUrl ? (
-                  '<a href="' + (c.purchaseUrl || c.roasterUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="btn-purchase" style="display:block;text-align:center;margin:12px 0;padding:14px;background:#121212;color:#fff;font-size:14px;font-weight:600;letter-spacing:0.04em;text-decoration:none;font-family:inherit">이 원두 구매하기 →</a>'
-                ) : '') +
+                  '<a href="' + (c.purchaseUrl || c.roasterUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:block;text-align:center;margin:12px 0;padding:14px;background:#121212;color:#fff;font-size:14px;font-weight:600;letter-spacing:0.04em;text-decoration:none;font-family:inherit">이 원두 구매하기 →</a>'
+                ) : (
+                  '<a href="https://www.google.com/search?q=' + encodeURIComponent((c.roaster||"")+" "+(c.name||"")+" 원두 구매") + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:block;text-align:center;margin:12px 0;padding:14px;background:#3D3D3D;color:#fff;font-size:14px;font-weight:600;letter-spacing:0.04em;text-decoration:none;font-family:inherit">구글에서 구매처 찾기 →</a>'
+                )) +
                 '<div class="actionRow">' +
                 '<button type="button" class="btn-secondary" data-add-idx="' +
                 idx +

@@ -880,38 +880,84 @@
     });
 
     // AI 추가 검색
+    // AI가 채운 필드 추적 (색상 강조용)
+    var aiFilledFields = {};
+
+    function highlightAiField(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.style.borderColor = "#8C7355";
+      el.style.backgroundColor = "#FFF8F0";
+      el.style.color = "#5C3D1A";
+      aiFilledFields[id] = true;
+    }
+
     document.getElementById("ocrAiSearchBtn").addEventListener("click", function() {
       var coffee = collectOcrForm();
       if (!coffee.name) { showToast("원두 이름을 입력해주세요."); return; }
       var btn = document.getElementById("ocrAiSearchBtn");
-      btn.textContent = "검색 중…"; btn.disabled = true;
+      btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>검색 중…</span>';
+      btn.disabled = true;
       var context = {country:coffee.country||"", region:coffee.region||"", farm:coffee.farm||""};
       fetch("/api/search", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
+        method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({query:coffee.name, forceAi:true, context:context})
       }).then(function(r){ return r.json(); })
         .then(function(data) {
-          btn.textContent = "AI로 추가 정보 검색"; btn.disabled = false;
+          btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>AI로 추가 정보 검색</span>';
+          btn.disabled = false;
           var ai = data.coffee || {};
-          // AI 결과로 빈 필드만 채움 (사용자 입력 우선)
-          if (!document.getElementById("ocrRoaster").value && ai.roaster) document.getElementById("ocrRoaster").value = ai.roaster;
-          if (!document.getElementById("ocrCountry").value && ai.country) document.getElementById("ocrCountry").value = ai.country;
-          if (!document.getElementById("ocrRegion").value  && ai.region)  document.getElementById("ocrRegion").value  = ai.region;
-          if (!document.getElementById("ocrProcess").value && ai.process) document.getElementById("ocrProcess").value = ai.process;
-          if (!document.getElementById("ocrVariety").value && ai.variety) document.getElementById("ocrVariety").value = ai.variety;
-          var curNotes = document.getElementById("ocrNotes").value.trim();
-          if (!curNotes && Array.isArray(ai.notes) && ai.notes.length) {
-            document.getElementById("ocrNotes").value = ai.notes.join(", ");
+          var filledCount = 0;
+
+          // 빈 필드만 채우되 AI가 채운 필드는 주황색 테두리로 강조
+          var fields = [
+            {id:"ocrRoaster", val:ai.roaster},
+            {id:"ocrCountry", val:ai.country},
+            {id:"ocrRegion",  val:ai.region},
+            {id:"ocrProcess", val:ai.process},
+            {id:"ocrVariety", val:ai.variety},
+          ];
+          fields.forEach(function(f) {
+            var el = document.getElementById(f.id);
+            if (el && !el.value && f.val) {
+              el.value = f.val;
+              highlightAiField(f.id);
+              filledCount++;
+            }
+          });
+          var notesEl = document.getElementById("ocrNotes");
+          if (notesEl && !notesEl.value.trim() && Array.isArray(ai.notes) && ai.notes.length) {
+            notesEl.value = ai.notes.join(", ");
+            highlightAiField("ocrNotes");
+            filledCount++;
+          }
+
+          // roasterUrl / farmUrl 저장 (저장 시 커피 객체에 포함)
+          if (ai.roasterUrl) { step2._aiRoasterUrl = ai.roasterUrl; }
+          if (ai.farmUrl)    { step2._aiFarmUrl    = ai.farmUrl; }
+          if (ai.purchaseUrl){ step2._aiPurchaseUrl= ai.purchaseUrl; }
+
+          // AI 검색 결과 요약 배너
+          var summary = document.getElementById("ocrAiSummary");
+          if (!summary) {
+            summary = document.createElement("div");
+            summary.id = "ocrAiSummary";
+            summary.style.cssText = "padding:10px 14px;background:#FFF8F0;border:1px solid #D4A96A;border-radius:4px;font-size:12px;color:#5C3D1A;margin-bottom:12px;line-height:1.6";
+            var form = document.querySelector(".ocrEditFields");
+            if (form) form.parentNode.insertBefore(summary, form);
+          }
+          if (filledCount > 0) {
+            summary.innerHTML = '<strong>AI가 ' + filledCount + '개 항목을 추가했어요</strong><br><span style="opacity:.7">주황색 테두리 = AI가 채운 정보 · 흰색 = 원본 이미지 정보</span>';
+            summary.style.display = "block";
+          } else {
+            summary.innerHTML = 'AI도 추가 정보를 찾지 못했어요. 직접 입력하거나 구글 검색을 이용해보세요.';
+            summary.style.display = "block";
           }
           aiNotice.style.display = "none";
-          showToast("AI 정보가 추가됐어요. 확인 후 저장하세요.");
-          // merged coffee
-          var merged = Object.assign({}, ai, collectOcrForm());
-          merged._aiEnriched = true;
         })
         .catch(function() {
-          btn.textContent = "AI로 추가 정보 검색"; btn.disabled = false;
+          btn.innerHTML = 'AI로 추가 정보 검색';
+          btn.disabled = false;
           showToast("AI 검색 실패. 직접 입력 후 저장하세요.");
         });
     });
@@ -920,15 +966,19 @@
   function collectOcrForm() {
     var notesRaw = (document.getElementById("ocrNotes")||{}).value || "";
     var notes = notesRaw.split(/[,、,]/).map(function(s){return s.trim();}).filter(Boolean);
+    var step2El = document.getElementById("ocrStep2");
     return {
-      name:    (document.getElementById("ocrName")||{}).value    || "",
-      roaster: (document.getElementById("ocrRoaster")||{}).value || "",
-      country: (document.getElementById("ocrCountry")||{}).value || "",
-      region:  (document.getElementById("ocrRegion")||{}).value  || "",
-      process: (document.getElementById("ocrProcess")||{}).value || "",
-      variety: (document.getElementById("ocrVariety")||{}).value || "",
-      notes:   notes,
-      source:  "ocr_edited"
+      name:        (document.getElementById("ocrName")||{}).value    || "",
+      roaster:     (document.getElementById("ocrRoaster")||{}).value || "",
+      country:     (document.getElementById("ocrCountry")||{}).value || "",
+      region:      (document.getElementById("ocrRegion")||{}).value  || "",
+      process:     (document.getElementById("ocrProcess")||{}).value || "",
+      variety:     (document.getElementById("ocrVariety")||{}).value || "",
+      notes:       notes,
+      roasterUrl:  (step2El && step2El._aiRoasterUrl)  || "",
+      farmUrl:     (step2El && step2El._aiFarmUrl)      || "",
+      purchaseUrl: (step2El && step2El._aiPurchaseUrl)  || "",
+      source:      "ocr_edited"
     };
   }
 
