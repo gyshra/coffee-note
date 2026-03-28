@@ -796,53 +796,64 @@
 
   function loadTesseractAndRecognize(file) {
     return new Promise(function (resolve, reject) {
-      // 이미지를 Canvas로 리사이즈 후 base64 변환 (Vercel 4.5MB 제한 대응)
-      var img = new Image();
-      var objectUrl = URL.createObjectURL(file);
+      var reader = new FileReader();
 
-      img.onload = function () {
-        URL.revokeObjectURL(objectUrl);
+      reader.onload = function (e) {
+        var dataUrl = e.target.result;
 
-        var MAX = 1024; // 최대 1024px
-        var w = img.width, h = img.height;
-        if (w > MAX || h > MAX) {
-          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
-          else { w = Math.round(w * MAX / h); h = MAX; }
-        }
+        // Canvas로 리사이즈 (iOS Safari 호환)
+        var img = new Image();
+        img.onload = function () {
+          try {
+            var MAX = 1024;
+            var w = img.width, h = img.height;
+            if (w > MAX || h > MAX) {
+              if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+              else { w = Math.round(w * MAX / h); h = MAX; }
+            }
+            var canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+            var base64 = canvas.toDataURL("image/jpeg", 0.8).split(",")[1];
 
-        var canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
-        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-
-        var base64 = canvas.toDataURL("image/jpeg", 0.85).split(",")[1];
-        var mimeType = "image/jpeg";
-
-        fetch("/api/ocr", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ base64: base64, mimeType: mimeType }),
-        })
-          .then(function (res) {
-            if (!res.ok) return res.json().then(function(d){ throw new Error(d.error || res.status); });
-            return res.json();
-          })
-          .then(function (data) {
-            if (data.error) { reject(new Error(data.error)); return; }
-            resolve(data.text || "");
-          })
-          .catch(function (err) {
-            console.error("[OCR] 오류:", err);
-            reject(err);
-          });
+            fetch("/api/ocr", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ base64: base64, mimeType: "image/jpeg" }),
+            })
+              .then(function (res) {
+                if (!res.ok) return res.json().then(function (d) { throw new Error(d.error || "서버 오류 " + res.status); });
+                return res.json();
+              })
+              .then(function (data) {
+                if (data.error) { reject(new Error(data.error)); return; }
+                resolve(data.text || "");
+              })
+              .catch(function (err) {
+                console.error("[OCR] fetch 오류:", err);
+                reject(err);
+              });
+          } catch (canvasErr) {
+            console.error("[OCR] Canvas 오류:", canvasErr);
+            // Canvas 실패 시 원본 base64 그대로 전송
+            var raw = dataUrl.split(",")[1];
+            fetch("/api/ocr", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ base64: raw, mimeType: file.type || "image/jpeg" }),
+            })
+              .then(function (r) { return r.json(); })
+              .then(function (d) { resolve(d.text || ""); })
+              .catch(reject);
+          }
+        };
+        img.onerror = function () { reject(new Error("이미지 로드 실패")); };
+        img.src = dataUrl;
       };
 
-      img.onerror = function () {
-        URL.revokeObjectURL(objectUrl);
-        reject(new Error("이미지 로드 실패"));
-      };
-
-      img.src = objectUrl;
+      reader.onerror = function () { reject(new Error("파일 읽기 실패")); };
+      reader.readAsDataURL(file);
     });
   }
 
