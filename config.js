@@ -1,9 +1,5 @@
 /**
- * 커피 노트 — API 키 설정
- * ===================================================
- * ⚠️  아래에 본인의 Anthropic API 키를 입력하세요.
- *    https://console.anthropic.com/settings/keys 에서 확인
- * ===================================================
+ * 커피 노트 — 클라이언트 설정
+ * API 키는 Vercel 환경변수에서 관리 (서버에만 존재)
+ * 이 파일에는 민감한 정보를 넣지 마세요.
  */
-window.ANTHROPIC_API_KEY = "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";
-// 예: "sk-ant-api03-xxxxxxxxxxxx..."

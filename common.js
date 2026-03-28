@@ -801,44 +801,20 @@
         var base64 = e.target.result.split(",")[1];
         var mimeType = file.type || "image/jpeg";
 
-        fetch("https://api.anthropic.com/v1/messages", {
+        fetch("/api/ocr", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": window.ANTHROPIC_API_KEY || "",
-            "anthropic-version": "2023-06-01",
-            "anthropic-dangerous-direct-browser-access": "true"
-          },
-          body: JSON.stringify({
-            model: "claude-haiku-4-5-20251001",
-            max_tokens: 1024,
-            messages: [{
-              role: "user",
-              content: [
-                {
-                  type: "image",
-                  source: { type: "base64", media_type: mimeType, data: base64 }
-                },
-                {
-                  type: "text",
-                  text: "이 커피 봉지나 카드에서 원두 이름, 산지(국가/지역), 가공방식, 품종, 컵노트를 추출해줘. 없는 정보는 생략하고 찾은 것만 한 줄씩 텍스트로 알려줘. 예: 원두명: 예가체프 콩가 / 산지: 에티오피아 / 가공: 워시드"
-                }
-              ]
-            }]
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ base64: base64, mimeType: mimeType }),
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            if (data.error) { reject(new Error(data.error)); return; }
+            resolve(data.text || "");
           })
-        })
-        .then(function (res) { return res.json(); })
-        .then(function (data) {
-          var text = "";
-          if (data && data.content && data.content[0] && data.content[0].text) {
-            text = data.content[0].text;
-          }
-          resolve(text.trim());
-        })
-        .catch(function (err) {
-          console.error("[OCR] Claude Vision 오류:", err);
-          reject(err);
-        });
+          .catch(function (err) {
+            console.error("[OCR] 오류:", err);
+            reject(err);
+          });
       };
       reader.onerror = function () { reject(new Error("파일 읽기 실패")); };
       reader.readAsDataURL(file);
