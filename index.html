@@ -171,24 +171,52 @@
                 ) : '') +
                 (c.description ? '<p class="section-heading">설명</p><p style="font-size:14px;line-height:1.7;color:var(--text-sub)">' + escapeHtml(c.description) + '</p>' : '') +
                 // 커뮤니티 섹션
+                '<p class="section-heading">다른 사용자 후기</p>' +
                 (c._community && c._community.count > 0 ? (
-                  '<p class="section-heading">👥 커뮤니티 (' + c._community.count + '명 기록)</p>' +
                   '<div class="communityBox">' +
+                  '<div class="communityRow"><span class="communityLabel">기록한 사람</span><span>' + c._community.count + '명</span></div>' +
                   (c._community.avgRating ? '<div class="communityRow"><span class="communityLabel">평균 별점</span><span>' + c._community.avgRating + ' / 5.0</span></div>' : '') +
                   (c._community.topFlavors && c._community.topFlavors.length ? '<div class="communityRow"><span class="communityLabel">많이 느낀 향미</span><div class="tagWrap" style="margin-top:6px">' + c._community.topFlavors.map(function(f,i){ return '<span class="tag ' + CN.toneClass(i) + '">' + escapeHtml(f) + '</span>'; }).join("") + '</div></div>' : '') +
-                  (c._community.topBrewMethods && c._community.topBrewMethods.length ? '<div class="communityRow"><span class="communityLabel">인기 추출 방법</span><span>' + c._community.topBrewMethods.map(function(b){ return escapeHtml(b.method) + '(' + b.count + ')'; }).join(', ') + '</span></div>' : '') +
+                  (c._community.topBrewMethods && c._community.topBrewMethods.length ? '<div class="communityRow"><span class="communityLabel">인기 추출법</span><span>' + c._community.topBrewMethods.map(function(b){ return escapeHtml(b.method) + ' (' + b.count + ')'; }).join(', ') + '</span></div>' : '') +
                   '</div>'
-                ) : '') +
+                ) : '<div class="emptyNote">아직 후기가 없어요. 첫 번째로 기록해보세요!</div>') +
                 '<p class="section-heading">지도</p>' +
                 '<div class="mapBox">' +
                 escapeHtml(c.mapText || "지도 연동 예정") +
                 "</div>" +
-                '<p class="section-heading">링크</p>' +
+                // ── rawNotes (원본 컵노트) ──
+                (c.rawNotes && c.rawNotes.length ? (
+                  '<p class="section-heading">원본 컵노트</p>' +
+                  '<div class="tagWrap" style="margin-bottom:4px">' +
+                  (c.rawNotes||[]).map(function(n){ return '<span class="tag" style="background:var(--bg);border:1px solid var(--border);color:var(--text-sub);font-size:12px">' + escapeHtml(n) + '</span>'; }).join("") +
+                  '</div><p style="font-size:11px;color:var(--text-sub);margin-bottom:12px">↑ 이미지/라벨 원본 · SCA 표준 노트는 상단 태그 참조</p>'
+                ) : '') +
+                // ── 커뮤니티 후기 카드 ──
+                (c._recentNotes && c._recentNotes.length ? (
+                  '<p class="section-heading">최근 후기</p>' +
+                  '<div class="recentNotesList">' +
+                  c._recentNotes.slice(0,3).map(function(n){
+                    var tags = Array.isArray(n.flavor_tags)?n.flavor_tags:[];
+                    var rating = n.rating ? CN.starHtml(n.rating) : '';
+                    return '<div class="recentNoteCard">' +
+                      '<div class="recentNoteHeader">' + rating +
+                      (n.brew_method ? '<span class="recentBrew">' + escapeHtml(n.brew_method) + '</span>' : '') + '</div>' +
+                      (tags.length ? '<div class="tagWrap recentTags">' + tags.slice(0,4).map(function(t,i){return '<span class="tag '+CN.toneClass(i)+'">'+escapeHtml(t)+'</span>';}).join("") + '</div>' : '') +
+                      (n.memo ? '<p class="recentMemo">' + escapeHtml(n.memo.slice(0,80)) + (n.memo.length>80?'…':'') + '</p>' : '') +
+                      '</div>';
+                  }).join("") +
+                  '</div>'
+                ) : '') +
+                // ── 링크 + 구매 버튼 ──
+                '<p class="section-heading">링크 · 구매</p>' +
                 '<div class="links">' +
-                '<a href="#">로스터리 웹사이트</a>' +
-                '<a href="#">농장/워싱스테이션 웹사이트</a>' +
-                '<a href="#">이 원두 구매하기</a>' +
-                "</div>" +
+                (c.roasterUrl ? '<a href="' + c.roasterUrl + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">로스터리 웹사이트 →</a>' : '') +
+                (c.farmUrl    ? '<a href="' + c.farmUrl    + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">농장/생산자 웹사이트 →</a>' : '') +
+                (!c.roasterUrl && !c.farmUrl ? '<span style="font-size:13px;color:var(--text-sub)">링크 정보 없음 (AI 검색 후 표시)</span>' : '') +
+                '</div>' +
+                (c.purchaseUrl || c.roasterUrl ? (
+                  '<a href="' + (c.purchaseUrl || c.roasterUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="btn-purchase" style="display:block;text-align:center;margin:12px 0;padding:14px;background:#121212;color:#fff;font-size:14px;font-weight:600;letter-spacing:0.04em;text-decoration:none;font-family:inherit">이 원두 구매하기 →</a>'
+                ) : '') +
                 '<div class="actionRow">' +
                 '<button type="button" class="btn-secondary" data-add-idx="' +
                 idx +
@@ -269,12 +297,12 @@
           }
         }
 
-        function runAiSearch(query) {
-          $results.innerHTML = '<div class="empty" id="aiSearchStatus">🤖 AI로 원두 정보 검색 중...</div>';
+        function runAiSearch(query, context) {
+          $results.innerHTML = '<div class="empty" id="aiSearchStatus"><span style="display:inline-block;animation:spin 1s linear infinite;margin-right:6px">⟳</span> AI 검색 중…</div>';
           fetch("/api/search", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: query })
+            body: JSON.stringify({ query: query, context: context || null })
           })
           .then(function(res) { return res.json(); })
           .then(function(data) {
@@ -348,7 +376,13 @@
             expandedIndex = null;
             renderResults(pairs);
           } else {
-            runAiSearch(coffeeName);
+            // OCR에서 넘어온 맥락 정보를 AI 검색에 전달
+            var ocrContext = (detail.coffee) ? {
+              country: detail.coffee.country || "",
+              region:  detail.coffee.region  || "",
+              farm:    detail.coffee.farm    || ""
+            } : null;
+            runAiSearch(coffeeName, ocrContext);
           }
         });
 

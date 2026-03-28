@@ -341,6 +341,7 @@
     {
       name: "에티오피아 예가체프 콩가 워시드",
       roaster: "Fritz Coffee Company",
+      roasterUrl: "https://fritzcoffeecompany.com",
       rating: 4.3,
       processCategory: "워시드",
       processDetail: "",
@@ -359,6 +360,7 @@
     {
       name: "에티오피아 예가체프 콩가 내추럴",
       roaster: "Coffee Libre",
+      roasterUrl: "https://coffeelibre.kr",
       rating: 4.2,
       processCategory: "내추럴",
       processDetail: "",
@@ -377,6 +379,7 @@
     {
       name: "에티오피아 예가체프 아리차",
       roaster: "Namusairo",
+      roasterUrl: "https://namusairo.com",
       rating: 4.4,
       processCategory: "워시드",
       processDetail: "",
@@ -395,6 +398,7 @@
     {
       name: "에티오피아 예가체프 첼베사",
       roaster: "Momos Coffee",
+      roasterUrl: "https://momoscoffee.com",
       rating: 4.5,
       processCategory: "허니",
       processDetail: "",
@@ -431,6 +435,7 @@
     {
       name: "에티오피아 게이샤 빌리지",
       roaster: "Deep Bean",
+      roasterUrl: "https://deepbean.co.kr",
       rating: 4.7,
       processCategory: "내추럴",
       processDetail: "",
@@ -449,6 +454,7 @@
     {
       name: "케냐 AA 키암부",
       roaster: "Center Coffee",
+      roasterUrl: "https://centercoffee.co.kr",
       rating: 4.3,
       processCategory: "워시드",
       processDetail: "",
@@ -467,6 +473,7 @@
     {
       name: "케냐 무랑아 AB",
       roaster: "Anthracite Coffee",
+      roasterUrl: "https://anthracitecoffee.com",
       rating: 4.1,
       processCategory: "워시드",
       processDetail: "",
@@ -811,30 +818,48 @@
       }).then(function(data) {
         loading.classList.remove("show");
         var coffee = data.coffee || {};
-        // 썸네일
-        var thumb = document.getElementById("ocrThumb");
-        if (window._ocrThumbUrl) {
-          thumb.innerHTML = '<img src="'+window._ocrThumbUrl+'" style="max-height:100px;max-width:100%;border-radius:6px;border:0.5px solid #ddd">';
-        }
-        // 폼 채우기
-        document.getElementById("ocrName").value    = coffee.name    || "";
-        document.getElementById("ocrRoaster").value = coffee.roaster || "";
-        document.getElementById("ocrCountry").value = coffee.country || "";
-        document.getElementById("ocrRegion").value  = coffee.region  || "";
-        document.getElementById("ocrProcess").value = coffee.process || "";
-        document.getElementById("ocrVariety").value = coffee.variety || "";
-        var notesArr = Array.isArray(coffee.notes) ? coffee.notes : [];
-        document.getElementById("ocrNotes").value   = notesArr.join(", ");
-        // 비어있는 필드 있으면 AI 안내
-        var incomplete = !coffee.roaster || !coffee.region || notesArr.length===0;
-        aiNotice.style.display = incomplete ? "block" : "none";
-        // Step 전환
-        step1.style.display = "none";
-        step2.style.display = "block";
+        fillOcrStep2(coffee, false);
       }).catch(function(err) {
         loading.classList.remove("show");
-        showToast("인식 실패: "+(err.message||"다시 시도해주세요."));
+        // 실패해도 Step2로 — 수동 입력 가능하게
+        showToast("자동 인식 실패 — 직접 입력해주세요.");
+        fillOcrStep2({}, true);
       });
+    }
+
+    function fillOcrStep2(coffee, manualMode) {
+      // 썸네일
+      var thumb = document.getElementById("ocrThumb");
+      if (window._ocrThumbUrl) {
+        thumb.innerHTML = '<img src="'+window._ocrThumbUrl+'" style="max-height:90px;max-width:100%;border-radius:6px;border:0.5px solid #ddd">';
+      }
+      // 폼 채우기
+      document.getElementById("ocrName").value    = coffee.name    || "";
+      document.getElementById("ocrRoaster").value = coffee.roaster || "";
+      document.getElementById("ocrCountry").value = coffee.country || "";
+      document.getElementById("ocrRegion").value  = coffee.region  || "";
+      document.getElementById("ocrProcess").value = coffee.process || "";
+      document.getElementById("ocrVariety").value = coffee.variety || "";
+      var notesArr = Array.isArray(coffee.notes) ? coffee.notes : [];
+      document.getElementById("ocrNotes").value = notesArr.join(", ");
+      // 상태 안내
+      if (manualMode) {
+        aiNotice.textContent = "사진에서 텍스트를 읽지 못했어요. 원두 이름을 직접 입력하거나 AI 검색을 사용해보세요.";
+        aiNotice.style.background = "#FFF3F0";
+        aiNotice.style.borderColor = "#F0B0A0";
+        aiNotice.style.color = "#8C3000";
+        aiNotice.style.display = "block";
+      } else {
+        var incomplete = !coffee.roaster || !coffee.region || notesArr.length === 0;
+        aiNotice.textContent = "로스터리/지역/컵노트 중 비어있는 항목이 있어요. AI 검색으로 채울 수 있어요.";
+        aiNotice.style.background = "#FFF8F0";
+        aiNotice.style.borderColor = "#F0C080";
+        aiNotice.style.color = "#8C5A00";
+        aiNotice.style.display = incomplete ? "block" : "none";
+      }
+      // Step 전환
+      step1.style.display = "none";
+      step2.style.display = "block";
     }
 
     fc.addEventListener("change", function() { handleFile(fc.files&&fc.files[0]); fc.value=""; });
@@ -854,10 +879,11 @@
       if (!coffee.name) { showToast("원두 이름을 입력해주세요."); return; }
       var btn = document.getElementById("ocrAiSearchBtn");
       btn.textContent = "검색 중…"; btn.disabled = true;
+      var context = {country:coffee.country||"", region:coffee.region||"", farm:coffee.farm||""};
       fetch("/api/search", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({query:coffee.name, forceAi:true})
+        body:JSON.stringify({query:coffee.name, forceAi:true, context:context})
       }).then(function(r){ return r.json(); })
         .then(function(data) {
           btn.textContent = "AI로 추가 정보 검색"; btn.disabled = false;

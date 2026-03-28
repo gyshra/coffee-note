@@ -2403,3 +2403,31 @@ input[type="range"]::-moz-range-track {
 .ocrFieldRow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .ocrFieldRow>div{display:flex;flex-direction:column;gap:4px;}
 .ocrFieldRow label{font-size:11px;font-weight:600;color:var(--text-sub);letter-spacing:0.04em;text-transform:uppercase;}
+
+/* ══════════════════════════════════════
+   RECENT NOTES CARDS (index.html)
+   ══════════════════════════════════════ */
+.recentNotesList{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+.recentNoteCard{background:var(--surface);border:1px solid var(--border);padding:12px 14px;}
+.recentNoteHeader{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.recentBrew{font-size:11px;color:var(--text-sub);background:var(--bg);border:1px solid var(--border);padding:2px 7px;}
+.recentTags{margin-bottom:6px;}
+.recentTags .tag{font-size:11px;padding:2px 7px;}
+.recentMemo{font-size:13px;color:var(--text-sub);line-height:1.5;margin:0;}
+
+/* 구매 버튼 hover */
+.btn-purchase:hover{background:#333 !important;}
+
+/* 스피너 */
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ══════════════════════════════════════
+   EMPTY NOTE PLACEHOLDER
+   ══════════════════════════════════════ */
+.emptyNote{padding:14px 16px;font-size:13px;color:var(--text-sub);background:var(--bg);border:1px dashed var(--border);text-align:center;margin-bottom:16px;}
+
+/* Community box tweaks */
+.communityBox{background:var(--bg);border:1px solid var(--border);padding:12px 14px;margin-bottom:16px;}
+.communityRow{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.communityRow:last-child{border-bottom:none;}
+.communityLabel{color:var(--text-sub);min-width:90px;flex-shrink:0;font-size:12px;}
