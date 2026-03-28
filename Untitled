@@ -1,0 +1,1 @@
+git add . && git commit -m "v24: farm 분리, rawNotes SCA매핑, 링크 실제연동, 후기→구매 흐름" && git push
