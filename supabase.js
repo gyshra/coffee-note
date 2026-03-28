@@ -5,8 +5,8 @@
  *    Supabase 대시보드 → Settings → API 에서 확인할 수 있습니다.
  * ===================================================
  */
-const SUPABASE_URL = "https://xonvxjflyykanhvsyhsu.supabase.co";        // 예: https://abcdefgh.supabase.co
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhvbnZ4amZseXlrYW5odnN5aHN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjMzODUsImV4cCI6MjA4OTczOTM4NX0.vExtW9eCW6JUWPv22rRmxYjwUm3z8ANZpPoHABxe0u8"; // 예: eyJhbGciOi...
+const SUPABASE_URL = "YOUR_SUPABASE_URL";        // 예: https://abcdefgh.supabase.co
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY"; // 예: eyJhbGciOi...
 
 // ===================================================
 // 아래는 수정하지 마세요
