@@ -11,6 +11,7 @@ module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
+  console.log("[OCR] API key exists:", !!apiKey, "| length:", apiKey ? apiKey.length : 0);
   if (!apiKey) return res.status(500).json({ error: "ANTHROPIC_API_KEY 환경변수가 설정되지 않았습니다." });
 
   // body 파싱 (Vercel은 자동 파싱하지만 안전하게 처리)
