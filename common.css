@@ -2390,3 +2390,16 @@ input[type="range"]::-moz-range-track {
 
 /* Shop brew sub-chips */
 .shop-brew-wrap{margin-top:12px;}
+
+/* ══════════════════════════════════════
+   OCR EDIT SHEET v2
+   ══════════════════════════════════════ */
+.ocrEditFields{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
+.ocrField{display:flex;flex-direction:column;gap:4px;}
+.ocrField label{font-size:11px;font-weight:600;color:var(--text-sub);letter-spacing:0.04em;text-transform:uppercase;}
+.ocrRequired{color:#D85A30;}
+.ocrField input{padding:10px 12px;font-size:14px;font-family:'Pretendard Variable',sans-serif;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:0;outline:none;transition:border-color .15s;}
+.ocrField input:focus{border-color:var(--accent-warm);}
+.ocrFieldRow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.ocrFieldRow>div{display:flex;flex-direction:column;gap:4px;}
+.ocrFieldRow label{font-size:11px;font-weight:600;color:var(--text-sub);letter-spacing:0.04em;text-transform:uppercase;}

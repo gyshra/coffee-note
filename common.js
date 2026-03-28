@@ -711,71 +711,223 @@
     });
   }
 
-  /** 스캔(사진 검색) 시트 — 없으면 주입 */
+  // ─────────────────────────────────────────────────────────────
+  // 사진 검색 시트 v2: 2단계 흐름
+  //   Step 1: 사진 선택 → Gemini OCR
+  //   Step 2: 결과 편집 + "AI로 추가 정보 검색" 선택권
+  // ─────────────────────────────────────────────────────────────
   function ensurePhotoScanSheet() {
     if (document.getElementById("photoSearchOverlay")) return;
 
-    var html =
-      '<div id="photoSearchOverlay" class="sheetOverlay" aria-hidden="true">' +
-      '  <div class="sheetPanel" role="dialog" aria-modal="true" aria-labelledby="photoSheetTitle">' +
-      '    <div class="sheetHandle"></div>' +
-      '    <h2 id="photoSheetTitle" class="sheetTitle">사진으로 검색</h2>' +
-      '    <p class="sheetText">커피 봉지나 설명 카드를 촬영하세요.</p>' +
-      '    <p class="sheetText" style="margin-top:-4px;">인식된 텍스트를 확인하고 수정하세요.</p>' +
-      '    <div id="ocrLoading" class="ocrLoading">텍스트 인식 중...</div>' +
-      '    <div class="sheetActions">' +
-      '      <input type="file" id="fileCamera" accept="image/*" capture="environment" />' +
-      '      <input type="file" id="fileGallery" accept="image/*" />' +
-      '      <button type="button" class="btn-primary" id="btnTriggerCamera">카메라 촬영</button>' +
-      '      <button type="button" class="btn-secondary" id="btnTriggerGallery">갤러리에서 선택</button>' +
-      '      <button type="button" class="btn-secondary" id="btnClosePhotoSheet">닫기</button>' +
-      "    </div>" +
-      "  </div>" +
-      "</div>";
+    var html = [
+      '<div id="photoSearchOverlay" class="sheetOverlay" aria-hidden="true">',
+      '<div class="sheetPanel" role="dialog" aria-modal="true" style="max-height:90vh;overflow-y:auto">',
+      '<div class="sheetHandle"></div>',
+
+      // ── Step 1: 촬영 ──
+      '<div id="ocrStep1">',
+      '<h2 class="sheetTitle">사진으로 검색</h2>',
+      '<p class="sheetText" style="margin-bottom:16px">커피 봉지나 설명 카드를 촬영하세요.<br>이미지의 텍스트만 먼저 읽어드립니다.</p>',
+      '<div id="ocrLoading" class="ocrLoading">인식 중…</div>',
+      '<div class="sheetActions">',
+      '<input type="file" id="fileCamera" accept="image/*" capture="environment"/>',
+      '<input type="file" id="fileGallery" accept="image/*"/>',
+      '<button type="button" class="btn-primary" id="btnTriggerCamera">카메라 촬영</button>',
+      '<button type="button" class="btn-secondary" id="btnTriggerGallery">갤러리에서 선택</button>',
+      '<button type="button" class="btn-secondary" id="btnClosePhotoSheet">닫기</button>',
+      '</div></div>',
+
+      // ── Step 2: 편집 ──
+      '<div id="ocrStep2" style="display:none">',
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">',
+      '<button type="button" id="ocrBackBtn" style="background:none;border:none;font-size:20px;cursor:pointer;padding:4px;color:#555">←</button>',
+      '<h2 class="sheetTitle" style="margin:0">인식 결과 확인</h2>',
+      '</div>',
+      '<p class="sheetText" style="margin-bottom:12px;font-size:13px;color:#888">잘못 인식된 내용을 탭해서 수정하세요.</p>',
+      '<div id="ocrThumb" style="margin-bottom:14px;text-align:center"></div>',
+      '<div class="ocrEditFields">',
+      '<div class="ocrField"><label>원두 이름 <span class="ocrRequired">*</span></label><input id="ocrName" type="text" placeholder="예: 에티오피아 예가체프 콩가"></div>',
+      '<div class="ocrField"><label>로스터리</label><input id="ocrRoaster" type="text" placeholder="로스터리 이름"></div>',
+      '<div class="ocrField ocrFieldRow">',
+      '<div><label>원산지</label><input id="ocrCountry" type="text" placeholder="국가"></div>',
+      '<div><label>지역</label><input id="ocrRegion" type="text" placeholder="지역"></div>',
+      '</div>',
+      '<div class="ocrField ocrFieldRow">',
+      '<div><label>가공방식</label><input id="ocrProcess" type="text" placeholder="워시드/내추럴…"></div>',
+      '<div><label>품종</label><input id="ocrVariety" type="text" placeholder="품종"></div>',
+      '</div>',
+      '<div class="ocrField"><label>컵노트</label><input id="ocrNotes" type="text" placeholder="블루베리, 자스민, 꿀 (쉼표로 구분)"></div>',
+      '</div>',
+      '<div id="ocrAiNotice" style="display:none;margin:10px 0;padding:10px 12px;background:#FFF8F0;border-radius:6px;font-size:12px;color:#8C5A00;border:0.5px solid #F0C080">',
+      '로스터리/지역/컵노트 중 비어있는 항목이 있어요. AI 검색으로 채울 수 있어요.',
+      '</div>',
+      '<div class="sheetActions" style="gap:8px">',
+      '<button type="button" class="btn-primary" id="ocrSaveBtn">이 정보로 저장</button>',
+      '<button type="button" class="btn-secondary" id="ocrAiSearchBtn">',
+      '<span style="display:inline-flex;align-items:center;gap:6px">',
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>',
+      'AI로 추가 정보 검색</span></button>',
+      '<button type="button" class="btn-secondary" id="ocrCancelBtn">취소</button>',
+      '</div></div>',
+      '</div></div>'
+    ].join("");
 
     document.body.insertAdjacentHTML("beforeend", html);
 
-    var overlay = document.getElementById("photoSearchOverlay");
-    var loading = document.getElementById("ocrLoading");
-    var fc = document.getElementById("fileCamera");
-    var fg = document.getElementById("fileGallery");
+    var overlay   = document.getElementById("photoSearchOverlay");
+    var step1     = document.getElementById("ocrStep1");
+    var step2     = document.getElementById("ocrStep2");
+    var loading   = document.getElementById("ocrLoading");
+    var fc        = document.getElementById("fileCamera");
+    var fg        = document.getElementById("fileGallery");
+    var aiNotice  = document.getElementById("ocrAiNotice");
 
-    document.getElementById("btnClosePhotoSheet").addEventListener("click", closePhotoSearchSheet);
-    overlay.addEventListener("click", function (e) {
-      if (e.target === overlay) closePhotoSearchSheet();
+    // 닫기
+    function closeSheet() { closePhotoSearchSheet(); }
+    document.getElementById("btnClosePhotoSheet").addEventListener("click", closeSheet);
+    document.getElementById("ocrCancelBtn").addEventListener("click", closeSheet);
+    document.getElementById("ocrBackBtn").addEventListener("click", function() {
+      step2.style.display = "none";
+      step1.style.display = "block";
     });
-    document.getElementById("btnTriggerCamera").addEventListener("click", function () {
-      fc.click();
-    });
-    document.getElementById("btnTriggerGallery").addEventListener("click", function () {
-      fg.click();
-    });
+    overlay.addEventListener("click", function(e) { if (e.target===overlay) closeSheet(); });
+
+    // 촬영/갤러리
+    document.getElementById("btnTriggerCamera").addEventListener("click", function() { fc.click(); });
+    document.getElementById("btnTriggerGallery").addEventListener("click", function() { fg.click(); });
 
     function handleFile(file) {
       if (!file) return;
       loading.classList.add("show");
-      loadTesseractAndRecognize(file)
-        .then(function (result) {
-          loading.classList.remove("show");
-          closePhotoSearchSheet();
-          // result는 { text, coffee } 또는 문자열
-          var detail = (typeof result === "object") ? result : { text: result || "", coffee: null };
-          var ev = new CustomEvent("coffeeNote:ocrText", { detail: detail });
-          document.dispatchEvent(ev);
-        })
-        .catch(function (err) {
-          loading.classList.remove("show");
-          showToast("인식 실패: " + (err.message || "다시 시도해주세요."));
+      imageToBase64(file).then(function(b64) {
+        return fetch("/api/ocr", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({base64:b64, mimeType:"image/jpeg"})
         });
+      }).then(function(r) {
+        if (!r.ok) return r.json().then(function(d){ throw new Error(d.error||"서버 오류"); });
+        return r.json();
+      }).then(function(data) {
+        loading.classList.remove("show");
+        var coffee = data.coffee || {};
+        // 썸네일
+        var thumb = document.getElementById("ocrThumb");
+        if (window._ocrThumbUrl) {
+          thumb.innerHTML = '<img src="'+window._ocrThumbUrl+'" style="max-height:100px;max-width:100%;border-radius:6px;border:0.5px solid #ddd">';
+        }
+        // 폼 채우기
+        document.getElementById("ocrName").value    = coffee.name    || "";
+        document.getElementById("ocrRoaster").value = coffee.roaster || "";
+        document.getElementById("ocrCountry").value = coffee.country || "";
+        document.getElementById("ocrRegion").value  = coffee.region  || "";
+        document.getElementById("ocrProcess").value = coffee.process || "";
+        document.getElementById("ocrVariety").value = coffee.variety || "";
+        var notesArr = Array.isArray(coffee.notes) ? coffee.notes : [];
+        document.getElementById("ocrNotes").value   = notesArr.join(", ");
+        // 비어있는 필드 있으면 AI 안내
+        var incomplete = !coffee.roaster || !coffee.region || notesArr.length===0;
+        aiNotice.style.display = incomplete ? "block" : "none";
+        // Step 전환
+        step1.style.display = "none";
+        step2.style.display = "block";
+      }).catch(function(err) {
+        loading.classList.remove("show");
+        showToast("인식 실패: "+(err.message||"다시 시도해주세요."));
+      });
     }
 
-    fc.addEventListener("change", function () {
-      handleFile(fc.files && fc.files[0]);
-      fc.value = "";
+    fc.addEventListener("change", function() { handleFile(fc.files&&fc.files[0]); fc.value=""; });
+    fg.addEventListener("change", function() { handleFile(fg.files&&fg.files[0]); fg.value=""; });
+
+    // 저장 (AI 없이)
+    document.getElementById("ocrSaveBtn").addEventListener("click", function() {
+      var coffee = collectOcrForm();
+      if (!coffee.name) { showToast("원두 이름을 입력해주세요."); return; }
+      closeSheet();
+      dispatchOcrResult(coffee);
     });
-    fg.addEventListener("change", function () {
-      handleFile(fg.files && fg.files[0]);
-      fg.value = "";
+
+    // AI 추가 검색
+    document.getElementById("ocrAiSearchBtn").addEventListener("click", function() {
+      var coffee = collectOcrForm();
+      if (!coffee.name) { showToast("원두 이름을 입력해주세요."); return; }
+      var btn = document.getElementById("ocrAiSearchBtn");
+      btn.textContent = "검색 중…"; btn.disabled = true;
+      fetch("/api/search", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({query:coffee.name, forceAi:true})
+      }).then(function(r){ return r.json(); })
+        .then(function(data) {
+          btn.textContent = "AI로 추가 정보 검색"; btn.disabled = false;
+          var ai = data.coffee || {};
+          // AI 결과로 빈 필드만 채움 (사용자 입력 우선)
+          if (!document.getElementById("ocrRoaster").value && ai.roaster) document.getElementById("ocrRoaster").value = ai.roaster;
+          if (!document.getElementById("ocrCountry").value && ai.country) document.getElementById("ocrCountry").value = ai.country;
+          if (!document.getElementById("ocrRegion").value  && ai.region)  document.getElementById("ocrRegion").value  = ai.region;
+          if (!document.getElementById("ocrProcess").value && ai.process) document.getElementById("ocrProcess").value = ai.process;
+          if (!document.getElementById("ocrVariety").value && ai.variety) document.getElementById("ocrVariety").value = ai.variety;
+          var curNotes = document.getElementById("ocrNotes").value.trim();
+          if (!curNotes && Array.isArray(ai.notes) && ai.notes.length) {
+            document.getElementById("ocrNotes").value = ai.notes.join(", ");
+          }
+          aiNotice.style.display = "none";
+          showToast("AI 정보가 추가됐어요. 확인 후 저장하세요.");
+          // merged coffee
+          var merged = Object.assign({}, ai, collectOcrForm());
+          merged._aiEnriched = true;
+        })
+        .catch(function() {
+          btn.textContent = "AI로 추가 정보 검색"; btn.disabled = false;
+          showToast("AI 검색 실패. 직접 입력 후 저장하세요.");
+        });
+    });
+  }
+
+  function collectOcrForm() {
+    var notesRaw = (document.getElementById("ocrNotes")||{}).value || "";
+    var notes = notesRaw.split(/[,、,]/).map(function(s){return s.trim();}).filter(Boolean);
+    return {
+      name:    (document.getElementById("ocrName")||{}).value    || "",
+      roaster: (document.getElementById("ocrRoaster")||{}).value || "",
+      country: (document.getElementById("ocrCountry")||{}).value || "",
+      region:  (document.getElementById("ocrRegion")||{}).value  || "",
+      process: (document.getElementById("ocrProcess")||{}).value || "",
+      variety: (document.getElementById("ocrVariety")||{}).value || "",
+      notes:   notes,
+      source:  "ocr_edited"
+    };
+  }
+
+  function dispatchOcrResult(coffee) {
+    var ev = new CustomEvent("coffeeNote:ocrText", { detail:{ coffee:coffee, text:coffee.name } });
+    document.dispatchEvent(ev);
+  }
+
+  function imageToBase64(file) {
+    return new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var dataUrl = e.target.result;
+        window._ocrThumbUrl = dataUrl;
+        var img = new Image();
+        img.onload = function() {
+          var MAX=1024, w=img.width, h=img.height;
+          if (w>MAX||h>MAX) {
+            if (w>h){h=Math.round(h*MAX/w);w=MAX;}
+            else{w=Math.round(w*MAX/h);h=MAX;}
+          }
+          var canvas = document.createElement("canvas");
+          canvas.width=w; canvas.height=h;
+          canvas.getContext("2d").drawImage(img,0,0,w,h);
+          resolve(canvas.toDataURL("image/jpeg",0.82).split(",")[1]);
+        };
+        img.onerror = function() { resolve(dataUrl.split(",")[1]); };
+        img.src = dataUrl;
+      };
+      reader.onerror = function(){ reject(new Error("파일 읽기 실패")); };
+      reader.readAsDataURL(file);
     });
   }
 
@@ -783,80 +935,22 @@
     ensurePhotoScanSheet();
     var overlay = document.getElementById("photoSearchOverlay");
     if (!overlay) return;
+    // 항상 Step1로 리셋
+    var step1 = document.getElementById("ocrStep1");
+    var step2 = document.getElementById("ocrStep2");
+    if (step1) step1.style.display = "block";
+    if (step2) step2.style.display = "none";
     overlay.classList.add("open");
-    overlay.setAttribute("aria-hidden", "false");
+    overlay.setAttribute("aria-hidden","false");
   }
 
   function closePhotoSearchSheet() {
     var overlay = document.getElementById("photoSearchOverlay");
     if (!overlay) return;
     overlay.classList.remove("open");
-    overlay.setAttribute("aria-hidden", "true");
+    overlay.setAttribute("aria-hidden","true");
     var loading = document.getElementById("ocrLoading");
     if (loading) loading.classList.remove("show");
-  }
-
-  function loadTesseractAndRecognize(file) {
-    return new Promise(function (resolve, reject) {
-      var reader = new FileReader();
-
-      reader.onload = function (e) {
-        var dataUrl = e.target.result;
-
-        // Canvas로 리사이즈 (iOS Safari 호환)
-        var img = new Image();
-        img.onload = function () {
-          try {
-            var MAX = 1024;
-            var w = img.width, h = img.height;
-            if (w > MAX || h > MAX) {
-              if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
-              else { w = Math.round(w * MAX / h); h = MAX; }
-            }
-            var canvas = document.createElement("canvas");
-            canvas.width = w;
-            canvas.height = h;
-            canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-            var base64 = canvas.toDataURL("image/jpeg", 0.8).split(",")[1];
-
-            fetch("/api/ocr", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ base64: base64, mimeType: "image/jpeg" }),
-            })
-              .then(function (res) {
-                if (!res.ok) return res.json().then(function (d) { throw new Error(d.error || "서버 오류 " + res.status); });
-                return res.json();
-              })
-              .then(function (data) {
-                if (data.error) { reject(new Error(data.error)); return; }
-                resolve({ coffee: data.coffee || null, text: data.text || "" });
-              })
-              .catch(function (err) {
-                console.error("[OCR] fetch 오류:", err);
-                reject(err);
-              });
-          } catch (canvasErr) {
-            console.error("[OCR] Canvas 오류:", canvasErr);
-            // Canvas 실패 시 원본 base64 그대로 전송
-            var raw = dataUrl.split(",")[1];
-            fetch("/api/ocr", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ base64: raw, mimeType: file.type || "image/jpeg" }),
-            })
-              .then(function (r) { return r.json(); })
-              .then(function (d) { resolve({ coffee: d.coffee || null, text: d.text || "" }); })
-              .catch(reject);
-          }
-        };
-        img.onerror = function () { reject(new Error("이미지 로드 실패")); };
-        img.src = dataUrl;
-      };
-
-      reader.onerror = function () { reject(new Error("파일 읽기 실패")); };
-      reader.readAsDataURL(file);
-    });
   }
 
   /** 하단 네비 스캔 — 검색 페이지가 아니면 검색으로 이동 후 시트 오픈 플래그 */

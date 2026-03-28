@@ -94,6 +94,10 @@
           <label for="fMemo">메모</label>
           <textarea id="fMemo" placeholder="추가 정보를 적어 주세요"></textarea>
         </div>
+        <div id="aiHintBar" style="display:none;padding:10px 14px;background:#FFF8F0;border:0.5px solid #F0C080;margin-bottom:12px;border-radius:4px">
+          <p style="font-size:13px;color:#8C5A00;margin:0 0 8px">원두 이름 기반으로 나머지 정보를 AI가 채울 수 있어요.</p>
+          <button type="button" id="btnAiFill" style="background:#121212;color:#fff;border:none;padding:8px 16px;font-size:13px;font-family:inherit;cursor:pointer">AI로 정보 채우기</button>
+        </div>
         <button type="submit" class="btn-primary" id="btnSubmit">등록하기</button>
       </form>
     </div>
@@ -128,6 +132,42 @@
 
         catSelect.addEventListener("change", syncProcessDetailVisibility);
         syncProcessDetailVisibility();
+        // AI 힌트바: 이름 입력 시 표시
+        var aiHintShown = false;
+        document.getElementById("fName").addEventListener("input", function() {
+          var bar = document.getElementById("aiHintBar");
+          if (this.value.trim().length > 2 && !aiHintShown) bar.style.display = "block";
+          else if (!this.value.trim()) bar.style.display = "none";
+        });
+
+        document.getElementById("btnAiFill").addEventListener("click", function() {
+          var name = document.getElementById("fName").value.trim();
+          if (!name) { CN.showToast("원두 이름을 먼저 입력해주세요."); return; }
+          var btn = this; btn.textContent = "검색 중…"; btn.disabled = true;
+          fetch("/api/search", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({query:name, forceAi:true})
+          }).then(function(r){ return r.json(); })
+            .then(function(data) {
+              btn.textContent = "AI로 정보 채우기"; btn.disabled = false;
+              var ai = data.coffee||{};
+              if (!document.getElementById("fRoaster").value && ai.roaster) document.getElementById("fRoaster").value = ai.roaster;
+              if (!document.getElementById("fRegion").value  && ai.region)  document.getElementById("fRegion").value  = ai.region;
+              if (!document.getElementById("fFarm").value    && ai.farm)    document.getElementById("fFarm").value    = ai.farm;
+              if (!document.getElementById("fAlt").value     && ai.altitude) document.getElementById("fAlt").value    = ai.altitude;
+              if (!document.getElementById("fVariety").value && ai.variety) document.getElementById("fVariety").value = ai.variety;
+              if (!document.getElementById("fNotes").value   && Array.isArray(ai.notes)) document.getElementById("fNotes").value = ai.notes.join(", ");
+              if (ai.processCategory) {
+                var opts = catSelect.querySelectorAll("option");
+                for (var oi=0;oi<opts.length;oi++) { if (opts[oi].value===ai.processCategory){ catSelect.value=ai.processCategory; break; } }
+                syncProcessDetailVisibility();
+              }
+              document.getElementById("aiHintBar").style.display = "none";
+              aiHintShown = true;
+              CN.showToast("AI 정보가 추가됐어요. 확인 후 등록하세요.");
+            })
+            .catch(function() { btn.textContent = "AI로 정보 채우기"; btn.disabled = false; CN.showToast("AI 검색 실패."); });
+        });
 
         document.getElementById("btnBack").addEventListener("click", function () {
           if (history.length > 1) history.back();
