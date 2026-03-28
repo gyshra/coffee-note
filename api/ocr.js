@@ -115,6 +115,26 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ text: text, coffee: null });
     }
 
+    // Supabase에 저장 (비동기, 실패해도 클라이언트엔 영향 없음)
+    try {
+      const baseUrl = process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000";
+      const saved = await fetch(`${baseUrl}/api/coffee`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "upsert", coffee }),
+      });
+      const savedData = await saved.json();
+      // Supabase에서 반환된 데이터(커뮤니티 포함)로 교체
+      if (savedData.coffee) {
+        coffee = { ...coffee, ...savedData.coffee };
+        if (savedData.community) coffee._community = savedData.community;
+      }
+    } catch (e) {
+      console.warn("[OCR] Supabase 저장 스킵:", e.message);
+    }
+
     return res.status(200).json({ coffee: coffee, text: coffee.name || "" });
   } catch (err) {
     console.error("[OCR] 서버 오류:", err.message);

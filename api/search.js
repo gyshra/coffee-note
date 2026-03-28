@@ -101,6 +101,25 @@ module.exports = async function handler(req, res) {
       return res.status(500).json({ error: "AI 응답 파싱 오류" });
     }
 
+    // Supabase에 저장 + 커뮤니티 데이터 조회
+    try {
+      const baseUrl = process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000";
+      const saved = await fetch(`${baseUrl}/api/coffee`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "upsert", coffee }),
+      });
+      const savedData = await saved.json();
+      if (savedData.coffee) {
+        coffee = { ...coffee, ...savedData.coffee };
+        if (savedData.community) coffee._community = savedData.community;
+      }
+    } catch (e) {
+      console.warn("[Search] Supabase 저장 스킵:", e.message);
+    }
+
     return res.status(200).json({ coffee });
   } catch (err) {
     console.error("[Search] 서버 오류:", err.message);

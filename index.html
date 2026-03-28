@@ -170,6 +170,15 @@
                   '</div>'
                 ) : '') +
                 (c.description ? '<p class="section-heading">설명</p><p style="font-size:14px;line-height:1.7;color:var(--text-sub)">' + escapeHtml(c.description) + '</p>' : '') +
+                // 커뮤니티 섹션
+                (c._community && c._community.count > 0 ? (
+                  '<p class="section-heading">👥 커뮤니티 (' + c._community.count + '명 기록)</p>' +
+                  '<div class="communityBox">' +
+                  (c._community.avgRating ? '<div class="communityRow"><span class="communityLabel">평균 별점</span><span>' + c._community.avgRating + ' / 5.0</span></div>' : '') +
+                  (c._community.topFlavors && c._community.topFlavors.length ? '<div class="communityRow"><span class="communityLabel">많이 느낀 향미</span><div class="tagWrap" style="margin-top:6px">' + c._community.topFlavors.map(function(f,i){ return '<span class="tag ' + CN.toneClass(i) + '">' + escapeHtml(f) + '</span>'; }).join("") + '</div></div>' : '') +
+                  (c._community.topBrewMethods && c._community.topBrewMethods.length ? '<div class="communityRow"><span class="communityLabel">인기 추출 방법</span><span>' + c._community.topBrewMethods.map(function(b){ return escapeHtml(b.method) + '(' + b.count + ')'; }).join(', ') + '</span></div>' : '') +
+                  '</div>'
+                ) : '') +
                 '<p class="section-heading">지도</p>' +
                 '<div class="mapBox">' +
                 escapeHtml(c.mapText || "지도 연동 예정") +
