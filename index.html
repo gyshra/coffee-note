@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
     <link rel="stylesheet" href="common.css" />
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="config.js"></script>
   </head>
   <body>
     <div class="wrap">
@@ -239,8 +239,23 @@
 
         document.addEventListener("coffeeNote:ocrText", function (e) {
           var text = (e.detail && e.detail.text) || "";
-          $q.value = text;
-          CN.showToast("인식이 완료되었습니다. 텍스트를 확인해 주세요.");
+          if (!text) { CN.showToast("인식된 텍스트가 없습니다."); return; }
+
+          // Claude 응답에서 원두명 우선 추출
+          var coffeeName = "";
+          var lines = text.split("\n");
+          for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            if (/원두명|원두\s*이름|name/i.test(line)) {
+              coffeeName = line.replace(/.*[:：]/,"").trim();
+              break;
+            }
+          }
+          // 원두명 못 찾으면 전체 텍스트 첫 줄 사용
+          if (!coffeeName) coffeeName = lines[0].replace(/.*[:：]/,"").trim();
+
+          $q.value = coffeeName || text.slice(0, 50);
+          CN.showToast("📷 인식 완료! 검색어를 확인하세요.");
           runSearch();
         });
 
