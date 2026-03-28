@@ -1282,5 +1282,6 @@
     getRecipeById: getRecipeById,
     updateRecipe: updateRecipe,
     openCoffeeSearch: openCoffeeSearch,
+    imageToBase64: imageToBase64,
   };
 })(typeof window !== "undefined" ? window : globalThis);

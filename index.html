@@ -76,6 +76,22 @@
         CN.renderBottomNav("search");
         CN.consumeScanIntent();
 
+        // home.html에서 OCR 완료 후 넘어온 경우 처리
+        (function() {
+          var params = new URLSearchParams(location.search);
+          if (params.get("from") === "ocr") {
+            try {
+              var pending = sessionStorage.getItem("ocr_pending");
+              if (pending) {
+                sessionStorage.removeItem("ocr_pending");
+                var detail = JSON.parse(pending);
+                var ev = new CustomEvent("coffeeNote:ocrText", { detail: detail });
+                setTimeout(function(){ document.dispatchEvent(ev); }, 100);
+              }
+            } catch(ex) {}
+          }
+        })();
+
         document.getElementById("btnOpenCamera").addEventListener("click", function () {
           CN.openCamera();
         });
