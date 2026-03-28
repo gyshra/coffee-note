@@ -3,7 +3,7 @@
  * 브라우저에서 /api/ocr 로 POST 요청 → 서버에서 Claude API 호출
  * API 키는 Vercel 환경변수에만 존재 (외부 노출 없음)
  */
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // CORS 허용
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
