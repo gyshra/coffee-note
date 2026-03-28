@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
   <link rel="stylesheet" href="common.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="wrap">
@@ -119,6 +120,7 @@
     <a href="mypage.html" class="nav-item" data-nav="mypage"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">마이</span></a>
   </nav>
   <script src="common.js"></script>
+  <script src="supabase.js"></script>
   <script src="tasting-wheel.js"></script>
   <script src="tasting-radar.js"></script>
   <script src="card-generator.js"></script>
@@ -398,6 +400,12 @@
       setTimeout(function(){location.href="notes.html";},600);
     } else {
       CN.addTastingRecord(recordData);
+      // ─── Supabase 동기화 (로그인 상태일 때) ───
+      if (window.SupaDB) {
+        SupaDB.saveTasting(recordData).then(function(result) {
+          if (result) console.log("[CoffeeNote] Supabase 저장 완료");
+        });
+      }
       var cardUrl=CardGenerator.generate(recordData);
       // 카드 이미지 캐싱
       try{var recs=CN.getTastingRecords();var ci=JSON.parse(localStorage.getItem("cardImages")||"{}");ci[recs.length-1]=cardUrl;localStorage.setItem("cardImages",JSON.stringify(ci));}catch(e){}
