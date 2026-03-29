@@ -1207,31 +1207,29 @@ input[type="range"]::-moz-range-track {
   display: block;
 }
 
-/* tasting.html STEP1: 반원형 휠 — JS가 높이/위치를 직접 설정함 */
+/* tasting.html STEP1: 반원형 휠 — JS(tasting-wheel.js)가 레이아웃 전체를 직접 설정 */
 #tastingMain.sensory-note #wheelViewport {
   max-width: none;
   aspect-ratio: auto;
-  margin: 8px -20px 8px;
-  touch-action: none;
+  margin: 8px 0 0;
+  overflow: hidden;
 }
 
 #tastingMain.sensory-note #wheelSvg {
-  /* position/size는 tasting-wheel.js가 설정 */
+  /* JS가 width/height/viewBox를 직접 설정함 — 여기서 오버라이드 금지 */
 }
 
 /* 레이더(기본 감각) */
 .sensory-note .pentagon-radar {
-  width: 310px;
-  height: 310px;
-  margin: 0 auto 8px;
+  width: 280px;
+  height: 280px;
+  margin: 0 auto 20px;
   touch-action: none;
-  overflow: visible;
 }
 
 .sensory-note .pentagon-radar svg {
   width: 100%;
   height: 100%;
-  overflow: visible;
   display: block;
 }
 
@@ -2259,20 +2257,26 @@ input[type="range"]::-moz-range-track {
 /* ══════════════════════════════════════
    TASTING: Pentagon Radar
    ══════════════════════════════════════ */
-.pentagon-radar{width:310px;height:310px;margin:0 auto 8px;touch-action:none;overflow:visible;}
-.pentagon-radar svg{width:100%;height:100%;overflow:visible;}
+.pentagon-radar{width:280px;height:280px;margin:0 auto 20px;touch-action:none;}
+.pentagon-radar svg{width:100%;height:100%;}
 
 /* ══════════════════════════════════════
-   TASTING: Compare Toggle
+   TASTING: Compare Toggle (목업 스타일)
    ══════════════════════════════════════ */
-.compare-toggle{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-top:1px solid var(--border);margin-top:20px;}
-.compare-toggle-text{flex:1;}
-.compare-toggle-label{font-size:14px;font-weight:600;color:var(--text);}
-.compare-toggle-sub{font-size:11px;color:var(--text-sub);margin-top:2px;}
+.compare-toggle{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-top:1px solid var(--border);margin-top:16px;gap:12px;}
 .toggle-switch{width:44px;height:24px;background:var(--border);border:none;border-radius:12px;position:relative;cursor:pointer;transition:background .25s ease;padding:0;flex-shrink:0;}
 .toggle-switch[aria-pressed="true"]{background:var(--accent-warm);}
 .toggle-thumb{position:absolute;top:2px;left:2px;width:20px;height:20px;background:var(--surface);border-radius:50%;transition:transform .25s ease;}
 .toggle-switch[aria-pressed="true"] .toggle-thumb{transform:translateX(20px);}
+
+/* 비교 결과 패널 — 목업 bar style */
+#radarComparePanel{margin-top:12px;}
+#radarComparePanel .cmp-bar-row{padding:7px 0;border-bottom:0.5px solid var(--border);}
+#radarComparePanel .cmp-bar-row:last-of-type{border-bottom:none;}
+#radarComparePanel .cmp-bar-track{height:5px;background:var(--bg);position:relative;margin-top:4px;}
+#radarComparePanel .cmp-bar-me{position:absolute;left:0;top:0;height:100%;background:var(--text);}
+#radarComparePanel .cmp-bar-avg{position:absolute;left:0;top:0;height:100%;background:var(--accent-warm);opacity:.5;}
+#radarComparePanel .cmp-insight{padding:10px 14px;font-size:13px;line-height:1.6;background:#FAF9F7;border-bottom:0.5px solid var(--border);margin-top:2px;}
 
 /* ══════════════════════════════════════
    TASTING: Recipe Form

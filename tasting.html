@@ -30,7 +30,7 @@
       <section id="step1" class="step-section revealed">
         <h2 class="section-heading">향미 선택</h2>
         <p class="step-desc">좌우로 돌려 카테고리를 선택하고, 향미를 탭해 추가하세요</p>
-        <div class="wheel-viewport" id="wheelViewport" style="margin:0 -20px">
+        <div class="wheel-viewport" id="wheelViewport">
           <svg id="wheelSvg" xmlns="http://www.w3.org/2000/svg"></svg>
         </div>
         <div class="selected-flavors" id="selectedFlavors">
@@ -54,9 +54,9 @@
         </div>
         <div id="baseSenseMemos" class="base-sense-list"></div>
         <div class="compare-toggle">
-          <div class="compare-toggle-text">
-            <div class="compare-toggle-label">커뮤니티 &amp; 전문가와 비교</div>
-            <div class="compare-toggle-sub">커뮤니티 평균 · 전문가 CQI 기준</div>
+          <div>
+            <div style="font-size:14px;font-weight:500">커뮤니티 & 전문가와 비교</div>
+            <div style="font-size:12px;color:var(--text-sub);margin-top:2px">커뮤니티 평균(회색) · 전문가 CQI(검정)</div>
           </div>
           <button type="button" class="toggle-switch" id="btnCompare" aria-pressed="false"><span class="toggle-thumb"></span></button>
         </div>
@@ -151,11 +151,42 @@
     coffee = c; idx = i;
     document.getElementById("missingCoffee").style.display="none";
     document.getElementById("tastingMain").style.display="block";
-    document.getElementById("coffeeSummary").innerHTML=
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
-      '<div><p class="card-title">'+esc(c.name)+'</p><p class="caption" style="margin-top:8px">'+esc(c.roaster||"")+'</p></div>'+
-      '<button type="button" class="btn-secondary" style="width:auto;padding:8px 14px;font-size:12px;flex-shrink:0" id="btnChangeCoffee">변경</button></div>'+
-      '<div class="tagWrap" style="margin-top:12px">'+(c.notes||[]).slice(0,5).map(function(n){return'<span class="tag">'+esc(n)+'</span>';}).join("")+'</div>';
+
+    // AI 예측 데이터 로드
+    var aiPred = null;
+    try { var ap = sessionStorage.getItem("ai_prediction"); if(ap) aiPred = JSON.parse(ap); } catch(e){}
+
+    // 커피 요약 카드
+    var summaryHtml =
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+        '<div>' +
+          '<p class="card-title">' + esc(c.name) + '</p>' +
+          '<p class="caption" style="margin-top:8px">' + esc(c.roaster||"") + '</p>' +
+        '</div>' +
+        '<button type="button" class="btn-secondary" style="width:auto;padding:8px 14px;font-size:12px;flex-shrink:0" id="btnChangeCoffee">변경</button>' +
+      '</div>' +
+      '<div class="tagWrap" style="margin-top:12px">' + (c.notes||[]).slice(0,5).map(function(n){return'<span class="tag">'+esc(n)+'</span>';}).join("") + '</div>';
+
+    // AI 예측 배너 (원두별 예상 감각값)
+    if (aiPred && aiPred.scores && Object.keys(aiPred.scores).length) {
+      var sc = aiPred.scores;
+      summaryHtml +=
+        '<div style="margin-top:14px;padding:12px 14px;background:#F8F6F3;border-left:3px solid #8C7355">' +
+          '<div style="font-size:9px;font-weight:700;letter-spacing:1px;color:#8C7355;margin-bottom:8px">AI 예측 — 이 원두의 예상 맛</div>' +
+          '<div style="display:flex;gap:0">' +
+            ['아로마','산미','단맛','바디감','여운'].map(function(k){
+              var v = sc[k]||'-';
+              return '<div style="flex:1;text-align:center;padding:0 2px">' +
+                '<div style="font-size:18px;font-weight:800;color:#121212;line-height:1">' + v + '</div>' +
+                '<div style="font-size:9px;color:#888;margin-top:3px">' + k + '</div>' +
+              '</div>';
+            }).join('<div style="width:0.5px;background:#E0E0E0;margin:2px 0"></div>') +
+          '</div>' +
+          (aiPred.brewTips ? '<p style="font-size:12px;color:#555;margin-top:8px;line-height:1.6;padding-top:8px;border-top:0.5px solid #E0E0E0">' + esc(aiPred.brewTips.slice(0,120)) + (aiPred.brewTips.length>120?'…':'') + '</p>' : '') +
+        '</div>';
+    }
+
+    document.getElementById("coffeeSummary").innerHTML = summaryHtml;
     document.getElementById("btnChangeCoffee").addEventListener("click",function(){
       CN.openCoffeeSearch(function(result){initWithCoffee(result.coffee, result.index);});
     });
@@ -255,7 +286,7 @@
     w.querySelectorAll(".fs-memo-input").forEach(function(ta){ta.addEventListener("input",function(){var en=ta.getAttribute("data-memo-for");flavorMemos[en]=ta.value;var b=w.querySelector('[data-memo-en="'+en+'"]');if(b)b.classList.toggle("has-memo",!!ta.value.trim());});});
   }
 
-  pentaChart=CoffeeRadar.createInteractive({svgId:"pentaSvg",onChange:function(v){renderBaseMemos(v);}});
+  pentaChart=CoffeeRadar.createInteractive({svgId:"pentaSvg", aiScores: (function(){ try{ var ap=sessionStorage.getItem("ai_prediction"); if(ap){var d=JSON.parse(ap); return d.scores||null;} }catch(e){} return null; })(), onChange:function(v){renderBaseMemos(v);}});
   function renderBaseMemos(vals){
     var w=document.getElementById("baseSenseMemos");
     w.innerHTML=CoffeeRadar.AXES.map(function(ax){var v=(vals&&vals[ax])||5;var hm=!!(baseMemos[ax]&&baseMemos[ax].trim());
@@ -380,7 +411,7 @@
   }
   renderStars();
 
-  function revealSection(id){var el=document.getElementById(id);if(!el||el.classList.contains("revealed"))return;el.classList.add("revealed");}
+  function revealSection(id){var el=document.getElementById(id);if(!el||el.classList.contains("revealed"))return;el.classList.add("revealed");setTimeout(function(){el.scrollIntoView({behavior:"smooth",block:"start"});},100);}
 
   document.getElementById("btnSaveFinal").addEventListener("click",function(){
     var flavors=CoffeeWheel.getSelectedFlavors();var baseScores=pentaChart.getValues();

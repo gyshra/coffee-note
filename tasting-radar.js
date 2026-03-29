@@ -49,11 +49,28 @@
     svgEl.style.userSelect  = "none";
 
     var vals = [5,5,5,5,5];
-    var showCompare = false;   /* 토글: 커뮤니티+전문가 오버레이 */
+    var showCompare = false;
     var dragIdx     = -1;
     var onChange    = options.onChange || null;
     var panelEl     = null;
     var activeAxisIdx = -1;
+
+    /* AI 예측 점수: options에서 주입하거나 sessionStorage에서 읽기 */
+    var aiScores = options.aiScores || null;
+    if (!aiScores) {
+      try {
+        var aiStr = sessionStorage.getItem("ai_prediction");
+        if (aiStr) {
+          var aiData = JSON.parse(aiStr);
+          if (aiData.scores) aiScores = aiData.scores;
+        }
+      } catch(e) {}
+    }
+
+    /* EXPERT = AI 예측값이 있으면 사용, 없으면 CQI 일반 기준값 */
+    var EXPERT_VALS = aiScores
+      ? { 아로마: aiScores["아로마"]||7, 산미: aiScores["산미"]||7, 단맛: aiScores["단맛"]||6, 바디감: aiScores["바디감"]||5, 여운: aiScores["여운"]||7 }
+      : EXPERT;
 
     /* ── 슬라이더 패널 ── */
     function getOrCreatePanel() {
@@ -113,60 +130,54 @@
       var cp = getOrCreateComparePanel();
       cp.style.display = "block";
 
-      /* 범례 — 목업 스타일 */
+      var expLabel = aiScores ? "AI 예측 (이 원두)" : "전문가 CQI";
+
+      /* 범례 */
       var legendHtml =
-        '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #F0EDE8">' +
-          '<span style="font-size:11px;font-weight:600;color:#111;display:flex;align-items:center;gap:4px">' +
-            '<span style="display:inline-block;width:16px;height:2px;background:#111"></span>내 기록</span>' +
-          '<span style="font-size:11px;font-weight:600;color:'+WARM+';display:flex;align-items:center;gap:4px">' +
-            '<svg width="16" height="4"><line x1="0" y1="2" x2="16" y2="2" stroke="'+WARM+'" stroke-width="1.5" stroke-dasharray="4,2"/></svg>커뮤니티 평균</span>' +
-          '<span style="font-size:11px;font-weight:600;color:#999;display:flex;align-items:center;gap:4px">' +
-            '<svg width="16" height="4"><line x1="0" y1="2" x2="16" y2="2" stroke="#999" stroke-width="1.5" stroke-dasharray="2,2"/></svg>전문가(CQI)</span>' +
+        '<div style="display:flex;gap:14px;flex-wrap:wrap;padding:0 0 10px;border-bottom:0.5px solid #E0E0E0;margin-bottom:10px">' +
+          '<span style="font-size:10px;font-weight:700;color:#121212;display:flex;align-items:center;gap:4px">' +
+            '<span style="display:inline-block;width:16px;height:2px;background:#121212"></span>내 기록</span>' +
+          '<span style="font-size:10px;font-weight:700;color:#8C7355;display:flex;align-items:center;gap:4px">' +
+            '<svg width="18" height="4"><line x1="0" y1="2" x2="18" y2="2" stroke="#8C7355" stroke-width="1.5" stroke-dasharray="4,2"/></svg>커뮤니티 평균</span>' +
+          '<span style="font-size:10px;font-weight:700;color:#555;display:flex;align-items:center;gap:4px">' +
+            '<svg width="18" height="4"><line x1="0" y1="2" x2="18" y2="2" stroke="#555" stroke-width="1.5" stroke-dasharray="2,2"/></svg>' + expLabel + '</span>' +
         '</div>';
 
-      /* 축별 바 비교 — 목업 compare-bar 스타일 */
+      /* 축별 바 차트 — 목업 compare-bar 스타일 */
       var barsHtml = AXES.map(function(ax, i) {
-        var my   = vals[i];
-        var com  = COMMUNITY[ax] || 5;
-        var exp  = EXPERT[ax]    || 7;
-        var dCom = (my - com).toFixed(1);
-        var dExp = (my - exp).toFixed(1);
-        var dComColor = dCom > 0 ? "#2d6a2d" : dCom < 0 ? "#8C4B1D" : "#888";
-        var dExpColor = dExp > 0 ? "#2d6a2d" : dExp < 0 ? "#8C4B1D" : "#888";
-        return '<div style="margin-bottom:7px">' +
-          '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">' +
-            '<span style="font-size:11px;font-weight:600;color:#111">' + ax + '</span>' +
-            '<span style="font-size:10px;color:#888">내: <strong style="color:#111">' + my + '</strong>' +
-            ' · 커뮤: ' + com.toFixed(1) +
-            ' <span style="font-size:10px;font-weight:700;color:'+dComColor+'">('+( dCom > 0 ? '+' : '') + dCom +')</span>' +
-            ' · 전문: ' + exp.toFixed(1) +
-            ' <span style="font-size:10px;font-weight:700;color:'+dExpColor+'">('+( dExp > 0 ? '+' : '') + dExp +')</span>' +
-            '</span>' +
+        var my  = vals[i];
+        var com = COMMUNITY[ax] || 5;
+        var exp = EXPERT_VALS[ax]    || 7;
+        var dCom = my - com, dExp = my - exp;
+        var dcSign = dCom >= 0 ? "+" : "", deSign = dExp >= 0 ? "+" : "";
+        var dcCol  = dCom > 0.3 ? "#2d6a2d" : dCom < -0.3 ? "#A0522D" : "#888";
+        var deCol  = dExp > 0.3 ? "#2d6a2d" : dExp < -0.3 ? "#A0522D" : "#888";
+        return '<div class="cmp-bar-row">' +
+          '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
+            '<span style="font-size:12px;font-weight:600;color:#121212">' + ax + '</span>' +
+            '<span style="font-size:11px;color:#888">내: <strong style="color:#121212">' + my + '</strong>' +
+            '&nbsp;·&nbsp;<span style="color:'+dcCol+'">커뮤니티 ' + dcSign + dCom.toFixed(1) + '</span>' +
+            '&nbsp;·&nbsp;<span style="color:'+deCol+'">전문가 ' + deSign + dExp.toFixed(1) + '</span></span>' +
           '</div>' +
-          '<div style="height:5px;background:#F0EDE8;position:relative">' +
-            '<div style="position:absolute;top:0;left:0;height:100%;background:'+WARM+';opacity:.45;width:' + (com/10*100) + '%"></div>' +
-            '<div style="position:absolute;top:0;left:0;height:100%;background:#BBBBBB;opacity:.5;width:' + (exp/10*100) + '%;clip-path:none"></div>' +
-            '<div style="position:absolute;top:0;left:0;height:100%;background:#111;width:' + (my/10*100) + '%"></div>' +
+          '<div class="cmp-bar-track">' +
+            '<div class="cmp-bar-avg" style="width:' + (com/10*100).toFixed(1) + '%"></div>' +
+            '<div class="cmp-bar-me"  style="width:' + (my /10*100).toFixed(1) + '%"></div>' +
           '</div>' +
         '</div>';
       }).join("");
 
-      /* 총평 */
-      var myAvg  = (vals.reduce(function(a,b){return a+b;},0)/N).toFixed(1);
-      var comAvg = (AXES.reduce(function(a,ax){return a+(COMMUNITY[ax]||5);},0)/N).toFixed(1);
-      var expAvg = (AXES.reduce(function(a,ax){return a+(EXPERT[ax]||7);},0)/N).toFixed(1);
-      var dC = (parseFloat(myAvg)-parseFloat(comAvg)).toFixed(1);
-      var dE = (parseFloat(myAvg)-parseFloat(expAvg)).toFixed(1);
-      var summaryHtml =
-        '<div style="margin-top:10px;padding:10px 12px;background:#F8F6F3;border-left:2px solid #111">' +
-          '<div style="font-size:11px;color:#888;margin-bottom:4px">평균 점수: 나 <strong style="color:#111">' + myAvg + '</strong> · 커뮤니티 ' + comAvg + ' · 전문가 ' + expAvg + '</div>' +
-          '<div style="font-size:12px;font-weight:600;color:#111">' +
-            '커뮤니티 대비 <span style="color:' + (dC>=0?'#2d6a2d':'#8C4B1D') + '">' + (dC>=0?'+':'') + dC + '</span> &nbsp;' +
-            '전문가 대비 <span style="color:' + (dE>=0?'#2d6a2d':'#8C4B1D') + '">' + (dE>=0?'+':'') + dE + '</span>' +
-          '</div>' +
-        '</div>';
+      /* AI 인사이트 — 가장 큰 차이 축 */
+      var maxDiff=0, maxIdx=0;
+      vals.forEach(function(v,i){ var d=Math.abs(v-EXPERT_VALS[AXES[i]]||7); if(d>maxDiff){maxDiff=d;maxIdx=i;} });
+      var insightHtml = maxDiff > 0.5 ?
+        '<div class="cmp-insight">' +
+          AXES[maxIdx] + '를 전문가보다 <strong>' +
+          (vals[maxIdx] > (EXPERT_VALS[AXES[maxIdx]]||7) ? '+' : '') +
+          (vals[maxIdx]-(EXPERT_VALS[AXES[maxIdx]]||7)).toFixed(1) + '</strong>점 다르게 느끼셨네요.' +
+          '<br><span style="color:#8C7355;font-size:12px">→ 다음 추출 시 물 온도를 1–2도 조정해 보세요.</span>' +
+        '</div>' : '';
 
-      cp.innerHTML = legendHtml + barsHtml + summaryHtml;
+      cp.innerHTML = legendHtml + barsHtml + insightHtml;
     }
 
     /* ── 레이더 렌더 ── */
@@ -216,7 +227,7 @@
 
         /* 전문가 점선 (검정) */
         app(svgEl, mkEl("polygon",{
-          points: pts(CX,CY,function(j){return vToR(EXPERT[AXES[j]]||7,MIN_R,MAX_R);},N),
+          points: pts(CX,CY,function(j){return vToR(EXPERT_VALS[AXES[j]]||7,MIN_R,MAX_R);},N),
           fill:"none", stroke:EXP_COLOR, "stroke-width":"1.5",
           "stroke-dasharray":"3 3", "stroke-linejoin":"round",
         }));
@@ -235,25 +246,24 @@
           var hr    = vToR(vals[idx],MIN_R,MAX_R);
           var hp    = pol(CX,CY,hr,angle);
 
-          /* 히트 영역 (보이지 않음, 터치 감지용) */
+          /* 히트 영역 */
           app(svgEl, mkEl("circle",{
-            cx:hp[0],cy:hp[1],r:"18",fill:"transparent",
+            cx:hp[0],cy:hp[1],r:"22",fill:"transparent",
             cursor:"grab","data-idx":idx,
           }));
 
-          /* 핸들 (작은 점, 목업 스타일) */
+          /* 핸들 */
           app(svgEl, mkEl("circle",{
-            cx:hp[0],cy:hp[1],r:"7",
+            cx:hp[0],cy:hp[1],r:"16",
             fill: activeAxisIdx===idx ? "#5C4A35" : WARM,
-            stroke:"#fff","stroke-width":"2",
-            "pointer-events":"none",
+            stroke:"#fff","stroke-width":"2.5",
+            cursor:"grab","pointer-events":"none",
           }));
 
-          /* 값 텍스트 (핸들 옆에 작게) */
+          /* 값 텍스트 */
           var vt = mkEl("text",{
-            x:hp[0],y:hp[1],
-            "text-anchor":"middle","dominant-baseline":"central",
-            "font-size":"8","font-weight":"700",fill:"#fff",
+            x:hp[0],y:hp[1],"text-anchor":"middle","dominant-baseline":"central",
+            "font-size":"11","font-weight":"700",fill:"#fff",
             "font-family":"'Pretendard Variable',sans-serif","pointer-events":"none",
           });
           vt.textContent = vals[idx];
@@ -263,9 +273,10 @@
           var nlp = pol(CX,CY,MAX_R+26,angle);
           var lt2 = mkEl("text",{
             x:nlp[0],y:nlp[1],"text-anchor":"middle","dominant-baseline":"central",
-            "font-size":"12","font-weight": activeAxisIdx===idx ? "700" : "500",
-            fill: activeAxisIdx===idx ? WARM : "#555",
-            "font-family":"'Pretendard Variable',sans-serif",cursor:"pointer",
+            "font-size":"13","font-weight":"600",
+            fill: activeAxisIdx===idx ? WARM : "#333",
+            "font-family":"'Pretendard Variable',sans-serif",
+            cursor:"pointer",
           });
           lt2.textContent = AXES[idx];
           app(svgEl, lt2);
@@ -376,7 +387,7 @@
           fill:"none",stroke:COM_COLOR,"stroke-width":"1","stroke-dasharray":"4 3","stroke-linejoin":"round",
         }));
         app(svgEl,mkEl("polygon",{
-          points:pts(CX,CY,function(j){return vToR(EXPERT[AXES[j]]||7,MIN_R,MAX_R);},N),
+          points:pts(CX,CY,function(j){return vToR(EXPERT_VALS[AXES[j]]||7,MIN_R,MAX_R);},N),
           fill:"none",stroke:EXP_COLOR,"stroke-width":"1","stroke-dasharray":"2 2","stroke-linejoin":"round",
         }));
       }
@@ -388,7 +399,7 @@
         (function(idx){
           var v=vals[AXES[idx]]||5;
           var hp=pol(CX,CY,vToR(v,MIN_R,MAX_R),aFor(idx));
-        app(svgEl,mkEl("circle",{cx:hp[0],cy:hp[1],r:"5",fill:WARM,stroke:"#fff","stroke-width":"1.5"}));
+          app(svgEl,mkEl("circle",{cx:hp[0],cy:hp[1],r:"5",fill:WARM,stroke:"#fff","stroke-width":"1.5"}));
           var nlp=pol(CX,CY,MAX_R+18,aFor(idx));
           var nt=mkEl("text",{
             x:nlp[0],y:nlp[1],"text-anchor":"middle","dominant-baseline":"central",

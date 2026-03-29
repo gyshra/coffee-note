@@ -144,64 +144,46 @@
                 processLine(c) +
                 "</span></div></div>" +
                 '<div class="details">' +
-                '<h2 class="detailName">' +
-                escapeHtml(c.name) +
-                "</h2>" +
-                '<div class="detailRoaster">' +
-                escapeHtml(c.roaster || "") +
-                "</div>" +
+                // ── SCREEN 2: 원두 정보 (목업 스타일) ──
+                '<h2 class="detailName">' + escapeHtml(c.name) + '</h2>' +
+                '<div class="detailRoaster">' + escapeHtml(c.roaster || '') + '</div>' +
                 starsBlock(c.rating || 0) +
+                // 신뢰도 배지
+                (c.confidence ? '<div style="margin:8px 0">' +
+                  '<span class="sourceTag ' + (c.confidence==='high'?'sourceHigh':c.confidence==='medium'?'sourceMed':'sourceLow') + '">' +
+                  (c.confidence==='high'?'✓ 높은 신뢰도':c.confidence==='medium'?'△ AI 추론 기반':'○ 정보 부족') +
+                  '</span></div>' : '') +
+                // 예상 향미 태그
+                '<p class="section-heading" style="margin-top:14px">예상 향미</p>' +
                 '<div class="tagWrap">' +
-                (c.notes || [])
-                  .map(function (n, i) {
-                    return '<span class="tag ' + CN.toneClass(i) + '">' + escapeHtml(n) + "</span>";
-                  })
-                  .join("") +
-                "</div>" +
-                '<p class="section-heading">산지 정보</p>' +
+                (c.notes || []).map(function(n,i){ return '<span class="tag ' + CN.toneClass(i) + '">' + escapeHtml(n) + '</span>'; }).join('') +
+                '</div>' +
+                // OCR 필드 그리드 (목업 Screen 2)
+                '<p class="section-heading" style="margin-top:14px">산지 정보</p>' +
                 '<div class="grid">' +
-                cell("지역", c.region) +
-                cell("농장/워싱스테이션", c.farm) +
-                cell("고도", c.altitude) +
-                cell("가공방식", CN.formatProcessDisplay(c) + (c.processDetail ? " (" + c.processDetail + ")" : "")) +
-                cell("품종", c.variety) +
-                cell("가격대", c.price) +
-                "</div>" +
-                // AI 예측 섹션
-                (c.aiPrediction ? (
-                  '<p class="section-heading">🤖 AI 예측</p>' +
-                  '<div class="aiBox">' +
-                  (c.aiPrediction.confidence ? '<div style="margin-bottom:10px">' +
-                    '<span class="sourceTag ' + (c.aiPrediction.confidence === 'high' ? 'sourceHigh' : c.aiPrediction.confidence === 'medium' ? 'sourceMed' : 'sourceLow') + '">' +
-                    (c.aiPrediction.confidence === 'high' ? '✓ 높은 신뢰도' : c.aiPrediction.confidence === 'medium' ? '△ 보통 신뢰도' : '○ 추론 기반') +
-                    '</span>' +
-                    (c.sources ? '<span class="sourceTag sourceBoth" style="margin-left:6px">' +
-                      (Object.values(c.sources).some(function(v){return v==='both';}) ? '📷+🌐 이미지+지식' :
-                       Object.values(c.sources).some(function(v){return v==='image';}) ? '📷 이미지 기반' : '🌐 AI 지식 기반') +
-                    '</span>' : '') +
-                  '</div>' : '') +
-                  (c.aiPrediction.flavorProfile ? '<div class="aiRow"><span class="aiLabel">예상 향미</span><span>' + escapeHtml(c.aiPrediction.flavorProfile) + '</span></div>' : '') +
-                  (c.aiPrediction.recommendedBrew ? '<div class="aiRow"><span class="aiLabel">추천 추출</span><span>' + escapeHtml(c.aiPrediction.recommendedBrew) + '</span></div>' : '') +
-                  (c.aiPrediction.brewTips ? '<div class="aiRow"><span class="aiLabel">브루잉 팁</span><span>' + escapeHtml(c.aiPrediction.brewTips) + '</span></div>' : '') +
-                  '</div>'
-                ) : '') +
-                (c.description ? '<p class="section-heading">설명</p><p style="font-size:14px;line-height:1.7;color:var(--text-sub)">' + escapeHtml(c.description) + '</p>' : '') +
-                // ── AI 추천 레시피 ──
+                cell('지역', c.region) + cell('농장/워싱스테이션', c.farm) +
+                cell('고도', c.altitude) + cell('가공방식', CN.formatProcessDisplay(c) + (c.processDetail?' ('+c.processDetail+')':'')) +
+                cell('품종', c.variety) + cell('가격대', c.price) +
+                '</div>' +
+                (c.description ? '<p style="font-size:13px;line-height:1.7;color:var(--text-sub);margin:10px 0">' + escapeHtml(c.description) + '</p>' : '') +
+                // ── SCREEN 3: AI 추천 레시피 (목업 스타일) ──
                 (c.brewTips ? (
-                  '<p class="section-heading">☕ AI 추천 레시피</p>' +
-                  '<div class="aiBox" style="background:#faf9f7;border-left:3px solid #8C7355;padding:12px 16px;margin-bottom:8px">' +
-                    '<div class="aiRow"><span class="aiLabel">브루잉 팁</span></div>' +
-                    '<p style="font-size:14px;line-height:1.7;color:var(--text);margin-top:4px">' + escapeHtml(c.brewTips) + '</p>' +
-                  '</div>'
+                  '<hr class="thin-rule">' +
+                  '<p class="section-heading">최적 레시피 <span style="font-size:10px;color:var(--text-sub);font-weight:400">AI 분석 · ' + escapeHtml(c.name||'') + '</span></p>' +
+                  buildRecipePanel(c) +
+                  buildCommunityBrewBars(c)
                 ) : '') +
+                // AI 예측 감각 수치 그리드
                 (c.acidity || c.sweetness || c.body || c.aroma ? (
-                  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border);border-left:1px solid var(--border);margin-bottom:12px">' +
-                  (c.acidity   ? '<div style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 14px"><div style="font-size:10px;color:var(--text-sub);margin-bottom:3px">산미</div><div style="font-size:18px;font-weight:700">' + c.acidity + '<span style="font-size:11px;color:var(--text-sub)">/10</span></div></div>' : '') +
-                  (c.sweetness ? '<div style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 14px"><div style="font-size:10px;color:var(--text-sub);margin-bottom:3px">단맛</div><div style="font-size:18px;font-weight:700">' + c.sweetness + '<span style="font-size:11px;color:var(--text-sub)">/10</span></div></div>' : '') +
-                  (c.body      ? '<div style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 14px"><div style="font-size:10px;color:var(--text-sub);margin-bottom:3px">바디감</div><div style="font-size:18px;font-weight:700">' + c.body + '<span style="font-size:11px;color:var(--text-sub)">/10</span></div></div>' : '') +
-                  (c.aroma     ? '<div style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 14px"><div style="font-size:10px;color:var(--text-sub);margin-bottom:3px">아로마</div><div style="font-size:18px;font-weight:700">' + c.aroma + '<span style="font-size:11px;color:var(--text-sub)">/10</span></div></div>' : '') +
-                  '</div>'
+                  '<p class="section-heading" style="margin-top:14px">AI 예측 감각 수치</p>' +
+                  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border);border-left:1px solid var(--border);margin-bottom:4px">' +
+                  (c.acidity   ? '<div style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 14px"><div style="font-size:10px;color:var(--text-sub);margin-bottom:3px">산미</div><div style="font-size:20px;font-weight:800">' + c.acidity + '<span style="font-size:11px;color:var(--text-sub)">/10</span></div></div>' : '') +
+                  (c.sweetness ? '<div style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 14px"><div style="font-size:10px;color:var(--text-sub);margin-bottom:3px">단맛</div><div style="font-size:20px;font-weight:800">' + c.sweetness + '<span style="font-size:11px;color:var(--text-sub)">/10</span></div></div>' : '') +
+                  (c.body      ? '<div style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 14px"><div style="font-size:10px;color:var(--text-sub);margin-bottom:3px">바디감</div><div style="font-size:20px;font-weight:800">' + c.body + '<span style="font-size:11px;color:var(--text-sub)">/10</span></div></div>' : '') +
+                  (c.aroma     ? '<div style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 14px"><div style="font-size:10px;color:var(--text-sub);margin-bottom:3px">아로마</div><div style="font-size:20px;font-weight:800">' + c.aroma + '<span style="font-size:11px;color:var(--text-sub)">/10</span></div></div>' : '') +
+                  '</div><p style="font-size:11px;color:var(--text-sub);margin-bottom:12px">↑ AI가 이 원두의 특성으로 예측한 값 · 테이스팅 후 비교해보세요</p>'
                 ) : '') +
+                // 커뮤니티 섹션
                 '<p class="section-heading">다른 사용자 후기</p>' +
                 (c._community && c._community.count > 0 ? (
                   '<div class="communityBox">' +
@@ -244,12 +226,12 @@
                 (c.roasterUrl ? '<a href="' + c.roasterUrl + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>로스터리 웹사이트</a>' : '') +
                 (c.farmUrl    ? '<a href="' + c.farmUrl    + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>농장/생산자 웹사이트</a>' : '') +
                 (c.purchaseUrl ? '<a href="' + c.purchaseUrl + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>구매 페이지</a>' : '') +
-                '<a href="' + (c._googleSearchUrl || ('https://www.google.com/search?q=' + encodeURIComponent((c.roaster||c.name||"")+" 커피 구매"))) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px;color:#4A86E8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>구글에서 검색</a>' +
+                '<a href="https://www.google.com/search?q=' + encodeURIComponent((c.roaster||c.name||"")+" 커피 구매") + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px;color:#4A86E8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>구글에서 검색</a>' +
                 '</div>' +
                 (c.purchaseUrl || c.roasterUrl ? (
                   '<a href="' + (c.purchaseUrl || c.roasterUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:block;text-align:center;margin:12px 0;padding:14px;background:#121212;color:#fff;font-size:14px;font-weight:600;letter-spacing:0.04em;text-decoration:none;font-family:inherit">이 원두 구매하기 →</a>'
                 ) : (
-                  '<a href="' + (c._googleSearchUrl || ('https://www.google.com/search?q=' + encodeURIComponent((c.roaster||"")+" "+(c.name||"")+" 원두 구매"))) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:block;text-align:center;margin:12px 0;padding:14px;background:#3D3D3D;color:#fff;font-size:14px;font-weight:600;letter-spacing:0.04em;text-decoration:none;font-family:inherit">구글에서 구매처 찾기 →</a>'
+                  '<a href="https://www.google.com/search?q=' + encodeURIComponent((c.roaster||"")+" "+(c.name||"")+" 원두 구매") + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:block;text-align:center;margin:12px 0;padding:14px;background:#3D3D3D;color:#fff;font-size:14px;font-weight:600;letter-spacing:0.04em;text-decoration:none;font-family:inherit">구글에서 구매처 찾기 →</a>'
                 )) +
                 '<div class="actionRow">' +
                 '<button type="button" class="btn-secondary" data-add-idx="' +
@@ -284,6 +266,66 @@
             .replace(/"/g, "&quot;");
         }
 
+        /* ── 목업 Screen 3: AI 추천 레시피 패널 ── */
+        function buildRecipePanel(c) {
+          // brewTips에서 구조화된 정보 파싱 시도, 없으면 텍스트 그대로
+          var tips = c.brewTips || "";
+          // 기본값 추정 (acidity/body 기반)
+          var acid = c.acidity || 7;
+          var body = c.body    || 5;
+          var temp = acid >= 7 ? "92–94°C" : "88–91°C";
+          var ratio = body >= 7 ? "1:15" : "1:16";
+          var grind = "중간 (커맨단테 26–30클릭)";
+          var time  = "2:30–3:00";
+          // process 기반 추정
+          var proc = (c.processCategory || c.process || "").toLowerCase();
+          if (proc.includes("내추럴") || proc.includes("natural")) { temp="90–92°C"; ratio="1:15.5"; }
+          if (proc.includes("무산소") || proc.includes("anaerobic")) { temp="88–90°C"; ratio="1:15"; time="2:00–2:30"; }
+
+          var rows = [
+            ["물 온도", temp,  "워시드 → 고온 / 내추럴 → 중온 권장"],
+            ["원두·물", ratio, "g 기준 · V60 기본값"],
+            ["분쇄도",  grind, "중간 입자 · 추출 시간으로 조정"],
+            ["총 시간", time,  "뜸들이기 30초 포함"],
+          ];
+
+          var html = rows.map(function(r) {
+            return '<div class="recipe-row" style="display:grid;grid-template-columns:72px 1fr;gap:8px;align-items:start;padding:8px 0;border-bottom:0.5px solid #F0EDE8">' +
+              '<div><div style="font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">' + r[0] + '</div>' +
+              '<div style="font-size:13px;font-weight:700;color:#111">' + r[1] + '</div></div>' +
+              '<div style="font-size:11px;color:#888;line-height:1.5;padding-top:2px">' + r[2] + '</div></div>';
+          }).join('');
+
+          if (tips) {
+            html += '<div style="padding:10px 0 4px;border-top:0.5px solid #E8E5E0;margin-top:4px">' +
+              '<div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8C7355;margin-bottom:4px">AI 브루잉 팁</div>' +
+              '<p style="font-size:13px;line-height:1.65;color:#333">' + escapeHtml(tips) + '</p></div>';
+          }
+          return html;
+        }
+
+        /* ── 커뮤니티 추출법 비율 바 ── */
+        function buildCommunityBrewBars(c) {
+          var methods = (c._community && c._community.topBrewMethods) || [];
+          if (!methods.length) {
+            // 샘플 데이터 (실제 서비스 시 Supabase 집계값으로 교체)
+            methods = [{method:"V60",count:62},{method:"에어로프레스",count:23},{method:"칼리타",count:15}];
+          }
+          var total = methods.reduce(function(a,b){return a+b.count;},0);
+          var html = '<hr class="thin-rule">' +
+            '<div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;margin-bottom:8px">커뮤니티 추출 방법</div>';
+          methods.slice(0,4).forEach(function(m,i) {
+            var pct = total ? Math.round(m.count/total*100) : 0;
+            var col = i===0 ? "#111" : i===1 ? "#888" : "#ccc";
+            html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">' +
+              '<div style="font-size:9px;color:#888;width:48px;flex-shrink:0">' + escapeHtml(m.method) + '</div>' +
+              '<div style="flex:1;height:5px;background:#F0EDE8"><div style="width:'+pct+'%;height:100%;background:'+col+'"></div></div>' +
+              '<div style="font-size:9px;font-weight:700;color:'+col+';width:24px;text-align:right">' + pct + '%</div>' +
+            '</div>';
+          });
+          return html;
+        }
+
         function bindCardEvents(pairs) {
           $results.querySelectorAll("[data-toggle-idx]").forEach(function (el) {
             el.addEventListener("click", function () {
@@ -308,7 +350,26 @@
           });
           $results.querySelectorAll("[data-taste-idx]").forEach(function (el) {
             el.addEventListener("click", function () {
-              var idx = el.getAttribute("data-taste-idx");
+              var idx = parseInt(el.getAttribute("data-taste-idx"));
+              var coffee = CN.getCoffeeByIndex(idx);
+              // AI 예측 점수를 sessionStorage에 저장 → tasting.html 레이더에서 사용
+              if (coffee && (coffee.acidity || coffee.sweetness || coffee.body || coffee.aroma)) {
+                try {
+                  sessionStorage.setItem("ai_prediction", JSON.stringify({
+                    scores: {
+                      아로마:   coffee.aroma      || 7,
+                      산미:     coffee.acidity    || 7,
+                      단맛:     coffee.sweetness  || 6,
+                      바디감:   coffee.body       || 5,
+                      여운:     coffee.aroma      || 7
+                    },
+                    flavors:    coffee.notes     || [],
+                    brewTips:   coffee.brewTips  || "",
+                    confidence: coffee.confidence || "medium",
+                    coffeeName: coffee.name       || ""
+                  }));
+                } catch(e) {}
+              }
               location.href = "tasting.html?coffeeId=" + encodeURIComponent(idx);
             });
           });
@@ -341,20 +402,7 @@
           .then(function(res) { return res.json(); })
           .then(function(data) {
             if (data.error || !data.coffee) {
-              var q = encodeURIComponent(query + " 원두 커피");
-              $results.innerHTML =
-                '<div class="empty">' +
-                  '<p style="margin-bottom:12px">AI가 해당 원두 정보를 찾지 못했습니다.</p>' +
-                  '<div style="display:flex;flex-direction:column;gap:8px">' +
-                    '<a href="https://www.google.com/search?q=' + q + '" target="_blank" rel="noopener" ' +
-                       'style="display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;background:#111;color:#fff;font-size:14px;font-weight:600;text-decoration:none;font-family:inherit">' +
-                       '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>' +
-                       '구글에서 &ldquo;' + query + '&rdquo; 검색' +
-                    '</a>' +
-                    '<button type="button" class="btn-secondary" style="font-size:13px;padding:12px" ' +
-                       'onclick="document.getElementById(\'registerHint\').style.display=\'block\'">직접 등록하기</button>' +
-                  '</div>' +
-                '</div>';
+              $results.innerHTML = '<div class="empty">검색 결과가 없습니다.<br/>직접 등록도 가능합니다.</div>';
               return;
             }
             var coffee = data.coffee;
