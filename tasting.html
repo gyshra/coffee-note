@@ -49,14 +49,30 @@
         <hr class="thin-rule" />
         <h2 class="section-heading">기본 감각</h2>
         <p class="step-desc">핸들을 드래그하여 조절하세요</p>
-        <div class="pentagon-radar" id="pentagonRadar">
-          <svg id="pentaSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="pentagon-radar" id="pentagonRadar" style="overflow:visible">
+          <svg id="pentaSvg" xmlns="http://www.w3.org/2000/svg" style="overflow:visible"></svg>
         </div>
+
+        <!-- 슬라이더 패널: 고정 위치로 겹침 방지 -->
+        <div id="radarPanel" style="display:none;margin:12px 0;padding:14px 16px;background:#F8F6F3;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span id="radarPanelLabel" style="font-size:14px;font-weight:600;color:#121212"></span>
+            <span id="radarPanelVal" style="font-size:22px;font-weight:700;color:#8C7355"></span>
+          </div>
+          <input type="range" id="radarSlider" min="1" max="10" step="1" style="width:100%;accent-color:#8C7355">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-top:4px">
+            <span>1</span><span>5</span><span>10</span>
+          </div>
+        </div>
+
+        <!-- 비교 패널: 고정 위치로 겹침 방지 -->
+        <div id="radarComparePanel" style="display:none;margin-top:4px;"></div>
+
         <div id="baseSenseMemos" class="base-sense-list"></div>
         <div class="compare-toggle">
-          <div>
-            <div style="font-size:14px;font-weight:500">커뮤니티 & 전문가와 비교</div>
-            <div style="font-size:12px;color:var(--text-sub);margin-top:2px">커뮤니티 평균(회색) · 전문가 CQI(검정)</div>
+          <div class="compare-toggle-text">
+            <div class="compare-toggle-label">커뮤니티 &amp; 전문가와 비교</div>
+            <div class="compare-toggle-sub">커뮤니티 평균 · 전문가 CQI 기준</div>
           </div>
           <button type="button" class="toggle-switch" id="btnCompare" aria-pressed="false"><span class="toggle-thumb"></span></button>
         </div>

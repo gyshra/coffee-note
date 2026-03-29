@@ -5,6 +5,92 @@
  */
 const { upsertCoffee, getClient, buildCommunity, formatCoffee } = require("./_lib/supabase");
 
+/* ══════════════════════════════════════════════════════════════
+   SCA Golden Cup Standard — 48조합 레시피 매트릭스
+   [process][roast][tool] = { temp, ratio, grind, time, note }
+   ══════════════════════════════════════════════════════════════ */
+const SCA_MATRIX = {
+  washed: {
+    light: {
+      V60:           { temp:"94–96°C", ratio:"1:16", grind:"중간-굵게", time:"2:30–3:00", note:"밝은 산미와 화사한 향미 극대화" },
+      칼리타:         { temp:"93–95°C", ratio:"1:15", grind:"중간",     time:"3:00–3:30", note:"균형 잡힌 추출, 안정적인 흐름" },
+      케멕스:         { temp:"95–96°C", ratio:"1:17", grind:"굵게",     time:"4:00–4:30", note:"클린하고 투명한 컵" },
+      에어로프레스:   { temp:"88–92°C", ratio:"1:12", grind:"중간-곱게", time:"1:30–2:00", note:"진하고 복합적인 추출" },
+      클레버:         { temp:"92–94°C", ratio:"1:15", grind:"중간",     time:"3:30–4:00", note:"침출식 특유의 묵직함" },
+      프렌치프레스:   { temp:"93–95°C", ratio:"1:14", grind:"굵게",     time:"4:00",       note:"오일감과 풍부한 바디" },
+    },
+    medium: {
+      V60:           { temp:"91–93°C", ratio:"1:15", grind:"중간",      time:"2:30–3:00", note:"단맛과 산미의 균형" },
+      칼리타:         { temp:"90–92°C", ratio:"1:15", grind:"중간",     time:"3:00–3:30", note:"안정적인 추출" },
+      케멕스:         { temp:"92–94°C", ratio:"1:16", grind:"중간-굵게", time:"4:00",     note:"균형 잡힌 클린 컵" },
+      에어로프레스:   { temp:"85–88°C", ratio:"1:12", grind:"중간",     time:"1:30",      note:"부드럽고 달콤한 추출" },
+      클레버:         { temp:"90–92°C", ratio:"1:15", grind:"중간",     time:"4:00",      note:"안정적인 침출" },
+      프렌치프레스:   { temp:"91–93°C", ratio:"1:14", grind:"굵게",     time:"4:00",      note:"풍부한 바디와 단맛" },
+    },
+    dark: {
+      V60:           { temp:"88–90°C", ratio:"1:14", grind:"중간-곱게", time:"2:00–2:30", note:"쓴맛 억제, 단맛 부각" },
+      칼리타:         { temp:"87–89°C", ratio:"1:14", grind:"중간-곱게", time:"2:30–3:00", note:"안정적인 진한 추출" },
+      에어로프레스:   { temp:"82–86°C", ratio:"1:10", grind:"곱게",     time:"1:00–1:30", note:"에스프레소 스타일" },
+      프렌치프레스:   { temp:"88–90°C", ratio:"1:12", grind:"굵게",     time:"4:00",      note:"진하고 묵직한 바디" },
+    },
+  },
+  natural: {
+    light: {
+      V60:           { temp:"92–94°C", ratio:"1:16", grind:"중간-굵게", time:"2:30–3:00", note:"과일향과 달콤함 극대화" },
+      칼리타:         { temp:"91–93°C", ratio:"1:15", grind:"중간",     time:"3:00–3:30", note:"자연스러운 단맛 강조" },
+      케멕스:         { temp:"92–94°C", ratio:"1:17", grind:"굵게",     time:"4:00–4:30", note:"클린하게 과일향 부각" },
+      에어로프레스:   { temp:"86–90°C", ratio:"1:12", grind:"중간",     time:"1:30–2:00", note:"진한 과일 풍미" },
+      프렌치프레스:   { temp:"91–93°C", ratio:"1:14", grind:"굵게",     time:"4:00",      note:"풍부한 오일과 과일향" },
+    },
+    medium: {
+      V60:           { temp:"90–92°C", ratio:"1:15", grind:"중간",      time:"2:30–3:00", note:"단맛과 바디 균형" },
+      칼리타:         { temp:"89–91°C", ratio:"1:15", grind:"중간",     time:"3:00",      note:"안정적인 단맛" },
+      에어로프레스:   { temp:"84–87°C", ratio:"1:12", grind:"중간",     time:"1:30",      note:"부드럽고 달콤한 추출" },
+      프렌치프레스:   { temp:"90–92°C", ratio:"1:14", grind:"굵게",     time:"4:00",      note:"묵직하고 달콤한 바디" },
+    },
+  },
+  honey: {
+    light: {
+      V60:           { temp:"92–94°C", ratio:"1:15", grind:"중간",      time:"2:30–3:00", note:"단맛과 과일향의 조화" },
+      칼리타:         { temp:"91–93°C", ratio:"1:15", grind:"중간",     time:"3:00",      note:"허니 가공 특유의 단맛" },
+      에어로프레스:   { temp:"87–90°C", ratio:"1:12", grind:"중간",     time:"1:30",      note:"진하고 달콤한 추출" },
+    },
+    medium: {
+      V60:           { temp:"90–92°C", ratio:"1:15", grind:"중간",      time:"2:30",      note:"균형 잡힌 단맛" },
+      에어로프레스:   { temp:"85–88°C", ratio:"1:12", grind:"중간",     time:"1:30",      note:"부드럽고 달콤함" },
+    },
+  },
+  anaerobic: {
+    light: {
+      V60:           { temp:"88–91°C", ratio:"1:15", grind:"중간-곱게", time:"2:00–2:30", note:"발효향 극대화, 낮은 온도 추천" },
+      에어로프레스:   { temp:"82–86°C", ratio:"1:12", grind:"중간",     time:"1:00–1:30", note:"복합적인 발효 풍미" },
+      클레버:         { temp:"88–90°C", ratio:"1:15", grind:"중간",     time:"3:30",      note:"안정적인 발효 풍미" },
+    },
+  },
+};
+
+function getRecipeFromMatrix(process, roast, tool) {
+  const procNorm = (process || "").toLowerCase()
+    .replace(/워시드|washed/, "washed")
+    .replace(/내추럴|natural/, "natural")
+    .replace(/허니|honey/, "honey")
+    .replace(/무산소|anaerobic/, "anaerobic")
+    .replace(/.*/, s => Object.keys(SCA_MATRIX).find(k => s.includes(k)) || "washed");
+
+  const roastNorm = (roast || "light").toLowerCase()
+    .replace(/라이트|light/, "light")
+    .replace(/미디엄|medium/, "medium")
+    .replace(/다크|dark/, "dark")
+    .replace(/.*/, s => ["light","medium","dark"].find(k => s.includes(k)) || "medium");
+
+  const toolNorm = tool || "V60";
+
+  const processRecipes = SCA_MATRIX[procNorm] || SCA_MATRIX["washed"];
+  const roastRecipes   = processRecipes[roastNorm] || processRecipes["medium"] || processRecipes["light"] || {};
+  return roastRecipes[toolNorm] || roastRecipes["V60"] || Object.values(roastRecipes)[0] || null;
+}
+
+
 // SCA 매핑 (ocr.js와 동일 로직 공유)
 const SCA_ITEMS = [
   "블루베리","라즈베리","딸기","체리","크랜베리",
@@ -175,6 +261,33 @@ module.exports = async function handler(req, res) {
       if (result.recipes)   coffee._recipes=result.recipes;
     }
   } catch(e){ console.warn("[Search] Supabase:",e.message); }
+
+  // ── CQI 기준값 조회 ─────────────────────────────────
+  try {
+    const cqiUrl = `${process.env.VERCEL_URL ? "https://" + process.env.VERCEL_URL : "http://localhost:3000"}/api/cqi`
+      + `?country=${encodeURIComponent(coffee.country||"")}`
+      + `&process=${encodeURIComponent(coffee.process||"")}`
+      + `&variety=${encodeURIComponent(coffee.variety||"")}`;
+    const cqiRes = await fetch(cqiUrl);
+    if (cqiRes.ok) {
+      const cqiData = await cqiRes.json();
+      if (cqiData.found) {
+        coffee.cqiScores    = cqiData.scores;
+        coffee.cqiMatchLevel= cqiData.matchLevel;
+        coffee.cqiCount     = cqiData.count;
+        coffee.sca_score    = cqiData.scores?.total_score || null;
+      }
+    }
+  } catch(e) { console.warn("[Search] CQI 조회 실패:", e.message); }
+
+  // ── SCA_MATRIX 레시피 자동 생성 ──────────────────────
+  if (!coffee.brewTips) {
+    const recipe = getRecipeFromMatrix(coffee.process, null, "V60");
+    if (recipe) {
+      coffee.brewTips = `물온도 ${recipe.temp} · 비율 ${recipe.ratio} · 분쇄도 ${recipe.grind} · 추출시간 ${recipe.time}. ${recipe.note}`;
+      coffee.scaRecipe = recipe;
+    }
+  }
 
   return res.status(200).json({coffee});
 };

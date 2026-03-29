@@ -75,29 +75,35 @@
     /* ── 슬라이더 패널 ── */
     function getOrCreatePanel() {
       if (panelEl) return panelEl;
-      var wrap = svgEl.parentElement;
-      panelEl = document.createElement("div");
-      panelEl.style.cssText = [
-        "margin-top:12px","padding:14px 16px",
-        "background:#F8F6F3","display:none",
-      ].join(";");
-      panelEl.innerHTML =
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
-          '<span id="radarPanelLabel" style="font-size:14px;font-weight:600;color:#121212"></span>' +
-          '<span id="radarPanelVal"   style="font-size:22px;font-weight:700;color:'+WARM+'"></span>' +
-        '</div>' +
-        '<input type="range" id="radarSlider" min="1" max="10" step="1" style="width:100%;accent-color:'+WARM+'">' +
-        '<div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-top:4px">' +
-          '<span>1</span><span>5</span><span>10</span>' +
-        '</div>';
-      wrap.insertBefore(panelEl, svgEl.nextSibling);
-      document.getElementById("radarSlider").addEventListener("input", function() {
-        if (activeAxisIdx < 0) return;
-        vals[activeAxisIdx] = +this.value;
-        document.getElementById("radarPanelVal").textContent = this.value;
-        draw();
-        if (onChange) onChange(getValues());
-      });
+      /* tasting.html에 id="radarPanel"로 고정 선언된 영역 사용 */
+      panelEl = document.getElementById("radarPanel");
+      if (!panelEl) {
+        /* 폴백: 없으면 생성 (하위 호환) */
+        panelEl = document.createElement("div");
+        panelEl.id = "radarPanel";
+        panelEl.style.cssText = "margin-top:12px;padding:14px 16px;background:#F8F6F3;display:none;";
+        panelEl.innerHTML =
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
+            '<span id="radarPanelLabel" style="font-size:14px;font-weight:600;color:#121212"></span>' +
+            '<span id="radarPanelVal" style="font-size:22px;font-weight:700;color:'+WARM+'"></span>' +
+          '</div>' +
+          '<input type="range" id="radarSlider" min="1" max="10" step="1" style="width:100%;accent-color:'+WARM+'">' +
+          '<div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-top:4px">' +
+            '<span>1</span><span>5</span><span>10</span>' +
+          '</div>';
+        svgEl.parentElement.insertBefore(panelEl, svgEl.nextSibling);
+      }
+      var slider = document.getElementById("radarSlider");
+      if (slider) {
+        slider.addEventListener("input", function() {
+          if (activeAxisIdx < 0) return;
+          vals[activeAxisIdx] = +this.value;
+          var pv = document.getElementById("radarPanelVal");
+          if (pv) pv.textContent = this.value;
+          draw();
+          if (onChange) onChange(getValues());
+        });
+      }
       return panelEl;
     }
 
@@ -114,11 +120,15 @@
     var comparePanelEl = null;
     function getOrCreateComparePanel() {
       if (comparePanelEl) return comparePanelEl;
-      var wrap = svgEl.parentElement;
-      comparePanelEl = document.createElement("div");
-      comparePanelEl.id = "radarComparePanel";
-      comparePanelEl.style.cssText = "margin-top:16px;display:none;";
-      wrap.appendChild(comparePanelEl);
+      /* tasting.html에 id="radarComparePanel"로 고정 선언된 영역 사용 */
+      comparePanelEl = document.getElementById("radarComparePanel");
+      if (!comparePanelEl) {
+        /* 폴백: 없으면 생성 */
+        comparePanelEl = document.createElement("div");
+        comparePanelEl.id = "radarComparePanel";
+        comparePanelEl.style.cssText = "margin-top:16px;display:none;";
+        svgEl.parentElement.appendChild(comparePanelEl);
+      }
       return comparePanelEl;
     }
 

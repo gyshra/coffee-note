@@ -152,6 +152,7 @@ function formatCoffee(row) {
     processCategory: row.process_category,
     variety:         row.variety,
     notes:           row.notes || [],
+    rawNotes:        row.raw_notes || [],
     price:           row.price,
     rating:          row.avg_rating || 0,
     avg_rating:      row.avg_rating,
@@ -161,10 +162,19 @@ function formatCoffee(row) {
     description:     row.description,
     keywords:        row.keywords || [],
     source:          row.source,
+    sca_score:       row.sca_score,
+    roasterUrl:      row.roaster_url  || "",
+    farmUrl:         row.farm_url     || "",
+    purchaseUrl:     row.purchase_url || "",
+    acidity:         row.acidity,
+    sweetness:       row.sweetness,
+    body:            row.body,
+    aroma:           row.aroma,
+    brewTips:        row.brew_tips    || "",
+    confidence:      row.confidence   || "medium",
     mapText: [(row.region||""), (row.country||"")].filter(Boolean).join(", ") + " | 지도 연동 예정",
   };
 }
-
 function buildCommunity(tastings) {
   if (!tastings.length) return { count: 0, avgRating: null, topFlavors: [], topBrewMethods: [], radarAvg: null };
 
