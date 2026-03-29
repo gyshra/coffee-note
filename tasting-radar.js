@@ -113,67 +113,52 @@
       var cp = getOrCreateComparePanel();
       cp.style.display = "block";
 
-      /* 범례 */
+      /* 범례 — 목업 스타일 */
       var legendHtml =
-        '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">' +
-          '<span style="font-size:11px;font-weight:700;color:'+WARM+';display:flex;align-items:center;gap:5px">' +
-            '<svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="'+WARM+'" stroke-width="2.5"/></svg> 내 기록</span>' +
-          '<span style="font-size:11px;font-weight:700;color:'+COM_COLOR+';display:flex;align-items:center;gap:5px">' +
-            '<svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="'+COM_COLOR+'" stroke-width="1.5" stroke-dasharray="4,2"/></svg> 커뮤니티 평균</span>' +
-          '<span style="font-size:11px;font-weight:700;color:'+EXP_COLOR+';display:flex;align-items:center;gap:5px">' +
-            '<svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="'+EXP_COLOR+'" stroke-width="1.5" stroke-dasharray="2,2"/></svg> 전문가(CQI)</span>' +
+        '<div style="display:flex;gap:14px;flex-wrap:wrap;padding:0 0 10px;border-bottom:0.5px solid #E0E0E0;margin-bottom:10px">' +
+          '<span style="font-size:10px;font-weight:700;color:#121212;display:flex;align-items:center;gap:4px">' +
+            '<span style="display:inline-block;width:16px;height:2px;background:#121212"></span>내 기록</span>' +
+          '<span style="font-size:10px;font-weight:700;color:#8C7355;display:flex;align-items:center;gap:4px">' +
+            '<svg width="18" height="4"><line x1="0" y1="2" x2="18" y2="2" stroke="#8C7355" stroke-width="1.5" stroke-dasharray="4,2"/></svg>커뮤니티 평균</span>' +
+          '<span style="font-size:10px;font-weight:700;color:#888;display:flex;align-items:center;gap:4px">' +
+            '<svg width="18" height="4"><line x1="0" y1="2" x2="18" y2="2" stroke="#888" stroke-width="1.5" stroke-dasharray="2,2"/></svg>전문가(CQI)</span>' +
         '</div>';
 
-      /* 축별 점수 비교 테이블 */
-      var rowsHtml = AXES.map(function(ax, i) {
+      /* 축별 바 차트 — 목업 compare-bar 스타일 */
+      var barsHtml = AXES.map(function(ax, i) {
         var my  = vals[i];
         var com = COMMUNITY[ax] || 5;
         var exp = EXPERT[ax]    || 7;
-        var dCom = (my - com).toFixed(1);
-        var dExp = (my - exp).toFixed(1);
-        var dComSign = dCom >= 0 ? "+" : "";
-        var dExpSign = dExp >= 0 ? "+" : "";
-        var dComColor = dCom > 0 ? "#2d6a2d" : dCom < 0 ? "#A0522D" : "#888";
-        var dExpColor = dExp > 0 ? "#2d6a2d" : dExp < 0 ? "#A0522D" : "#888";
-        return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #F0EDE8">' +
-          '<span style="font-size:12px;font-weight:600;width:44px;color:#121212">' + ax + '</span>' +
-          '<span style="font-size:15px;font-weight:800;width:20px;text-align:center;color:'+WARM+'">' + my + '</span>' +
-          '<div style="flex:1;height:3px;background:#E8E5E0;position:relative">' +
-            '<div style="position:absolute;left:0;top:0;height:100%;background:'+WARM+';width:'+(my/10*100)+'%;transition:width .2s"></div>' +
+        var dCom = my - com, dExp = my - exp;
+        var dcSign = dCom >= 0 ? "+" : "", deSign = dExp >= 0 ? "+" : "";
+        var dcCol  = dCom > 0.3 ? "#2d6a2d" : dCom < -0.3 ? "#A0522D" : "#888";
+        var deCol  = dExp > 0.3 ? "#2d6a2d" : dExp < -0.3 ? "#A0522D" : "#888";
+        return '<div class="cmp-bar-row">' +
+          '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
+            '<span style="font-size:12px;font-weight:600;color:#121212">' + ax + '</span>' +
+            '<span style="font-size:11px;color:#888">내: <strong style="color:#121212">' + my + '</strong>' +
+            '&nbsp;·&nbsp;<span style="color:'+dcCol+'">커뮤니티 ' + dcSign + dCom.toFixed(1) + '</span>' +
+            '&nbsp;·&nbsp;<span style="color:'+deCol+'">전문가 ' + deSign + dExp.toFixed(1) + '</span></span>' +
           '</div>' +
-          '<span style="font-size:10px;font-weight:700;width:36px;text-align:right;color:'+dComColor+'">' + dComSign + dCom + '</span>' +
-          '<span style="font-size:10px;font-weight:700;width:36px;text-align:right;color:'+dExpColor+'">' + dExpSign + dExp + '</span>' +
+          '<div class="cmp-bar-track">' +
+            '<div class="cmp-bar-avg" style="width:' + (com/10*100).toFixed(1) + '%"></div>' +
+            '<div class="cmp-bar-me"  style="width:' + (my /10*100).toFixed(1) + '%"></div>' +
+          '</div>' +
         '</div>';
       }).join("");
 
-      var headerHtml =
-        '<div style="display:flex;align-items:center;gap:8px;padding-bottom:5px;border-bottom:2px solid #121212;margin-bottom:2px">' +
-          '<span style="font-size:10px;font-weight:700;color:#888;width:44px"></span>' +
-          '<span style="font-size:10px;font-weight:700;color:'+WARM+';width:20px;text-align:center">나</span>' +
-          '<div style="flex:1"></div>' +
-          '<span style="font-size:10px;font-weight:700;color:'+COM_COLOR+';width:36px;text-align:right">vs커뮤</span>' +
-          '<span style="font-size:10px;font-weight:700;color:'+EXP_COLOR+';width:36px;text-align:right">vs전문가</span>' +
-        '</div>';
+      /* AI 인사이트 — 가장 큰 차이 축 */
+      var maxDiff=0, maxIdx=0;
+      vals.forEach(function(v,i){ var d=Math.abs(v-EXPERT[AXES[i]]||7); if(d>maxDiff){maxDiff=d;maxIdx=i;} });
+      var insightHtml = maxDiff > 0.5 ?
+        '<div class="cmp-insight">' +
+          AXES[maxIdx] + '를 전문가보다 <strong>' +
+          (vals[maxIdx] > (EXPERT[AXES[maxIdx]]||7) ? '+' : '') +
+          (vals[maxIdx]-(EXPERT[AXES[maxIdx]]||7)).toFixed(1) + '</strong>점 다르게 느끼셨네요.' +
+          '<br><span style="color:#8C7355;font-size:12px">→ 다음 추출 시 물 온도를 1–2도 조정해 보세요.</span>' +
+        '</div>' : '';
 
-      /* 전체 평균 차이 */
-      var myAvg  = vals.reduce(function(a,b){return a+b;},0)/N;
-      var comAvg = AXES.reduce(function(a,ax){return a+(COMMUNITY[ax]||5);},0)/N;
-      var expAvg = AXES.reduce(function(a,ax){return a+(EXPERT[ax]||7);},0)/N;
-      var dCom2  = (myAvg-comAvg).toFixed(1);
-      var dExp2  = (myAvg-expAvg).toFixed(1);
-      var summaryHtml =
-        '<div style="display:flex;gap:12px;margin-top:12px">' +
-          '<div style="flex:1;background:#F8F6F3;padding:10px 12px;text-align:center">' +
-            '<div style="font-size:9px;font-weight:700;letter-spacing:1px;color:'+COM_COLOR+';margin-bottom:3px">vs 커뮤니티</div>' +
-            '<div style="font-size:22px;font-weight:900;color:' + (dCom2>=0?'#2d6a2d':'#A0522D') + '">' + (dCom2>=0?'+':'') + dCom2 + '</div>' +
-          '</div>' +
-          '<div style="flex:1;background:#F8F6F3;padding:10px 12px;text-align:center">' +
-            '<div style="font-size:9px;font-weight:700;letter-spacing:1px;color:'+EXP_COLOR+';margin-bottom:3px">vs 전문가</div>' +
-            '<div style="font-size:22px;font-weight:900;color:' + (dExp2>=0?'#2d6a2d':'#A0522D') + '">' + (dExp2>=0?'+':'') + dExp2 + '</div>' +
-          '</div>' +
-        '</div>';
-
-      cp.innerHTML = legendHtml + headerHtml + rowsHtml + summaryHtml;
+      cp.innerHTML = legendHtml + barsHtml + insightHtml;
     }
 
     /* ── 레이더 렌더 ── */
