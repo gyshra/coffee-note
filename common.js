@@ -863,6 +863,81 @@
         aiNotice.style.color = "#8C5A00";
         aiNotice.style.display = incomplete ? "block" : "none";
       }
+      // ── Entity Resolution UI ────────────────────────────────
+      var er = coffee._entityResolution;
+      var erBanner = document.getElementById("erBanner");
+      if (erBanner) erBanner.remove(); // 기존 배너 제거
+
+      if (er && er.action === "confirm" && er.matched) {
+        // confidence 70~89% → 사용자 확인 배너 표시
+        var banner = document.createElement("div");
+        banner.id = "erBanner";
+        banner.style.cssText = [
+          "margin:12px 0","padding:14px 16px",
+          "background:#FFF8F0","border-left:3px solid #8C7355",
+          "font-family:inherit"
+        ].join(";");
+
+        var pct = Math.round(er.confidence * 100);
+        banner.innerHTML =
+          '<div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#8C7355;margin-bottom:6px">원두 매칭 확인 · ' + pct + '% 일치</div>' +
+          '<div style="font-size:14px;font-weight:600;color:#121212;margin-bottom:2px">' + (er.matched.farm || er.matched.region || "") + '</div>' +
+          '<div style="font-size:12px;color:#555;margin-bottom:10px">' +
+            (er.matched.country || "") + (er.matched.region ? " · " + er.matched.region : "") +
+            (er.matched.process ? " · " + er.matched.process : "") +
+          '</div>' +
+          '<div style="font-size:12px;color:#888;margin-bottom:10px">' + (er.message || "이 원두가 맞나요?") + '</div>' +
+          '<div style="display:flex;gap:8px">' +
+            '<button type="button" id="erConfirmYes" style="flex:1;padding:10px;background:#121212;color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">맞아요 ✓</button>' +
+            '<button type="button" id="erConfirmNo"  style="flex:1;padding:10px;background:none;border:1px solid #E0E0E0;color:#555;font-size:12px;cursor:pointer;font-family:inherit">다른 원두예요</button>' +
+          '</div>' +
+          (er.alternatives && er.alternatives.length
+            ? '<div style="margin-top:10px;font-size:11px;color:#888">다른 후보: ' +
+                er.alternatives.map(function(a) {
+                  return '<span style="cursor:pointer;text-decoration:underline;margin-right:8px" data-uid="' + a.uid + '">' + (a.farm || a.region) + ' (' + a.similarity + '%)</span>';
+                }).join("") +
+              '</div>'
+            : "");
+
+        // step2 상단에 배너 삽입
+        var step2el = document.querySelector("#ocrStep2") || step2;
+        step2el.insertBefore(banner, step2el.firstChild);
+
+        // 이벤트: 맞아요
+        document.getElementById("erConfirmYes").addEventListener("click", function() {
+          banner.innerHTML = '<div style="font-size:13px;color:#2d6a2d;font-weight:600">✓ 매핑 완료 — ' + (er.matched.farm || er.matched.region) + '</div>';
+          window._erConfirmedUid = er.matched.uid;
+          // 폼에 정규화된 정보 반영
+          if (er.matched.country && !document.getElementById("ocrCountry").value) {
+            document.getElementById("ocrCountry").value = er.matched.country;
+          }
+        });
+
+        // 이벤트: 다른 원두예요
+        document.getElementById("erConfirmNo").addEventListener("click", function() {
+          banner.innerHTML = '<div style="font-size:12px;color:#888">새 원두로 등록합니다. 아래 정보를 직접 확인해주세요.</div>';
+          window._erConfirmedUid = null;
+        });
+
+        // 이벤트: 대안 후보 클릭
+        banner.querySelectorAll("[data-uid]").forEach(function(el) {
+          el.addEventListener("click", function() {
+            window._erConfirmedUid = el.getAttribute("data-uid");
+            banner.innerHTML = '<div style="font-size:13px;color:#2d6a2d;font-weight:600">✓ 매핑 완료 — ' + el.textContent + '</div>';
+          });
+        });
+
+      } else if (er && er.action === "auto" && er.matched) {
+        // confidence ≥ 90% → 조용히 완료 안내만
+        var autoMsg = document.createElement("div");
+        autoMsg.id = "erBanner";
+        autoMsg.style.cssText = "margin:8px 0 4px;padding:6px 12px;background:#F0FFF0;border-left:2px solid #4CAF50;font-size:11px;color:#2d6a2d;font-family:inherit";
+        autoMsg.textContent = "✓ " + (er.matched.farm || er.matched.region || "원두") + " 자동 매핑 (" + Math.round(er.confidence * 100) + "%)";
+        var step2el = document.querySelector("#ocrStep2") || step2;
+        step2el.insertBefore(autoMsg, step2el.firstChild);
+        window._erConfirmedUid = er.matched.uid;
+      }
+
       // Step 전환
       step1.style.display = "none";
       step2.style.display = "block";
@@ -875,6 +950,11 @@
     document.getElementById("ocrSaveBtn").addEventListener("click", function() {
       var coffee = collectOcrForm();
       if (!coffee.name) { showToast("원두 이름을 입력해주세요."); return; }
+      // Entity Resolution UID 포함
+      if (window._erConfirmedUid) {
+        coffee.taxonomy_uid = window._erConfirmedUid;
+        window._erConfirmedUid = null;
+      }
       closeSheet();
       dispatchOcrResult(coffee);
     });

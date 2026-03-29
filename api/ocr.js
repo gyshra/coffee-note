@@ -155,5 +155,29 @@ module.exports = async function handler(req, res) {
     }
   } catch(e) { console.warn("[OCR] Supabase:", e.message); }
 
+  // ── Entity Resolution: 택소노미 UID 매핑 ────────────────────
+  try {
+    const { resolveEntity, recordMapping } = require("./normalize");
+    const searchText = [coffee.farm, coffee.region, coffee.country, coffee.process].filter(Boolean).join(" ");
+    const resolved = await resolveEntity(searchText, { country: coffee.country });
+
+    coffee._entityResolution = {
+      confidence:   resolved.confidence,
+      action:       resolved.action,
+      message:      resolved.message,
+      matched:      resolved.matched,
+      alternatives: resolved.alternatives,
+    };
+
+    if (resolved.action === "auto" && resolved.matched?.uid) {
+      coffee.taxonomy_uid = resolved.matched.uid;
+      if (coffee.id) {
+        const sb = require("./_lib/supabase").getClient();
+        if (sb) await sb.from("coffees").update({ taxonomy_uid: resolved.matched.uid }).eq("id", coffee.id);
+        await recordMapping({ rawText: searchText, normalized: resolved.normalized, uid: resolved.matched.uid, confidence: resolved.confidence, confirmedBy: "auto" });
+      }
+    }
+  } catch(e) { console.warn("[OCR] EntityResolution:", e.message); }
+
   return res.status(200).json({coffee, text:coffee.name, _model:usedModel});
 };
