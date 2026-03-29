@@ -1,6 +1,7 @@
 /**
- * Coffee Note — Radar Chart v2
- * UX 개선: 큰 터치 영역 + 탭→슬라이더 패널
+ * Coffee Note — Radar Chart v3
+ * 3중 비교: 내 기록(warm 실선) / 커뮤니티 평균(회색 점선) / 전문가(black 점선)
+ * 드래그 핸들 + 탭→슬라이더 패널
  */
 (function(global) {
   "use strict";
@@ -8,58 +9,70 @@
   var NS = "http://www.w3.org/2000/svg";
   var AXES = ["아로마","산미","단맛","바디감","여운"];
   var N = 5;
-  var COMMUNITY = {아로마:6.5,산미:6.0,단맛:5.8,바디감:5.5,여운:6.2};
-  var WARM = "#8C7355";
+
+  /* 커뮤니티 평균 (실제 서비스 시 Supabase GROUP BY로 교체) */
+  var COMMUNITY = { 아로마:6.5, 산미:6.0, 단맛:5.8, 바디감:5.5, 여운:6.2 };
+
+  /* 전문가(Q-Grader / CQI) 기준값 (실제 서비스 시 cqi_benchmarks 테이블로 교체) */
+  var EXPERT = { 아로마:8.2, 산미:8.5, 단맛:7.0, 바디감:7.5, 여운:8.0 };
+
+  var WARM       = "#8C7355";
   var WARM_LIGHT = "rgba(140,115,85,0.12)";
+  var EXP_COLOR  = "#121212";          /* 전문가: 진한 검정 */
+  var COM_COLOR  = "#BBBBBB";          /* 커뮤니티: 연회색 */
 
   function aFor(i,n) { return (Math.PI*2*i/(n||N)) - Math.PI/2; }
   function pol(cx,cy,r,a) { return [cx+r*Math.cos(a), cy+r*Math.sin(a)]; }
   function vToR(v,min,max) { return min+((max-min)*(Math.max(1,Math.min(10,v))-1)/9); }
   function pts(cx,cy,rfn,n) {
     var arr=[];
-    for(var i=0;i<n;i++){var p=pol(cx,cy,rfn(i),aFor(i,n));arr.push(p[0]+","+p[1]);}
+    for(var i=0;i<(n||N);i++){var p=pol(cx,cy,rfn(i),aFor(i,n||N));arr.push(p[0]+","+p[1]);}
     return arr.join(" ");
   }
+  function mkEl(tag,attrs) {
+    var el=document.createElementNS(NS,tag);
+    for(var k in attrs) el.setAttribute(k,attrs[k]);
+    return el;
+  }
+  function app(p,c){p.appendChild(c);}
 
-  /* ══════════════════════════════════════════
+  /* ══════════════════════════════════════════════════════════════
      Interactive (tasting.html)
-     ══════════════════════════════════════════ */
+     ══════════════════════════════════════════════════════════════ */
   function createInteractive(options) {
     var svgEl = document.getElementById(options.svgId);
     if (!svgEl) return null;
 
-    // 더 큰 뷰박스 → 핸들 조작 편의
     var CX=180, CY=180, MAX_R=140, MIN_R=20;
     svgEl.setAttribute("viewBox","0 0 360 360");
     svgEl.style.touchAction = "none";
-    svgEl.style.userSelect = "none";
+    svgEl.style.userSelect  = "none";
 
     var vals = [5,5,5,5,5];
-    var showCommunity = false;
-    var dragIdx = -1;
-    var onChange = options.onChange || null;
-    var onAxisClick = options.onAxisClick || null;
-
-    // ── 슬라이더 패널 ──────────────────────────────────────────
-    var panelEl = null;
+    var showCompare = false;   /* 토글: 커뮤니티+전문가 오버레이 */
+    var dragIdx     = -1;
+    var onChange    = options.onChange || null;
+    var panelEl     = null;
     var activeAxisIdx = -1;
 
+    /* ── 슬라이더 패널 ── */
     function getOrCreatePanel() {
       if (panelEl) return panelEl;
       var wrap = svgEl.parentElement;
       panelEl = document.createElement("div");
       panelEl.style.cssText = [
         "margin-top:12px","padding:14px 16px",
-        "background:var(--color-background-secondary,#F8F6F3)",
-        "border-radius:8px","display:none"
+        "background:#F8F6F3","display:none",
       ].join(";");
       panelEl.innerHTML =
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
-        '<span id="radarPanelLabel" style="font-size:14px;font-weight:600;color:#121212"></span>' +
-        '<span id="radarPanelVal" style="font-size:22px;font-weight:700;color:'+WARM+'"></span>' +
+          '<span id="radarPanelLabel" style="font-size:14px;font-weight:600;color:#121212"></span>' +
+          '<span id="radarPanelVal"   style="font-size:22px;font-weight:700;color:'+WARM+'"></span>' +
         '</div>' +
         '<input type="range" id="radarSlider" min="1" max="10" step="1" style="width:100%;accent-color:'+WARM+'">' +
-        '<div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-top:4px"><span>1</span><span>5</span><span>10</span></div>';
+        '<div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-top:4px">' +
+          '<span>1</span><span>5</span><span>10</span>' +
+        '</div>';
       wrap.insertBefore(panelEl, svgEl.nextSibling);
       document.getElementById("radarSlider").addEventListener("input", function() {
         if (activeAxisIdx < 0) return;
@@ -76,191 +89,252 @@
       activeAxisIdx = idx;
       panel.style.display = "block";
       document.getElementById("radarPanelLabel").textContent = AXES[idx];
-      document.getElementById("radarPanelVal").textContent = vals[idx];
-      document.getElementById("radarSlider").value = vals[idx];
+      document.getElementById("radarPanelVal").textContent   = vals[idx];
+      document.getElementById("radarSlider").value           = vals[idx];
     }
 
+    /* ── 비교 패널 (compare ON 시 차이 표시) ── */
+    var comparePanelEl = null;
+    function getOrCreateComparePanel() {
+      if (comparePanelEl) return comparePanelEl;
+      var wrap = svgEl.parentElement;
+      comparePanelEl = document.createElement("div");
+      comparePanelEl.id = "radarComparePanel";
+      comparePanelEl.style.cssText = "margin-top:16px;display:none;";
+      wrap.appendChild(comparePanelEl);
+      return comparePanelEl;
+    }
+
+    function updateComparePanel() {
+      if (!showCompare) {
+        if (comparePanelEl) comparePanelEl.style.display = "none";
+        return;
+      }
+      var cp = getOrCreateComparePanel();
+      cp.style.display = "block";
+
+      /* 범례 */
+      var legendHtml =
+        '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">' +
+          '<span style="font-size:11px;font-weight:700;color:'+WARM+';display:flex;align-items:center;gap:5px">' +
+            '<svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="'+WARM+'" stroke-width="2.5"/></svg> 내 기록</span>' +
+          '<span style="font-size:11px;font-weight:700;color:'+COM_COLOR+';display:flex;align-items:center;gap:5px">' +
+            '<svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="'+COM_COLOR+'" stroke-width="1.5" stroke-dasharray="4,2"/></svg> 커뮤니티 평균</span>' +
+          '<span style="font-size:11px;font-weight:700;color:'+EXP_COLOR+';display:flex;align-items:center;gap:5px">' +
+            '<svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="'+EXP_COLOR+'" stroke-width="1.5" stroke-dasharray="2,2"/></svg> 전문가(CQI)</span>' +
+        '</div>';
+
+      /* 축별 점수 비교 테이블 */
+      var rowsHtml = AXES.map(function(ax, i) {
+        var my  = vals[i];
+        var com = COMMUNITY[ax] || 5;
+        var exp = EXPERT[ax]    || 7;
+        var dCom = (my - com).toFixed(1);
+        var dExp = (my - exp).toFixed(1);
+        var dComSign = dCom >= 0 ? "+" : "";
+        var dExpSign = dExp >= 0 ? "+" : "";
+        var dComColor = dCom > 0 ? "#2d6a2d" : dCom < 0 ? "#A0522D" : "#888";
+        var dExpColor = dExp > 0 ? "#2d6a2d" : dExp < 0 ? "#A0522D" : "#888";
+        return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #F0EDE8">' +
+          '<span style="font-size:12px;font-weight:600;width:44px;color:#121212">' + ax + '</span>' +
+          '<span style="font-size:15px;font-weight:800;width:20px;text-align:center;color:'+WARM+'">' + my + '</span>' +
+          '<div style="flex:1;height:3px;background:#E8E5E0;position:relative">' +
+            '<div style="position:absolute;left:0;top:0;height:100%;background:'+WARM+';width:'+(my/10*100)+'%;transition:width .2s"></div>' +
+          '</div>' +
+          '<span style="font-size:10px;font-weight:700;width:36px;text-align:right;color:'+dComColor+'">' + dComSign + dCom + '</span>' +
+          '<span style="font-size:10px;font-weight:700;width:36px;text-align:right;color:'+dExpColor+'">' + dExpSign + dExp + '</span>' +
+        '</div>';
+      }).join("");
+
+      var headerHtml =
+        '<div style="display:flex;align-items:center;gap:8px;padding-bottom:5px;border-bottom:2px solid #121212;margin-bottom:2px">' +
+          '<span style="font-size:10px;font-weight:700;color:#888;width:44px"></span>' +
+          '<span style="font-size:10px;font-weight:700;color:'+WARM+';width:20px;text-align:center">나</span>' +
+          '<div style="flex:1"></div>' +
+          '<span style="font-size:10px;font-weight:700;color:'+COM_COLOR+';width:36px;text-align:right">vs커뮤</span>' +
+          '<span style="font-size:10px;font-weight:700;color:'+EXP_COLOR+';width:36px;text-align:right">vs전문가</span>' +
+        '</div>';
+
+      /* 전체 평균 차이 */
+      var myAvg  = vals.reduce(function(a,b){return a+b;},0)/N;
+      var comAvg = AXES.reduce(function(a,ax){return a+(COMMUNITY[ax]||5);},0)/N;
+      var expAvg = AXES.reduce(function(a,ax){return a+(EXPERT[ax]||7);},0)/N;
+      var dCom2  = (myAvg-comAvg).toFixed(1);
+      var dExp2  = (myAvg-expAvg).toFixed(1);
+      var summaryHtml =
+        '<div style="display:flex;gap:12px;margin-top:12px">' +
+          '<div style="flex:1;background:#F8F6F3;padding:10px 12px;text-align:center">' +
+            '<div style="font-size:9px;font-weight:700;letter-spacing:1px;color:'+COM_COLOR+';margin-bottom:3px">vs 커뮤니티</div>' +
+            '<div style="font-size:22px;font-weight:900;color:' + (dCom2>=0?'#2d6a2d':'#A0522D') + '">' + (dCom2>=0?'+':'') + dCom2 + '</div>' +
+          '</div>' +
+          '<div style="flex:1;background:#F8F6F3;padding:10px 12px;text-align:center">' +
+            '<div style="font-size:9px;font-weight:700;letter-spacing:1px;color:'+EXP_COLOR+';margin-bottom:3px">vs 전문가</div>' +
+            '<div style="font-size:22px;font-weight:900;color:' + (dExp2>=0?'#2d6a2d':'#A0522D') + '">' + (dExp2>=0?'+':'') + dExp2 + '</div>' +
+          '</div>' +
+        '</div>';
+
+      cp.innerHTML = legendHtml + headerHtml + rowsHtml + summaryHtml;
+    }
+
+    /* ── 레이더 렌더 ── */
     function draw() {
       svgEl.innerHTML = "";
 
-      // 가이드 다각형
-      for (var ring=1;ring<=5;ring++) {
+      /* 가이드 링 */
+      for (var ring=1; ring<=5; ring++) {
         var r = MIN_R+((MAX_R-MIN_R)*ring/5);
-        var pg = document.createElementNS(NS,"polygon");
-        pg.setAttribute("points", pts(CX,CY,function(){return r;},N));
-        pg.setAttribute("fill", ring===5?WARM_LIGHT:"none");
-        pg.setAttribute("stroke","#E8E5E0");
-        pg.setAttribute("stroke-width","0.8");
-        svgEl.appendChild(pg);
+        var pg = mkEl("polygon",{
+          points: pts(CX,CY,function(){return r;},N),
+          fill: ring===5 ? WARM_LIGHT : "none",
+          stroke: "#E8E5E0", "stroke-width":"0.8",
+        });
+        app(svgEl, pg);
       }
 
-      // 링 수치 라벨 (2,4,6,8,10)
-      [2,4,6,8,10].forEach(function(v,ri){
+      /* 수치 라벨 */
+      [2,4,6,8,10].forEach(function(v) {
         var r2 = vToR(v,MIN_R,MAX_R);
         var lp = pol(CX,CY,r2,-Math.PI/2+0.18);
-        var lt = document.createElementNS(NS,"text");
-        lt.setAttribute("x",lp[0]+3);
-        lt.setAttribute("y",lp[1]);
-        lt.setAttribute("font-size","9");
-        lt.setAttribute("fill","#AAA");
-        lt.setAttribute("font-family","'Pretendard Variable',sans-serif");
-        lt.setAttribute("dominant-baseline","central");
-        lt.setAttribute("pointer-events","none");
+        var lt = mkEl("text",{
+          x:lp[0]+3, y:lp[1], "font-size":"9", fill:"#BBB",
+          "font-family":"'Pretendard Variable',sans-serif",
+          "dominant-baseline":"central","pointer-events":"none",
+        });
         lt.textContent = v;
-        svgEl.appendChild(lt);
+        app(svgEl, lt);
       });
 
-      // 축 라인
-      for (var i=0;i<N;i++) {
+      /* 축 라인 */
+      for (var i=0; i<N; i++) {
         var ep = pol(CX,CY,MAX_R+6,aFor(i));
-        var ln = document.createElementNS(NS,"line");
-        ln.setAttribute("x1",CX); ln.setAttribute("y1",CY);
-        ln.setAttribute("x2",ep[0]); ln.setAttribute("y2",ep[1]);
-        ln.setAttribute("stroke","#E0DDD8"); ln.setAttribute("stroke-width","0.8");
-        svgEl.appendChild(ln);
+        app(svgEl, mkEl("line",{
+          x1:CX,y1:CY, x2:ep[0],y2:ep[1],
+          stroke:"#E0DDD8","stroke-width":"0.8",
+        }));
       }
 
-      // 커뮤니티 비교
-      if (showCommunity) {
-        var cp = document.createElementNS(NS,"polygon");
-        cp.setAttribute("points", pts(CX,CY,function(j){return vToR(COMMUNITY[AXES[j]]||5,MIN_R,MAX_R);},N));
-        cp.setAttribute("fill","rgba(18,18,18,0.04)");
-        cp.setAttribute("stroke","#C0BCBA");
-        cp.setAttribute("stroke-width","1.5");
-        cp.setAttribute("stroke-dasharray","6 4");
-        cp.setAttribute("stroke-linejoin","round");
-        svgEl.appendChild(cp);
+      if (showCompare) {
+        /* 커뮤니티 점선 (회색) */
+        app(svgEl, mkEl("polygon",{
+          points: pts(CX,CY,function(j){return vToR(COMMUNITY[AXES[j]]||5,MIN_R,MAX_R);},N),
+          fill:"none", stroke:COM_COLOR, "stroke-width":"1.5",
+          "stroke-dasharray":"6 4", "stroke-linejoin":"round",
+        }));
+
+        /* 전문가 점선 (검정) */
+        app(svgEl, mkEl("polygon",{
+          points: pts(CX,CY,function(j){return vToR(EXPERT[AXES[j]]||7,MIN_R,MAX_R);},N),
+          fill:"none", stroke:EXP_COLOR, "stroke-width":"1.5",
+          "stroke-dasharray":"3 3", "stroke-linejoin":"round",
+        }));
       }
 
-      // 내 값 다각형
-      var fp = document.createElementNS(NS,"polygon");
-      fp.setAttribute("points", pts(CX,CY,function(j){return vToR(vals[j],MIN_R,MAX_R);},N));
-      fp.setAttribute("fill",WARM_LIGHT);
-      fp.setAttribute("stroke",WARM);
-      fp.setAttribute("stroke-width","2.5");
-      fp.setAttribute("stroke-linejoin","round");
-      svgEl.appendChild(fp);
+      /* 내 값 */
+      app(svgEl, mkEl("polygon",{
+        points: pts(CX,CY,function(j){return vToR(vals[j],MIN_R,MAX_R);},N),
+        fill: WARM_LIGHT, stroke:WARM, "stroke-width":"2.5", "stroke-linejoin":"round",
+      }));
 
-      // 핸들 + 터치 영역 + 축 라벨
-      for (var i=0;i<N;i++) {
-        (function(idx){
+      /* 핸들 + 라벨 */
+      for (var i=0; i<N; i++) {
+        (function(idx) {
           var angle = aFor(idx);
-          var hr = vToR(vals[idx],MIN_R,MAX_R);
-          var hp = pol(CX,CY,hr,angle);
+          var hr    = vToR(vals[idx],MIN_R,MAX_R);
+          var hp    = pol(CX,CY,hr,angle);
 
-          // ── 보이지 않는 큰 터치 히트 영역 (r=22) ──
-          var hitCircle = document.createElementNS(NS,"circle");
-          hitCircle.setAttribute("cx",hp[0]); hitCircle.setAttribute("cy",hp[1]);
-          hitCircle.setAttribute("r","22");
-          hitCircle.setAttribute("fill","transparent");
-          hitCircle.setAttribute("cursor","grab");
-          hitCircle.setAttribute("data-idx",idx);
-          svgEl.appendChild(hitCircle);
+          /* 히트 영역 */
+          app(svgEl, mkEl("circle",{
+            cx:hp[0],cy:hp[1],r:"22",fill:"transparent",
+            cursor:"grab","data-idx":idx,
+          }));
 
-          // 값 라벨 (핸들 내부)
-          var vt = document.createElementNS(NS,"text");
-          vt.setAttribute("x",hp[0]); vt.setAttribute("y",hp[1]);
-          vt.setAttribute("text-anchor","middle"); vt.setAttribute("dominant-baseline","central");
-          vt.setAttribute("font-size","11"); vt.setAttribute("font-weight","700");
-          vt.setAttribute("fill","#fff"); vt.setAttribute("pointer-events","none");
-          vt.setAttribute("font-family","'Pretendard Variable',sans-serif");
+          /* 핸들 */
+          app(svgEl, mkEl("circle",{
+            cx:hp[0],cy:hp[1],r:"16",
+            fill: activeAxisIdx===idx ? "#5C4A35" : WARM,
+            stroke:"#fff","stroke-width":"2.5",
+            cursor:"grab","pointer-events":"none",
+          }));
+
+          /* 값 텍스트 */
+          var vt = mkEl("text",{
+            x:hp[0],y:hp[1],"text-anchor":"middle","dominant-baseline":"central",
+            "font-size":"11","font-weight":"700",fill:"#fff",
+            "font-family":"'Pretendard Variable',sans-serif","pointer-events":"none",
+          });
           vt.textContent = vals[idx];
-          svgEl.appendChild(vt);
+          app(svgEl, vt);
 
-          // 핸들 (시각적, r=16)
-          var hc = document.createElementNS(NS,"circle");
-          hc.setAttribute("cx",hp[0]); hc.setAttribute("cy",hp[1]);
-          hc.setAttribute("r","16");
-          hc.setAttribute("fill", activeAxisIdx===idx ? "#5C4A35" : WARM);
-          hc.setAttribute("stroke","#fff"); hc.setAttribute("stroke-width","2.5");
-          hc.setAttribute("cursor","grab"); hc.setAttribute("pointer-events","none");
-          svgEl.appendChild(hc);
-          // 값 라벨을 핸들 위로
-          svgEl.appendChild(vt);
-
-          // 축 이름 라벨 (탭 가능)
+          /* 축 라벨 */
           var nlp = pol(CX,CY,MAX_R+26,angle);
-          var labelBg = document.createElementNS(NS,"rect");
-          var labelText = document.createElementNS(NS,"text");
-          labelText.setAttribute("x",nlp[0]); labelText.setAttribute("y",nlp[1]);
-          labelText.setAttribute("text-anchor","middle"); labelText.setAttribute("dominant-baseline","central");
-          labelText.setAttribute("font-size","13"); labelText.setAttribute("font-weight","600");
-          labelText.setAttribute("fill", activeAxisIdx===idx ? WARM : "#333");
-          labelText.setAttribute("font-family","'Pretendard Variable',sans-serif");
-          labelText.setAttribute("cursor","pointer");
-          labelText.textContent = AXES[idx];
-          svgEl.appendChild(labelText);
+          var lt2 = mkEl("text",{
+            x:nlp[0],y:nlp[1],"text-anchor":"middle","dominant-baseline":"central",
+            "font-size":"13","font-weight":"600",
+            fill: activeAxisIdx===idx ? WARM : "#333",
+            "font-family":"'Pretendard Variable',sans-serif",
+            cursor:"pointer",
+          });
+          lt2.textContent = AXES[idx];
+          app(svgEl, lt2);
         })(i);
       }
+
+      updateComparePanel();
     }
 
-    // ── 드래그 로직 ───────────────────────────────────────────
-    function getEventXY(e) {
-      var rect = svgEl.getBoundingClientRect();
-      var scaleX = 360/rect.width;
-      var scaleY = 360/rect.height;
-      var clientX = e.touches?e.touches[0].clientX:e.clientX;
-      var clientY = e.touches?e.touches[0].clientY:e.clientY;
-      return [(clientX-rect.left)*scaleX, (clientY-rect.top)*scaleY];
+    /* ── 드래그 ── */
+    function getXY(e) {
+      var rect=svgEl.getBoundingClientRect();
+      var sx=360/rect.width, sy=360/rect.height;
+      var cx=e.touches?e.touches[0].clientX:e.clientX;
+      var cy=e.touches?e.touches[0].clientY:e.clientY;
+      return [(cx-rect.left)*sx,(cy-rect.top)*sy];
     }
 
     function xyToVal(x,y,idx) {
-      var angle = aFor(idx);
-      var dx=x-CX, dy=y-CY;
-      var proj = dx*Math.cos(angle)+dy*Math.sin(angle);
-      var clamped = Math.max(MIN_R,Math.min(MAX_R,proj));
-      return Math.round(1+(clamped-MIN_R)/(MAX_R-MIN_R)*9);
+      var a=aFor(idx), dx=x-CX, dy=y-CY;
+      var proj=dx*Math.cos(a)+dy*Math.sin(a);
+      return Math.round(1+(Math.max(MIN_R,Math.min(MAX_R,proj))-MIN_R)/(MAX_R-MIN_R)*9);
     }
 
-    function findNearestHandle(x,y) {
-      var best=-1, bestDist=999;
-      for (var i=0;i<N;i++) {
+    function nearest(x,y) {
+      var best=-1, bd=999;
+      for(var i=0;i<N;i++){
         var hr=vToR(vals[i],MIN_R,MAX_R);
         var hp=pol(CX,CY,hr,aFor(i));
         var d=Math.hypot(x-hp[0],y-hp[1]);
-        if (d<bestDist){bestDist=d;best=i;}
+        if(d<bd){bd=d;best=i;}
       }
-      return bestDist<30?best:-1;
+      return bd<30?best:-1;
     }
 
     svgEl.addEventListener("pointerdown",function(e){
-      var xy=getEventXY(e);
-      var idx=findNearestHandle(xy[0],xy[1]);
-      if (idx<0) return;
-      dragIdx=idx;
-      svgEl.setPointerCapture(e.pointerId);
-      e.preventDefault();
+      var xy=getXY(e); var idx=nearest(xy[0],xy[1]);
+      if(idx<0) return;
+      dragIdx=idx; svgEl.setPointerCapture(e.pointerId); e.preventDefault();
     });
     svgEl.addEventListener("pointermove",function(e){
-      if (dragIdx<0) return;
-      var xy=getEventXY(e);
-      var v=xyToVal(xy[0],xy[1],dragIdx);
-      if (v!==vals[dragIdx]) {
+      if(dragIdx<0) return;
+      var xy=getXY(e), v=xyToVal(xy[0],xy[1],dragIdx);
+      if(v!==vals[dragIdx]){
         vals[dragIdx]=v;
-        if (panelEl&&activeAxisIdx===dragIdx) {
+        if(panelEl&&activeAxisIdx===dragIdx){
           document.getElementById("radarPanelVal").textContent=v;
           document.getElementById("radarSlider").value=v;
         }
         draw();
-        if (onChange) onChange(getValues());
+        if(onChange) onChange(getValues());
       }
       e.preventDefault();
     });
     svgEl.addEventListener("pointerup",function(e){
-      if (dragIdx>=0) { showPanel(dragIdx); dragIdx=-1; }
+      if(dragIdx>=0){ showPanel(dragIdx); dragIdx=-1; }
     });
     svgEl.addEventListener("pointercancel",function(){ dragIdx=-1; });
-
-    // 탭(클릭)으로 축 라벨/핸들 탭 → 슬라이더 패널 열기
     svgEl.addEventListener("click",function(e){
-      if (dragIdx>=0) return;
-      var xy=getEventXY(e);
-      var idx=findNearestHandle(xy[0],xy[1]);
-      if (idx>=0) {
-        activeAxisIdx=idx;
-        showPanel(idx);
-        draw();
-      }
+      if(dragIdx>=0) return;
+      var xy=getXY(e), idx=nearest(xy[0],xy[1]);
+      if(idx>=0){ activeAxisIdx=idx; showPanel(idx); draw(); }
     });
 
     function getValues() {
@@ -268,92 +342,82 @@
       AXES.forEach(function(a,i){obj[a]=vals[i];});
       return obj;
     }
-
     function setValues(obj) {
       AXES.forEach(function(a,i){if(obj[a]!==undefined) vals[i]=+obj[a];});
       draw();
     }
-
-    function toggleCommunity(v) { showCommunity=v; draw(); }
+    function setShowCommunity(v) { showCompare=v; draw(); }
 
     draw();
-    return { draw,getValues,setValues,toggleCommunity };
+    return { draw:draw, getValues:getValues, setValues:setValues, setShowCommunity:setShowCommunity };
   }
 
-  /* ══════════════════════════════════════════
+  /* ══════════════════════════════════════════════════════════════
      Readonly mini (note-detail)
-     ══════════════════════════════════════════ */
+     ══════════════════════════════════════════════════════════════ */
   function createReadonly(options) {
     var svgEl = document.getElementById(options.svgId);
     if (!svgEl) return null;
     var CX=120,CY=120,MAX_R=90,MIN_R=14;
     svgEl.setAttribute("viewBox","0 0 240 240");
-    var vals = options.values || {};
-    var showCommunity = options.showCommunity || false;
-    var onAxisClick = options.onAxisClick || null;
+    var vals=options.values||{};
+    var showCommunity=options.showCommunity||false;
+    var onAxisClick=options.onAxisClick||null;
 
     function draw() {
       svgEl.innerHTML="";
       for(var ring=1;ring<=5;ring++){
         var r=MIN_R+((MAX_R-MIN_R)*ring/5);
-        var pg=document.createElementNS(NS,"polygon");
-        pg.setAttribute("points",pts(CX,CY,function(){return r;},N));
-        pg.setAttribute("fill",ring===5?WARM_LIGHT:"none");
-        pg.setAttribute("stroke","#E8E5E0");
-        pg.setAttribute("stroke-width","0.5");
-        svgEl.appendChild(pg);
+        app(svgEl,mkEl("polygon",{
+          points:pts(CX,CY,function(){return r;},N),
+          fill:ring===5?WARM_LIGHT:"none",stroke:"#E8E5E0","stroke-width":"0.5",
+        }));
       }
       for(var i=0;i<N;i++){
         var ep=pol(CX,CY,MAX_R+2,aFor(i));
-        var ln=document.createElementNS(NS,"line");
-        ln.setAttribute("x1",CX);ln.setAttribute("y1",CY);
-        ln.setAttribute("x2",ep[0]);ln.setAttribute("y2",ep[1]);
-        ln.setAttribute("stroke","#E8E5E0");ln.setAttribute("stroke-width","0.5");
-        svgEl.appendChild(ln);
+        app(svgEl,mkEl("line",{x1:CX,y1:CY,x2:ep[0],y2:ep[1],stroke:"#E8E5E0","stroke-width":"0.5"}));
       }
       if(showCommunity){
-        var cp=document.createElementNS(NS,"polygon");
-        cp.setAttribute("points",pts(CX,CY,function(j){return vToR(COMMUNITY[AXES[j]]||5,MIN_R,MAX_R);},N));
-        cp.setAttribute("fill","rgba(18,18,18,0.04)");
-        cp.setAttribute("stroke","#C0BCBA");
-        cp.setAttribute("stroke-width","1");
-        cp.setAttribute("stroke-dasharray","4 3");
-        cp.setAttribute("stroke-linejoin","round");
-        svgEl.appendChild(cp);
+        app(svgEl,mkEl("polygon",{
+          points:pts(CX,CY,function(j){return vToR(COMMUNITY[AXES[j]]||5,MIN_R,MAX_R);},N),
+          fill:"none",stroke:COM_COLOR,"stroke-width":"1","stroke-dasharray":"4 3","stroke-linejoin":"round",
+        }));
+        app(svgEl,mkEl("polygon",{
+          points:pts(CX,CY,function(j){return vToR(EXPERT[AXES[j]]||7,MIN_R,MAX_R);},N),
+          fill:"none",stroke:EXP_COLOR,"stroke-width":"1","stroke-dasharray":"2 2","stroke-linejoin":"round",
+        }));
       }
-      var fp=document.createElementNS(NS,"polygon");
-      fp.setAttribute("points",pts(CX,CY,function(j){return vToR(vals[AXES[j]]||5,MIN_R,MAX_R);},N));
-      fp.setAttribute("fill",WARM_LIGHT);
-      fp.setAttribute("stroke",WARM);
-      fp.setAttribute("stroke-width","1.5");
-      fp.setAttribute("stroke-linejoin","round");
-      svgEl.appendChild(fp);
+      app(svgEl,mkEl("polygon",{
+        points:pts(CX,CY,function(j){return vToR(vals[AXES[j]]||5,MIN_R,MAX_R);},N),
+        fill:WARM_LIGHT,stroke:WARM,"stroke-width":"1.5","stroke-linejoin":"round",
+      }));
       for(var i=0;i<N;i++){
         (function(idx){
-          var angle=aFor(idx);
           var v=vals[AXES[idx]]||5;
-          var hp=pol(CX,CY,vToR(v,MIN_R,MAX_R),angle);
-          var dot=document.createElementNS(NS,"circle");
-          dot.setAttribute("cx",hp[0]);dot.setAttribute("cy",hp[1]);
-          dot.setAttribute("r","5");dot.setAttribute("fill",WARM);
-          dot.setAttribute("stroke","#fff");dot.setAttribute("stroke-width","1.5");
-          svgEl.appendChild(dot);
-          var nlp=pol(CX,CY,MAX_R+18,angle);
-          var nt=document.createElementNS(NS,"text");
-          nt.setAttribute("x",nlp[0]);nt.setAttribute("y",nlp[1]);
-          nt.setAttribute("text-anchor","middle");nt.setAttribute("dominant-baseline","central");
-          nt.setAttribute("font-size","10");nt.setAttribute("font-weight","500");
-          nt.setAttribute("fill","#333");
-          nt.setAttribute("font-family","'Pretendard Variable',sans-serif");
+          var hp=pol(CX,CY,vToR(v,MIN_R,MAX_R),aFor(idx));
+          app(svgEl,mkEl("circle",{cx:hp[0],cy:hp[1],r:"5",fill:WARM,stroke:"#fff","stroke-width":"1.5"}));
+          var nlp=pol(CX,CY,MAX_R+18,aFor(idx));
+          var nt=mkEl("text",{
+            x:nlp[0],y:nlp[1],"text-anchor":"middle","dominant-baseline":"central",
+            "font-size":"10","font-weight":"500",fill:"#333",
+            "font-family":"'Pretendard Variable',sans-serif",
+          });
           if(onAxisClick){nt.setAttribute("cursor","pointer");nt.addEventListener("click",function(){onAxisClick(AXES[idx]);});}
           nt.textContent = AXES[idx]+" "+v;
-          svgEl.appendChild(nt);
+          app(svgEl,nt);
         })(i);
       }
     }
     draw();
-    return {draw};
+    return {draw:draw};
   }
 
-  global.CoffeeRadar = { createInteractive, createReadonly, AXES };
+  global.CoffeeRadar = {
+    createInteractive: createInteractive,
+    createReadonly:    createReadonly,
+    AXES:              AXES,
+    COMMUNITY:         COMMUNITY,
+    EXPERT:            EXPERT,
+  };
+
 })(typeof window!=="undefined"?window:globalThis);

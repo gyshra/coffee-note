@@ -1207,21 +1207,16 @@ input[type="range"]::-moz-range-track {
   display: block;
 }
 
-/* tasting.html STEP1: 오른쪽 반원만 보이도록 클리핑 */
+/* tasting.html STEP1: 반원형 휠 — JS가 높이/위치를 직접 설정함 */
 #tastingMain.sensory-note #wheelViewport {
-  height: 440px;
   max-width: none;
   aspect-ratio: auto;
-  margin: 16px 0 8px;
+  margin: 8px -20px 8px;
+  touch-action: none;
 }
 
 #tastingMain.sensory-note #wheelSvg {
-  position: absolute;
-  width: 440px;
-  height: 440px;
-  left: -212px; /* 500 viewBox 기준: CX=240에 맞춘 근사 */
-  top: 0;
-  display: block;
+  /* position/size는 tasting-wheel.js가 설정 */
 }
 
 /* 레이더(기본 감각) */
