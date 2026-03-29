@@ -47,17 +47,28 @@ function buildPrompt(query, context) {
   const ctx = context
     ? `\n알려진 맥락: 국가=${context.country||""}, 지역=${context.region||""}, 농장=${context.farm||""}`
     : "";
-  return `커피 원두 "${query}" 정보를 JSON만 반환. 마크다운 없이.${ctx}
 
-[규칙]
-- farm: 농장/생산자 이름. 원두명에 포함된 경우도 분리해서 기입.
-- rawNotes: 이 원두의 실제 컵노트 (자유 텍스트, 알려진 것 기입)
-- roasterUrl: 로스터리 공식 웹사이트 URL (확실한 것만, 불확실하면 "")
-- farmUrl: 농장/생산자 공식 웹사이트 URL (확실한 것만, 불확실하면 "")
-- purchaseUrl: 이 원두를 구매할 수 있는 URL (로스터리 상품 페이지, 확실한 것만)
-- confidence: 정보 신뢰도 (high=잘 알려진 원두, medium=어느 정도 알려짐, low=정보 불충분)
+  return `당신은 스페셜티 커피 전문가입니다. 검색어에 해당하는 원두 정보를 순수 JSON으로만 응답하세요. 마크다운, 코드블록, 부연 설명 없이 JSON만.
 
-{"name":"원두명(한글)","roaster":"","country":"국가(한글)","region":"지역","farm":"농장/생산자","altitude":"고도","process":"워시드|내추럴|허니|무산소 워시드|무산소 내추럴|CM 내추럴|CM 워시드|유산균 발효|더블 퍼멘테이션|웻 헐드","variety":"품종","rawNotes":["노트1","노트2","노트3"],"description":"2문장(한글)","brewTips":"물온도/분쇄도/비율(한글)","acidity":7,"sweetness":6,"body":5,"aroma":8,"roasterUrl":"","farmUrl":"","purchaseUrl":"","confidence":"high|medium|low"}`;
+검색어: "${query}"${ctx}
+
+필드 설명:
+- name: 원두 전체 이름(로스터리명 제외)
+- roaster: 로스터리 이름(검색어에 포함된 경우 추출, 없으면 "")
+- country: 원산지 국가 한글(에티오피아/콜롬비아/케냐/과테말라/코스타리카/브라질/파나마/예멘 등)
+- region: 세부 지역(예가체프/게샤/냐에리/우일라/타라주 등)
+- farm: 농장/워싱스테이션/협동조합
+- altitude: 재배 고도(예: 1800-2200m)
+- process: 워시드/내추럴/허니/무산소 워시드/무산소 내추럴/CM 내추럴/CM 워시드/유산균 발효/더블 퍼멘테이션/웻 헐드 중 택1
+- variety: 품종(게샤/에티오피아 원주민/카투라/SL28/버번/파카마라 등)
+- rawNotes: 대표 향미 노트 3-6개 배열(한글)
+- description: 이 원두 특징 2-3문장(한글)
+- brewTips: 최적 추출 가이드. 물온도/원두:물비율/분쇄도/추출시간 포함(한글)
+- acidity,sweetness,body,aroma: AI 예측 점수 1-10 정수
+- roasterUrl,farmUrl,purchaseUrl: 확실한 URL만, 불확실하면 ""
+- confidence: high(잘 알려진 원두)/medium/low(정보 부족)
+
+{"name":"","roaster":"","country":"","region":"","farm":"","altitude":"","process":"","variety":"","rawNotes":[],"description":"","brewTips":"","acidity":7,"sweetness":6,"body":5,"aroma":8,"roasterUrl":"","farmUrl":"","purchaseUrl":"","confidence":"medium"}`;
 }
 
 async function callGemini(prompt, key) {
@@ -165,6 +176,12 @@ module.exports = async function handler(req, res) {
   coffee.roasterUrl  = isValidUrl(coffee.roasterUrl)  ? coffee.roasterUrl  : "";
   coffee.farmUrl     = isValidUrl(coffee.farmUrl)      ? coffee.farmUrl     : "";
   coffee.purchaseUrl = isValidUrl(coffee.purchaseUrl)  ? coffee.purchaseUrl : "";
+
+  // confidence low/medium이면 구글 검색 URL 추가 (클라이언트에서 버튼으로 표시)
+  if (coffee.confidence !== "high" || !coffee.purchaseUrl) {
+    const gQuery = [coffee.roaster, coffee.name].filter(Boolean).join(" ") || query;
+    coffee._googleSearchUrl = "https://www.google.com/search?q=" + encodeURIComponent(gQuery + " 원두 구매");
+  }
 
   // Supabase 저장
   try {

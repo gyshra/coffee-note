@@ -158,7 +158,9 @@
             }
 
             // 로컬 → Supabase 마이그레이션 (첫 로그인 시)
-            SupaDB.migrateFromLocalStorage();
+            if (window.SupaDB && SupaDB.migrateLocalData) {
+              SupaDB.migrateLocalData();
+            }
 
           } else {
             // 비로그인 상태: 닉네임 설정 시트 표시 (기존 동작)

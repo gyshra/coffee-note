@@ -1,294 +1,171 @@
 /**
- * 커피 노트 — Supabase 연동 모듈
- * ===================================================
- * ⚠️  아래 두 줄에 본인의 Supabase 프로젝트 정보를 입력하세요.
- *    Supabase 대시보드 → Settings → API 에서 확인할 수 있습니다.
- * ===================================================
+ * 커피 노트 — Supabase 연동 모듈 v2
+ * ====================================================
+ * ✅ 환경변수 자동 주입 방식 — 이 파일 수정 불필요
+ *    Vercel 대시보드 → Settings → Environment Variables:
+ *      NEXT_PUBLIC_SUPABASE_URL
+ *      NEXT_PUBLIC_SUPABASE_ANON_KEY
+ * ====================================================
  */
-const SUPABASE_URL = "YOUR_SUPABASE_URL";        // 예: https://abcdefgh.supabase.co
-const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY"; // 예: eyJhbGciOi...
-
-// ===================================================
-// 아래는 수정하지 마세요
-// ===================================================
-
 (function (global) {
   "use strict";
 
-  var _isConfigured = (
-    SUPABASE_URL !== "YOUR_SUPABASE_URL" &&
-    SUPABASE_ANON_KEY !== "YOUR_SUPABASE_ANON_KEY"
-  );
+  var _client = null;
+  var _configPromise = null;
 
-  function getClient() {
-    if (!_isConfigured) return null;
-    if (!global.supabase) return null;
-    if (!getClient._client) {
-      getClient._client = global.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    }
-    return getClient._client;
+  function loadConfig() {
+    if (_configPromise) return _configPromise;
+    _configPromise = fetch("/api/config")
+      .then(function (r) { return r.json(); })
+      .then(function (cfg) {
+        if (!cfg.configured) return null;
+        if (global.supabase) {
+          _client = global.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+        }
+        return _client;
+      })
+      .catch(function (e) {
+        console.warn("[SupaDB] config 로드 실패:", e.message);
+        return null;
+      });
+    return _configPromise;
   }
 
-  // ─── 인증 (Auth) ───────────────────────────────────
+  function getClient() { return _client; }
 
+  loadConfig();
+
+  /* ────── Auth ────── */
   var SupaAuth = {
-    /**
-     * 현재 로그인된 사용자 반환 (없으면 null)
-     */
     getUser: async function () {
-      var client = getClient();
-      if (!client) return null;
-      try {
-        var res = await client.auth.getUser();
-        return res.data.user || null;
-      } catch (e) {
-        return null;
-      }
+      await loadConfig();
+      var c = getClient(); if (!c) return null;
+      try { return (await c.auth.getUser()).data.user || null; } catch (e) { return null; }
     },
 
-    /**
-     * Google 소셜 로그인 (팝업 방식)
-     */
     loginWithGoogle: async function () {
-      var client = getClient();
-      if (!client) {
-        alert("Supabase 설정이 필요합니다. supabase.js 파일을 확인해주세요.");
-        return;
-      }
+      await loadConfig();
+      var c = getClient();
+      if (!c) { alert("Supabase 환경변수를 Vercel에 설정해주세요."); return; }
       try {
-        var { error } = await client.auth.signInWithOAuth({
+        var { error } = await c.auth.signInWithOAuth({
           provider: "google",
-          options: {
-            redirectTo: window.location.origin + "/mypage.html",
-          },
+          options: { redirectTo: window.location.origin + "/mypage.html" },
         });
         if (error) throw error;
-      } catch (e) {
-        console.error("[CoffeeNote] Google 로그인 오류:", e);
-        alert("로그인 중 오류가 발생했습니다.");
-      }
+      } catch (e) { console.error("[SupaAuth]", e); alert("로그인 오류: " + e.message); }
     },
 
-    /**
-     * 로그아웃
-     */
     logout: async function () {
-      var client = getClient();
-      if (!client) return;
-      try {
-        await client.auth.signOut();
-        window.location.reload();
-      } catch (e) {
-        console.error("[CoffeeNote] 로그아웃 오류:", e);
-      }
+      var c = getClient(); if (!c) return;
+      try { await c.auth.signOut(); window.location.reload(); } catch (e) {}
     },
 
-    /**
-     * 인증 상태 변경 감지 콜백 등록
-     * callback(user) — user가 null이면 로그아웃 상태
-     */
-    onAuthChange: function (callback) {
-      var client = getClient();
-      if (!client) return;
-      client.auth.onAuthStateChange(function (event, session) {
-        callback(session ? session.user : null);
+    onAuthChange: function (cb) {
+      loadConfig().then(function () {
+        var c = getClient();
+        if (!c) { cb(null); return; }
+        c.auth.onAuthStateChange(function (_, session) { cb(session ? session.user : null); });
+        c.auth.getUser().then(function (res) { cb(res.data.user || null); });
       });
     },
   };
 
-  // ─── 데이터베이스 (DB) ──────────────────────────────
-
+  /* ────── DB ────── */
   var SupaDB = {
-    /**
-     * 테이스팅 기록 저장
-     * record: localStorage에 저장되는 기존 객체와 동일한 형태
-     */
     saveTasting: async function (record) {
-      var client = getClient();
-      if (!client) return null;
-      var user = await SupaAuth.getUser();
-      if (!user) return null;
-
+      await loadConfig();
+      var c = getClient(); if (!c) return null;
+      var user = await SupaAuth.getUser(); if (!user) return null;
       try {
+        var bs = record.baseScores || record.scores || {};
+        var tags = (record.flavorSelections || []).map(function (f) { return f.ko || f.en || ""; });
         var row = {
           user_id: user.id,
-          local_id: record.id,               // localStorage 기준 ID (중복 방지용)
-          coffee_name: record.coffeeName || record.name || "",
-          coffee_index: record.coffeeIndex != null ? record.coffeeIndex : null,
-          aroma: record.sliders ? record.sliders["아로마"] : null,
-          acidity: record.sliders ? record.sliders["산미"] : null,
-          sweetness: record.sliders ? record.sliders["단맛"] : null,
-          body: record.sliders ? record.sliders["바디감"] : null,
-          aftertaste: record.sliders ? record.sliders["여운"] : null,
-          flavor_tags: record.flavorSelections || record.tags || [],
+          local_id: String(record.id || record.createdAt || Date.now()),
+          coffee_name: record.coffeeName || "",
+          coffee_index: record.coffeeIndex != null ? Number(record.coffeeIndex) : null,
+          aroma:       bs["아로마"]  || null,
+          acidity:     bs["산미"]    || null,
+          sweetness:   bs["단맛"]    || null,
+          body:        bs["바디감"]  || null,
+          aftertaste:  bs["여운"]    || null,
+          flavor_tags: tags,
           brew_method: record.brewMethod || null,
-          memo: record.memo || null,
-          rating: record.rating || null,
-          created_at: record.createdAt || new Date().toISOString(),
-          raw_data: JSON.stringify(record),   // 전체 원본 보존
+          memo:        record.memo || null,
+          rating:      record.starRating || record.rating || null,
+          is_public:   true,
+          created_at:  record.createdAt || new Date().toISOString(),
+          raw_data:    JSON.stringify(record),
         };
-
-        var { data, error } = await client
-          .from("tastings")
-          .upsert(row, { onConflict: "local_id,user_id" })
-          .select()
-          .single();
-
+        var { data, error } = await c.from("tastings")
+          .upsert(row, { onConflict: "local_id,user_id" }).select().single();
         if (error) throw error;
         return data;
-      } catch (e) {
-        console.error("[CoffeeNote] 테이스팅 저장 오류:", e);
-        return null;
-      }
+      } catch (e) { console.error("[SupaDB] saveTasting:", e.message); return null; }
     },
 
-    /**
-     * 사용자의 테이스팅 기록 전체 조회 (최신순)
-     */
     getTastings: async function () {
-      var client = getClient();
-      if (!client) return [];
-      var user = await SupaAuth.getUser();
-      if (!user) return [];
-
+      await loadConfig();
+      var c = getClient(); if (!c) return [];
+      var user = await SupaAuth.getUser(); if (!user) return [];
       try {
-        var { data, error } = await client
-          .from("tastings")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
-
+        var { data, error } = await c.from("tastings").select("*")
+          .eq("user_id", user.id).order("created_at", { ascending: false });
         if (error) throw error;
-        // raw_data를 파싱해서 반환 (기존 코드와 호환)
         return (data || []).map(function (row) {
-          try {
-            return JSON.parse(row.raw_data);
-          } catch (e) {
-            return row;
-          }
+          try { return JSON.parse(row.raw_data); } catch (e) { return row; }
         });
-      } catch (e) {
-        console.error("[CoffeeNote] 테이스팅 조회 오류:", e);
-        return [];
-      }
+      } catch (e) { console.error("[SupaDB] getTastings:", e.message); return []; }
     },
 
-    /**
-     * 즐겨찾기 추가
-     * coffeeIndex: 원두 인덱스 (localStorage 기준)
-     * coffeeName: 원두 이름 (표시용)
-     */
-    saveFavorite: async function (coffeeIndex, coffeeName) {
-      var client = getClient();
-      if (!client) return null;
-      var user = await SupaAuth.getUser();
-      if (!user) return null;
-
+    toggleFavorite: async function (coffeeIndex, coffeeName) {
+      await loadConfig();
+      var c = getClient(); if (!c) return null;
+      var user = await SupaAuth.getUser(); if (!user) return null;
       try {
-        var { data, error } = await client
-          .from("favorites")
-          .upsert(
-            {
-              user_id: user.id,
-              coffee_index: coffeeIndex,
-              coffee_name: coffeeName || "",
-            },
-            { onConflict: "user_id,coffee_index" }
-          )
-          .select()
-          .single();
-
+        var { data: ex } = await c.from("favorites").select("id")
+          .eq("user_id", user.id).eq("coffee_index", coffeeIndex).maybeSingle();
+        if (ex) {
+          await c.from("favorites").delete().eq("id", ex.id);
+          return { action: "removed" };
+        }
+        var { data, error } = await c.from("favorites")
+          .insert({ user_id: user.id, coffee_index: coffeeIndex, coffee_name: coffeeName || "" })
+          .select().single();
         if (error) throw error;
-        return data;
-      } catch (e) {
-        console.error("[CoffeeNote] 즐겨찾기 저장 오류:", e);
-        return null;
-      }
+        return { action: "added", data };
+      } catch (e) { console.error("[SupaDB] toggleFavorite:", e.message); return null; }
     },
 
-    /**
-     * 즐겨찾기 삭제
-     */
-    removeFavorite: async function (coffeeIndex) {
-      var client = getClient();
-      if (!client) return;
-      var user = await SupaAuth.getUser();
-      if (!user) return;
-
-      try {
-        var { error } = await client
-          .from("favorites")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("coffee_index", coffeeIndex);
-
-        if (error) throw error;
-      } catch (e) {
-        console.error("[CoffeeNote] 즐겨찾기 삭제 오류:", e);
-      }
-    },
-
-    /**
-     * 사용자의 즐겨찾기 목록 조회
-     * 반환: coffee_index 배열
-     */
     getFavorites: async function () {
-      var client = getClient();
-      if (!client) return [];
-      var user = await SupaAuth.getUser();
-      if (!user) return [];
-
+      await loadConfig();
+      var c = getClient(); if (!c) return [];
+      var user = await SupaAuth.getUser(); if (!user) return [];
       try {
-        var { data, error } = await client
-          .from("favorites")
-          .select("coffee_index")
-          .eq("user_id", user.id);
-
+        var { data, error } = await c.from("favorites").select("*")
+          .eq("user_id", user.id).order("created_at", { ascending: false });
         if (error) throw error;
-        return (data || []).map(function (r) { return r.coffee_index; });
-      } catch (e) {
-        console.error("[CoffeeNote] 즐겨찾기 조회 오류:", e);
-        return [];
-      }
+        return data || [];
+      } catch (e) { return []; }
     },
 
-    /**
-     * localStorage 데이터를 Supabase로 마이그레이션
-     * 로그인 직후 1회 실행 → 기존 데이터를 클라우드에 업로드
-     */
-    migrateFromLocalStorage: async function () {
-      var user = await SupaAuth.getUser();
-      if (!user) return;
-
-      var CN = window.CoffeeNote;
-      if (!CN) return;
-
-      var migrationKey = "cn_migrated_" + user.id;
-      if (localStorage.getItem(migrationKey)) return; // 이미 마이그레이션 완료
-
-      console.log("[CoffeeNote] localStorage → Supabase 마이그레이션 시작...");
-
-      // 테이스팅 기록 업로드
-      var records = CN.getTastingRecords ? CN.getTastingRecords() : [];
+    migrateLocalData: async function () {
+      if (!global.CoffeeNote) return;
+      var records = global.CoffeeNote.getTastingRecords() || [];
+      if (!records.length) return;
+      var migrated = 0;
       for (var i = 0; i < records.length; i++) {
-        await SupaDB.saveTasting(records[i]);
+        if (await SupaDB.saveTasting(records[i])) migrated++;
       }
-
-      // 즐겨찾기 업로드
-      var favorites = CN.getFavoriteIndices ? CN.getFavoriteIndices() : [];
-      var allCoffees = CN.getCoffees ? CN.getCoffees() : [];
-      for (var j = 0; j < favorites.length; j++) {
-        var coffee = allCoffees[favorites[j]];
-        var name = coffee ? (coffee.name || "") : "";
-        await SupaDB.saveFavorite(favorites[j], name);
+      if (migrated > 0) {
+        global.CoffeeNote && global.CoffeeNote.showToast("☁️ " + migrated + "개 기록을 클라우드에 저장했어요!");
       }
-
-      localStorage.setItem(migrationKey, "1");
-      console.log("[CoffeeNote] 마이그레이션 완료!");
     },
   };
 
-  // 전역 노출
   global.SupaAuth = SupaAuth;
-  global.SupaDB = SupaDB;
+  global.SupaDB   = SupaDB;
+  global._supaLoadConfig = loadConfig;
+
 })(window);

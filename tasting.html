@@ -30,7 +30,7 @@
       <section id="step1" class="step-section revealed">
         <h2 class="section-heading">향미 선택</h2>
         <p class="step-desc">좌우로 돌려 카테고리를 선택하고, 향미를 탭해 추가하세요</p>
-        <div class="wheel-viewport" id="wheelViewport">
+        <div class="wheel-viewport" id="wheelViewport" style="margin:0 -20px">
           <svg id="wheelSvg" xmlns="http://www.w3.org/2000/svg"></svg>
         </div>
         <div class="selected-flavors" id="selectedFlavors">
@@ -54,9 +54,9 @@
         </div>
         <div id="baseSenseMemos" class="base-sense-list"></div>
         <div class="compare-toggle">
-          <div>
-            <div style="font-size:14px;font-weight:500">커뮤니티 & 전문가와 비교</div>
-            <div style="font-size:12px;color:var(--text-sub);margin-top:2px">커뮤니티 평균(회색) · 전문가 CQI(검정)</div>
+          <div class="compare-toggle-text">
+            <div class="compare-toggle-label">커뮤니티 &amp; 전문가와 비교</div>
+            <div class="compare-toggle-sub">커뮤니티 평균 · 전문가 CQI 기준</div>
           </div>
           <button type="button" class="toggle-switch" id="btnCompare" aria-pressed="false"><span class="toggle-thumb"></span></button>
         </div>
@@ -380,7 +380,7 @@
   }
   renderStars();
 
-  function revealSection(id){var el=document.getElementById(id);if(!el||el.classList.contains("revealed"))return;el.classList.add("revealed");setTimeout(function(){el.scrollIntoView({behavior:"smooth",block:"start"});},100);}
+  function revealSection(id){var el=document.getElementById(id);if(!el||el.classList.contains("revealed"))return;el.classList.add("revealed");}
 
   document.getElementById("btnSaveFinal").addEventListener("click",function(){
     var flavors=CoffeeWheel.getSelectedFlavors();var baseScores=pentaChart.getValues();
