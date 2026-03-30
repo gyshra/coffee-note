@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Coffee Note. — 레시피</title>
+  <link rel="stylesheet" href="common.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #FFFFFF; --text: #121212; --text-sub: #888888;
+      --accent: #121212; --accent-warm: #8C7355;
+      --border: #E0E0E0; --surface: #F8F7F5;
+      --nav-h: 60px; --header-h: 56px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Pretendard Variable', 'Pretendard', -apple-system, sans-serif; }
+
+    /* ─── 헤더 ── */
+    .header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: var(--header-h); background: var(--bg);
+      border-bottom: 1.5px solid var(--text);
+      display: flex; align-items: center; gap: 0;
+      padding: 0 16px;
+    }
+    .btn-back {
+      background: none; border: none; cursor: pointer;
+      width: 36px; height: 36px; display: flex; align-items: center;
+      justify-content: center; margin-right: 8px; color: var(--text);
+    }
+    .btn-back svg { width: 20px; height: 20px; }
+    .header-title {
+      flex: 1;
+      font-family: 'Playfair Display', serif;
+      font-weight: 900; font-size: 18px; color: var(--text);
+    }
+    .header-title small {
+      display: block; font-family: 'Pretendard Variable', sans-serif;
+      font-size: 11px; font-weight: 600; color: var(--text-sub);
+      letter-spacing: 0.5px; text-transform: uppercase; margin-top: 1px;
+    }
+    .btn-icon {
+      background: none; border: none; cursor: pointer;
+      padding: 4px; display: flex; align-items: center; justify-content: center;
+      color: var(--text);
+    }
+    .btn-icon svg { width: 20px; height: 20px; }
+
+    /* ─── 본문 ── */
+    .wrap {
+      padding-top: calc(var(--header-h) + 8px);
+      padding-bottom: calc(var(--nav-h) + 16px);
+    }
+
+    /* ─── 원두 요약 배너 ── */
+    .coffee-banner {
+      background: var(--text); color: var(--bg);
+      padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+    }
+    .banner-icon { font-size: 28px; }
+    .banner-meta { flex: 1; }
+    .banner-name { font-size: 14px; font-weight: 700; line-height: 1.3; }
+    .banner-sub { font-size: 11px; opacity: 0.65; margin-top: 2px; }
+    .banner-score {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px; font-weight: 900; color: var(--accent-warm);
+    }
+
+    /* ─── SCA 황금 컵 레시피 ── */
+    .sca-panel {
+      background: var(--surface); border-bottom: 1.5px solid var(--border);
+      padding: 16px 16px 12px;
+    }
+    .sca-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .sca-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .sca-badge {
+      font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+      padding: 3px 8px; border: 1px solid var(--accent-warm); color: var(--accent-warm);
+    }
+    .sca-recipe-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    }
+    .sca-cell { padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); }
+    .sca-key { font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-sub); margin-bottom: 3px; }
+    .sca-val { font-size: 14px; font-weight: 700; color: var(--text); }
+
+    /* 맛 변화 예측 한 줄 */
+    .predict-tips { margin-top: 10px; }
+    .predict-tip { display: flex; gap: 8px; padding: 6px 0; border-top: 1px solid var(--border); font-size: 12px; }
+    .predict-tip-key { font-weight: 700; color: var(--text); min-width: 56px; flex-shrink: 0; }
+    .predict-tip-val { color: var(--text-sub); line-height: 1.4; }
+
+    /* ─── 추출법 탭 ── */
+    .tab-bar {
+      display: flex; overflow-x: auto; border-bottom: 1.5px solid var(--border);
+      scrollbar-width: none; background: var(--bg);
+      position: sticky; top: var(--header-h); z-index: 50;
+    }
+    .tab-bar::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      flex-shrink: 0; padding: 12px 16px;
+      border: none; background: none; cursor: pointer;
+      font-family: inherit; font-size: 13px; font-weight: 600;
+      color: var(--text-sub); border-bottom: 2px solid transparent;
+      margin-bottom: -1.5px; white-space: nowrap; transition: all 0.15s;
+    }
+    .tab-btn.active { color: var(--text); border-bottom-color: var(--text); }
+
+    /* ─── 섹션 라벨 ── */
+    .section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--text-sub); padding: 14px 16px 8px;
+    }
+    .section-divider { height: 1px; background: var(--border); }
+
+    /* ─── 커뮤니티 인기도 바 ── */
+    .method-stats { padding: 12px 16px; }
+    .method-stat-row {
+      display: flex; align-items: center; gap: 10px; padding: 5px 0;
+    }
+    .method-label { font-size: 12px; font-weight: 600; min-width: 80px; color: var(--text); }
+    .method-bar-wrap { flex: 1; height: 6px; background: var(--border); }
+    .method-bar-fill { height: 100%; background: var(--text); transition: width 0.5s ease; }
+    .method-pct { font-size: 11px; font-weight: 700; color: var(--text-sub); min-width: 30px; text-align: right; }
+
+    /* ─── 레시피 카드 ── */
+    .recipe-list { padding: 0 16px; }
+    .recipe-card {
+      border: 1px solid var(--border); margin-bottom: 10px;
+      cursor: pointer; transition: border-color 0.15s;
+    }
+    .recipe-card:active { background: var(--surface); }
+    .recipe-card.selected { border-color: var(--text); border-width: 1.5px; }
+    .recipe-card-header {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 12px 12px 10px;
+    }
+    .recipe-icon { font-size: 20px; flex-shrink: 0; }
+    .recipe-meta { flex: 1; min-width: 0; }
+    .recipe-name { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+    .recipe-by { font-size: 11px; color: var(--text-sub); }
+    .recipe-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+    .recipe-likes { font-size: 12px; color: var(--text-sub); }
+    .recipe-badge {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+      padding: 2px 6px; border: 1px solid;
+    }
+    .recipe-badge.expert { border-color: var(--accent-warm); color: var(--accent-warm); }
+    .recipe-badge.popular { border-color: var(--text); color: var(--text); }
+    .recipe-badge.mine { border-color: var(--text-sub); color: var(--text-sub); }
+
+    /* 레시피 파라미터 행 */
+    .recipe-params {
+      display: flex; gap: 0; border-top: 1px solid var(--border);
+      overflow-x: auto; scrollbar-width: none;
+    }
+    .recipe-params::-webkit-scrollbar { display: none; }
+    .param-cell {
+      flex-shrink: 0; padding: 8px 12px; border-right: 1px solid var(--border);
+      text-align: center; min-width: 70px;
+    }
+    .param-cell:last-child { border-right: none; }
+    .param-key { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-sub); }
+    .param-val { font-size: 13px; font-weight: 700; color: var(--text); margin-top: 2px; }
+
+    /* 레시피 확장 스텝 */
+    .recipe-steps { display: none; border-top: 1px solid var(--border); }
+    .recipe-steps.open { display: block; }
+    .step-row {
+      display: flex; gap: 12px; padding: 10px 12px;
+      border-bottom: 1px solid var(--border); align-items: flex-start;
+    }
+    .step-row:last-child { border-bottom: none; }
+    .step-num {
+      width: 22px; height: 22px; background: var(--text); color: var(--bg);
+      font-size: 11px; font-weight: 700; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0;
+    }
+    .step-content { flex: 1; }
+    .step-action { font-size: 13px; font-weight: 600; color: var(--text); }
+    .step-detail { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+    .step-time { font-size: 11px; font-weight: 700; color: var(--accent-warm); flex-shrink: 0; }
+
+    /* ─── 내 장비 설정 ── */
+    .gear-section {
+      padding: 12px 16px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .gear-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .gear-item {
+      display: flex; align-items: center; gap: 6px; flex: 1; min-width: 120px;
+      padding: 8px 10px; background: var(--bg); border: 1px solid var(--border);
+    }
+    .gear-icon { font-size: 16px; }
+    .gear-meta { flex: 1; }
+    .gear-key { font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--text-sub); }
+    .gear-val { font-size: 12px; font-weight: 700; color: var(--text); }
+    .gear-change { font-size: 11px; color: var(--text-sub); text-decoration: underline; cursor: pointer; }
+
+    /* ─── 바텀 CTA ── */
+    .bottom-cta {
+      position: fixed; bottom: var(--nav-h); left: 0; right: 0; z-index: 90;
+      background: var(--bg); border-top: 1.5px solid var(--border);
+      padding: 12px 16px; display: flex; gap: 8px;
+    }
+    .btn-primary {
+      flex: 2; height: 48px; background: var(--text); color: var(--bg);
+      border: none; font-family: inherit; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-primary:active { opacity: 0.8; }
+    .btn-secondary {
+      flex: 1; height: 48px; background: var(--bg); color: var(--text);
+      border: 1.5px solid var(--text); font-family: inherit; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-secondary:active { background: var(--surface); }
+    .wrap { padding-bottom: calc(var(--nav-h) + 80px); }
+
+    /* ─── 하단 네비 ── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+      height: var(--nav-h); display: flex; background: var(--bg);
+      border-top: 1.5px solid var(--text);
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 3px;
+      cursor: pointer; text-decoration: none; color: var(--text-sub);
+    }
+    .nav-item.active { color: var(--text); }
+    .nav-item svg { width: 20px; height: 20px; }
+    .nav-label { font-size: 9px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+
+    /* ─── 토스트 ── */
+    .toast {
+      position: fixed; bottom: calc(var(--nav-h) + 80px); left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--text); color: var(--bg); padding: 10px 20px;
+      font-size: 13px; font-weight: 600; opacity: 0; transition: all 0.3s;
+      z-index: 400; white-space: nowrap; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* 반응형 */
+    @media (min-width: 480px) {
+      .wrap { max-width: 480px; margin: 0 auto; }
+      .header { max-width: 480px; left: 50%; transform: translateX(-50%); right: auto; width: 480px; }
+      .bottom-nav { max-width: 480px; left: 50%; transform: translateX(-50%); right: auto; width: 480px; }
+      .bottom-cta { max-width: 480px; left: 50%; transform: translateX(-50%); right: auto; width: 480px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── 헤더 ── -->
+<header class="header">
+  <button class="btn-back" onclick="history.back()" aria-label="뒤로">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+      <polyline points="15,18 9,12 15,6"/>
+    </svg>
+  </button>
+  <div class="header-title">
+    레시피
+    <small>Brewing Recipe</small>
+  </div>
+  <button class="btn-icon" onclick="openAddRecipe()" aria-label="레시피 추가">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  </button>
+</header>
+
+<!-- ── 본문 ── -->
+<main class="wrap">
+
+  <!-- 원두 요약 배너 -->
+  <div class="coffee-banner" id="coffeeBanner">
+    <div class="banner-icon">☕</div>
+    <div class="banner-meta">
+      <div class="banner-name" id="bannerName">원두 정보 없음</div>
+      <div class="banner-sub" id="bannerSub">레시피를 선택해 주세요</div>
+    </div>
+    <div class="banner-score" id="bannerScore"></div>
+  </div>
+
+  <!-- 내 장비 -->
+  <div class="gear-section">
+    <div class="section-label" style="padding:0 0 10px;">내 장비</div>
+    <div class="gear-row">
+      <div class="gear-item">
+        <div class="gear-icon">🫗</div>
+        <div class="gear-meta">
+          <div class="gear-key">드리퍼</div>
+          <div class="gear-val" id="gearDripper">V60</div>
+        </div>
+        <span class="gear-change" onclick="changeGear('dripper')">변경</span>
+      </div>
+      <div class="gear-item">
+        <div class="gear-icon">⚙️</div>
+        <div class="gear-meta">
+          <div class="gear-key">그라인더</div>
+          <div class="gear-val" id="gearGrinder">핸드밀</div>
+        </div>
+        <span class="gear-change" onclick="changeGear('grinder')">변경</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCA 황금 컵 AI 추천 레시피 -->
+  <div class="sca-panel">
+    <div class="sca-header">
+      <div class="sca-title">AI 추천 레시피</div>
+      <div class="sca-badge">SCA Golden Cup</div>
+    </div>
+    <div class="sca-recipe-grid" id="scaGrid">
+      <div class="sca-cell"><div class="sca-key">물 온도</div><div class="sca-val" id="sca-temp">93°C</div></div>
+      <div class="sca-cell"><div class="sca-key">원두:물 비율</div><div class="sca-val" id="sca-ratio">1:16</div></div>
+      <div class="sca-cell"><div class="sca-key">분쇄도</div><div class="sca-val" id="sca-grind">중간</div></div>
+      <div class="sca-cell"><div class="sca-key">총 추출 시간</div><div class="sca-val" id="sca-time">2:30</div></div>
+    </div>
+    <div class="predict-tips" id="brewTips">
+      <div class="predict-tip">
+        <span class="predict-tip-key">로스팅</span>
+        <span class="predict-tip-val">라이트 → 산미 강조 / 미디엄 → 균형 / 다크 → 쓴맛</span>
+      </div>
+      <div class="predict-tip">
+        <span class="predict-tip-key">분쇄도</span>
+        <span class="predict-tip-val">굵게 → 연하고 깔끔 / 중간 → 균형 / 곱게 → 진하고 묵직</span>
+      </div>
+      <div class="predict-tip">
+        <span class="predict-tip-key">추출법</span>
+        <span class="predict-tip-val">V60 → 섬세한 산미 / 에어로 → 진하고 복잡 / 프렌치프레스 → 묵직한 오일감</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 추출법 탭 -->
+  <div class="tab-bar" id="tabBar">
+    <button class="tab-btn active" data-method="V60" onclick="selectMethod('V60', this)">V60</button>
+    <button class="tab-btn" data-method="칼리타" onclick="selectMethod('칼리타', this)">칼리타</button>
+    <button class="tab-btn" data-method="케멕스" onclick="selectMethod('케멕스', this)">케멕스</button>
+    <button class="tab-btn" data-method="에어로프레스" onclick="selectMethod('에어로프레스', this)">에어로</button>
+    <button class="tab-btn" data-method="프렌치프레스" onclick="selectMethod('프렌치프레스', this)">프렌치프</button>
+    <button class="tab-btn" data-method="에스프레소" onclick="selectMethod('에스프레소', this)">에스프레소</button>
+    <button class="tab-btn" data-method="콜드브루" onclick="selectMethod('콜드브루', this)">콜드브루</button>
+    <button class="tab-btn" data-method="모카포트" onclick="selectMethod('모카포트', this)">모카포트</button>
+  </div>
+
+  <!-- 커뮤니티 추출법 분포 -->
+  <div class="method-stats" id="methodStats" style="display:none">
+    <div class="section-label" style="padding:0 0 8px;">이 원두의 커뮤니티 추출법</div>
+    <div id="methodBarChart"></div>
+  </div>
+
+  <!-- 레시피 목록 -->
+  <div>
+    <div class="section-label" id="recipeListLabel">추천 레시피</div>
+    <div class="section-divider"></div>
+    <div class="recipe-list" id="recipeList" style="padding-top:10px"></div>
+  </div>
+
+</main>
+
+<!-- ── 바텀 CTA ── -->
+<div class="bottom-cta">
+  <button class="btn-secondary" onclick="goSearch()">원두 변경</button>
+  <button class="btn-primary" onclick="goTasting()">이 레시피로 기록하기</button>
+</div>
+
+<!-- ── 하단 네비 ── -->
+<nav class="bottom-nav">
+  <a href="home.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+      <polyline points="9,22 9,12 15,12 15,22"/>
+    </svg>
+    <span class="nav-label">홈</span>
+  </a>
+  <a href="index.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+      <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/>
+    </svg>
+    <span class="nav-label">탐색</span>
+  </a>
+  <a href="notes.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+      <polyline points="14,2 14,8 20,8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+    <span class="nav-label">노트</span>
+  </a>
+  <a href="mypage.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+      <circle cx="12" cy="7" r="4"/>
+    </svg>
+    <span class="nav-label">마이</span>
+  </a>
+</nav>
+
+<!-- ── 토스트 ── -->
+<div class="toast" id="toast"></div>
+
+<!-- ── 스크립트 ── -->
+<script src="supabase.js"></script>
+<script src="common.js"></script>
+<script>
+/* ═══════════════════════════════════════════════
+   Coffee Note — recipe.html (레시피 화면)
+   Phase B-2 | v30
+   ═══════════════════════════════════════════════ */
+
+// ── SCA Golden Cup 매트릭스 (48조합) ──────────
+// [process][roast][method] = {temp, ratio, grind, time}
+const SCA_MATRIX = {
+  washed: {
+    light: {
+      V60:      { temp:'94-96°C', ratio:'1:15', grind:'중간-가늘게', time:'2:30' },
+      칼리타:   { temp:'93-95°C', ratio:'1:15', grind:'중간', time:'3:00' },
+      케멕스:   { temp:'93°C',    ratio:'1:16', grind:'굵게-중간', time:'3:30' },
+      에어로프레스: { temp:'85-90°C', ratio:'1:13', grind:'가늘게', time:'1:30' },
+      프렌치프레스: { temp:'92°C',  ratio:'1:14', grind:'굵게', time:'4:00' },
+      에스프레소: { temp:'93-94°C', ratio:'1:2',  grind:'매우 가늘게', time:'0:28' },
+      콜드브루: { temp:'상온',    ratio:'1:8',  grind:'굵게', time:'12h' },
+      모카포트: { temp:'—',       ratio:'1:7',  grind:'중간-가늘게', time:'4:00' },
+    },
+    medium: {
+      V60:      { temp:'92-94°C', ratio:'1:16', grind:'중간', time:'2:45' },
+      칼리타:   { temp:'91-93°C', ratio:'1:16', grind:'중간', time:'3:15' },
+      케멕스:   { temp:'92°C',    ratio:'1:17', grind:'굵게-중간', time:'4:00' },
+      에어로프레스: { temp:'80-85°C', ratio:'1:14', grind:'중간', time:'2:00' },
+      프렌치프레스: { temp:'90°C',  ratio:'1:15', grind:'굵게', time:'4:00' },
+      에스프레소: { temp:'91-93°C', ratio:'1:2',  grind:'가늘게', time:'0:28' },
+      콜드브루: { temp:'상온',    ratio:'1:8',  grind:'굵게', time:'12h' },
+      모카포트: { temp:'—',       ratio:'1:7',  grind:'중간-가늘게', time:'4:00' },
+    },
+    dark: {
+      V60:      { temp:'89-91°C', ratio:'1:17', grind:'중간-굵게', time:'3:00' },
+      칼리타:   { temp:'88-90°C', ratio:'1:17', grind:'중간', time:'3:30' },
+      케멕스:   { temp:'89°C',    ratio:'1:17', grind:'굵게', time:'4:00' },
+      에어로프레스: { temp:'78-82°C', ratio:'1:14', grind:'중간', time:'2:30' },
+      프렌치프레스: { temp:'88°C',  ratio:'1:15', grind:'굵게', time:'4:00' },
+      에스프레소: { temp:'89-91°C', ratio:'1:2.5', grind:'가늘게', time:'0:30' },
+      콜드브루: { temp:'상온',    ratio:'1:9',  grind:'굵게', time:'14h' },
+      모카포트: { temp:'—',       ratio:'1:8',  grind:'중간-가늘게', time:'4:00' },
+    }
+  },
+  natural: {
+    light:  { V60: { temp:'93°C', ratio:'1:15', grind:'중간', time:'2:30' }, 칼리타: { temp:'92°C', ratio:'1:15', grind:'중간', time:'3:00' }, 케멕스: { temp:'92°C', ratio:'1:16', grind:'중간-굵게', time:'3:30' }, 에어로프레스: { temp:'83°C', ratio:'1:13', grind:'중간-가늘게', time:'1:30' }, 프렌치프레스: { temp:'91°C', ratio:'1:14', grind:'굵게', time:'4:00' }, 에스프레소: { temp:'92°C', ratio:'1:2', grind:'가늘게', time:'0:28' }, 콜드브루: { temp:'상온', ratio:'1:8', grind:'굵게', time:'14h' }, 모카포트: { temp:'—', ratio:'1:7', grind:'중간', time:'4:00' } },
+    medium: { V60: { temp:'91°C', ratio:'1:15', grind:'중간', time:'2:45' }, 칼리타: { temp:'90°C', ratio:'1:15', grind:'중간', time:'3:15' }, 케멕스: { temp:'91°C', ratio:'1:16', grind:'중간-굵게', time:'4:00' }, 에어로프레스: { temp:'81°C', ratio:'1:13', grind:'중간', time:'2:00' }, 프렌치프레스: { temp:'89°C', ratio:'1:14', grind:'굵게', time:'4:00' }, 에스프레소: { temp:'91°C', ratio:'1:2.5', grind:'가늘게', time:'0:30' }, 콜드브루: { temp:'상온', ratio:'1:8', grind:'굵게', time:'14h' }, 모카포트: { temp:'—', ratio:'1:7', grind:'중간', time:'4:00' } },
+    dark:   { V60: { temp:'89°C', ratio:'1:16', grind:'중간-굵게', time:'3:00' }, 칼리타: { temp:'88°C', ratio:'1:16', grind:'중간', time:'3:30' }, 케멕스: { temp:'89°C', ratio:'1:17', grind:'굵게', time:'4:00' }, 에어로프레스: { temp:'79°C', ratio:'1:14', grind:'중간', time:'2:30' }, 프렌치프레스: { temp:'87°C', ratio:'1:15', grind:'굵게', time:'4:00' }, 에스프레소: { temp:'89°C', ratio:'1:2.5', grind:'가늘게', time:'0:30' }, 콜드브루: { temp:'상온', ratio:'1:9', grind:'굵게', time:'16h' }, 모카포트: { temp:'—', ratio:'1:8', grind:'중간', time:'4:00' } }
+  },
+  honey: {
+    light:  { V60: { temp:'93°C', ratio:'1:15', grind:'중간', time:'2:40' }, 칼리타: { temp:'92°C', ratio:'1:15', grind:'중간', time:'3:00' }, 케멕스: { temp:'92°C', ratio:'1:16', grind:'중간-굵게', time:'3:30' }, 에어로프레스: { temp:'84°C', ratio:'1:13', grind:'중간-가늘게', time:'1:30' }, 프렌치프레스: { temp:'91°C', ratio:'1:14', grind:'굵게', time:'4:00' }, 에스프레소: { temp:'92°C', ratio:'1:2', grind:'가늘게', time:'0:28' }, 콜드브루: { temp:'상온', ratio:'1:8', grind:'굵게', time:'12h' }, 모카포트: { temp:'—', ratio:'1:7', grind:'중간', time:'4:00' } },
+    medium: { V60: { temp:'91°C', ratio:'1:16', grind:'중간', time:'2:45' }, 칼리타: { temp:'90°C', ratio:'1:16', grind:'중간', time:'3:15' }, 케멕스: { temp:'91°C', ratio:'1:16', grind:'중간-굵게', time:'4:00' }, 에어로프레스: { temp:'82°C', ratio:'1:14', grind:'중간', time:'2:00' }, 프렌치프레스: { temp:'89°C', ratio:'1:15', grind:'굵게', time:'4:00' }, 에스프레소: { temp:'91°C', ratio:'1:2', grind:'가늘게', time:'0:28' }, 콜드브루: { temp:'상온', ratio:'1:8', grind:'굵게', time:'12h' }, 모카포트: { temp:'—', ratio:'1:7', grind:'중간', time:'4:00' } },
+    dark:   { V60: { temp:'89°C', ratio:'1:17', grind:'중간-굵게', time:'3:00' }, 칼리타: { temp:'88°C', ratio:'1:17', grind:'중간', time:'3:30' }, 케멕스: { temp:'89°C', ratio:'1:17', grind:'굵게', time:'4:00' }, 에어로프레스: { temp:'80°C', ratio:'1:14', grind:'중간', time:'2:30' }, 프렌치프레스: { temp:'87°C', ratio:'1:15', grind:'굵게', time:'4:00' }, 에스프레소: { temp:'89°C', ratio:'1:2.5', grind:'가늘게', time:'0:30' }, 콜드브루: { temp:'상온', ratio:'1:9', grind:'굵게', time:'14h' }, 모카포트: { temp:'—', ratio:'1:8', grind:'중간', time:'4:00' } }
+  }
+};
+
+// V60 기본 스텝 (방법별 자동 생성)
+const METHOD_STEPS = {
+  V60: [
+    { action:'뜸들이기', detail:'30ml 물을 붓고 30초 기다립니다', time:'0:30' },
+    { action:'1차 붓기', detail:'총량의 40%까지 원을 그리며 붓기', time:'1:00' },
+    { action:'2차 붓기', detail:'총량의 70%까지 천천히 붓기', time:'1:30' },
+    { action:'마무리 붓기', detail:'나머지 물을 붓고 드리퍼 흔들기', time:'2:30' },
+    { action:'완료', detail:'드리퍼 제거 후 잔에 따르기', time:'2:30' },
+  ],
+  에어로프레스: [
+    { action:'분쇄/예열', detail:'그라인더 세팅 후 기구 예열', time:'0:00' },
+    { action:'원두 투입', detail:'필터 적신 후 원두 넣기', time:'0:10' },
+    { action:'1차 붓기', detail:'전량 붓고 30초 기다리기', time:'0:40' },
+    { action:'교반', detail:'스패튤라로 10회 저어주기', time:'0:50' },
+    { action:'프레스', detail:'천천히 30초간 눌러 추출', time:'1:20' },
+  ],
+  프렌치프레스: [
+    { action:'예열', detail:'따뜻한 물로 기구 예열 후 버리기', time:'0:00' },
+    { action:'원두 투입', detail:'원두 넣고 타이머 시작', time:'0:10' },
+    { action:'물 붓기', detail:'전체 물량 붓고 살짝 저어주기', time:'0:30' },
+    { action:'대기', detail:'뚜껑 닫고 4분 기다리기', time:'4:30' },
+    { action:'프레스', detail:'천천히 내리고 즉시 따르기', time:'4:30' },
+  ],
+};
+
+// 기본 스텝 (정의 없는 추출법용)
+function getDefaultSteps(method) {
+  return [
+    { action:`${method} 준비`, detail:'기구를 예열하고 원두를 분쇄합니다', time:'0:00' },
+    { action:'원두 투입', detail:'분쇄된 원두를 투입합니다', time:'0:10' },
+    { action:'추출', detail:'레시피에 따라 추출합니다', time:'—' },
+    { action:'완료', detail:'완성된 커피를 즐겨보세요', time:'—' },
+  ];
+}
+
+// ── 상태 ──────────────────────────────────────
+let currentCoffee = null;
+let currentMethod = 'V60';
+let selectedRecipeId = null;
+let selectedRecipe = null;
+let myGear = { dripper: 'V60', grinder: '핸드밀' };
+
+// ── 초기화 ────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadGear();
+  loadCoffee();
+});
+
+function loadGear() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('coffee_note_gear') || '{}');
+    myGear = { ...myGear, ...saved };
+    document.getElementById('gearDripper').textContent = myGear.dripper;
+    document.getElementById('gearGrinder').textContent = myGear.grinder;
+    // 장비 드리퍼에 맞게 탭 활성화
+    selectMethod(myGear.dripper);
+  } catch {}
+}
+
+function loadCoffee() {
+  const params = new URLSearchParams(location.search);
+  const coffeeId = params.get('coffeeId');
+
+  // sessionStorage에서 먼저 확인
+  const stored = sessionStorage.getItem('recipe_coffee');
+  if (stored) {
+    currentCoffee = JSON.parse(stored);
+  } else if (coffeeId !== null) {
+    const coffees = getCoffeesLocal();
+    currentCoffee = coffees[parseInt(coffeeId)] || null;
+  }
+
+  if (currentCoffee) {
+    renderCoffeeBanner(currentCoffee);
+    updateScaRecipe();
+    loadCommunityStats();
+  }
+
+  renderRecipeList();
+}
+
+function getCoffeesLocal() {
+  try {
+    if (typeof getCoffees === 'function') return getCoffees();
+    return JSON.parse(localStorage.getItem('coffee_note_coffees') || '[]');
+  } catch { return []; }
+}
+
+function renderCoffeeBanner(coffee) {
+  document.getElementById('bannerName').textContent = coffee.name || '—';
+  document.getElementById('bannerSub').textContent =
+    [coffee.country, coffee.process, coffee.roaster].filter(Boolean).join(' · ');
+  if (coffee.sca_score) {
+    document.getElementById('bannerScore').textContent = parseFloat(coffee.sca_score).toFixed(1);
+  }
+}
+
+// ── SCA 레시피 업데이트 ────────────────────────
+function updateScaRecipe() {
+  if (!currentCoffee) return;
+  const process = detectProcess(currentCoffee.process);
+  const roast = detectRoast(currentCoffee.roast_level || currentCoffee.roast || 'medium');
+  const matrix = SCA_MATRIX[process]?.[roast]?.[currentMethod]
+              || SCA_MATRIX['washed']['medium'][currentMethod];
+
+  if (matrix) {
+    document.getElementById('sca-temp').textContent = matrix.temp;
+    document.getElementById('sca-ratio').textContent = matrix.ratio;
+    document.getElementById('sca-grind').textContent = matrix.grind;
+    document.getElementById('sca-time').textContent = matrix.time;
+  }
+}
+
+function detectProcess(raw) {
+  if (!raw) return 'washed';
+  const r = raw.toLowerCase();
+  if (r.includes('natural') || r.includes('내추럴')) return 'natural';
+  if (r.includes('honey') || r.includes('허니')) return 'honey';
+  return 'washed';
+}
+
+function detectRoast(raw) {
+  if (!raw) return 'medium';
+  const r = raw.toLowerCase();
+  if (r.includes('light') || r.includes('라이트')) return 'light';
+  if (r.includes('dark') || r.includes('다크')) return 'dark';
+  return 'medium';
+}
+
+// ── 추출법 탭 선택 ─────────────────────────────
+function selectMethod(method, el) {
+  currentMethod = method;
+
+  // 탭 UI 업데이트
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (el) {
+    el.classList.add('active');
+  } else {
+    const btn = document.querySelector(`[data-method="${method}"]`);
+    if (btn) btn.classList.add('active');
+  }
+
+  updateScaRecipe();
+  renderRecipeList();
+}
+
+// ── 커뮤니티 통계 ─────────────────────────────
+async function loadCommunityStats() {
+  if (!currentCoffee) return;
+  // 실제로는 Supabase에서 brew_method별 집계
+  // 여기선 더미 데이터 + 실제 API 연동 구조 준비
+  const dummy = [
+    { method:'V60', pct:38 },
+    { method:'에어로프레스', pct:22 },
+    { method:'프렌치프레스', pct:15 },
+    { method:'에스프레소', pct:12 },
+    { method:'케멕스', pct:8 },
+    { method:'기타', pct:5 },
+  ];
+  renderMethodChart(dummy);
+  document.getElementById('methodStats').style.display = 'block';
+}
+
+function renderMethodChart(data) {
+  const max = Math.max(...data.map(d => d.pct));
+  document.getElementById('methodBarChart').innerHTML = data.map(d => `
+    <div class="method-stat-row">
+      <span class="method-label">${d.method}</span>
+      <div class="method-bar-wrap">
+        <div class="method-bar-fill" style="width:${(d.pct/max*100)}%"></div>
+      </div>
+      <span class="method-pct">${d.pct}%</span>
+    </div>
+  `).join('');
+}
+
+// ── 레시피 목록 렌더링 ────────────────────────
+function renderRecipeList() {
+  const list = document.getElementById('recipeList');
+  const label = document.getElementById('recipeListLabel');
+  label.textContent = `${currentMethod} 레시피`;
+
+  const recipes = getRecipesForMethod(currentMethod);
+  list.innerHTML = '';
+
+  if (recipes.length === 0) {
+    list.innerHTML = `
+      <div style="padding:32px 0; text-align:center">
+        <div style="font-size:32px;opacity:0.3;margin-bottom:12px">📋</div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:6px">아직 레시피가 없어요</div>
+        <div style="font-size:12px;color:var(--text-sub)">첫 번째 레시피를 등록해보세요</div>
+        <button class="btn-secondary" style="margin-top:16px" onclick="openAddRecipe()">+ 레시피 등록</button>
+      </div>
+    `;
+    return;
+  }
+
+  recipes.forEach(r => {
+    list.appendChild(buildRecipeCard(r));
+  });
+}
+
+function getRecipesForMethod(method) {
+  // 저장된 레시피 + SCA 기본 레시피 합치기
+  const saved = JSON.parse(localStorage.getItem('coffee_note_recipes') || '[]')
+    .filter(r => r.dripper === method || r.brew_method === method);
+
+  // SCA 기본 레시피 하나 항상 포함
+  const scaMatrix = SCA_MATRIX['washed']['medium'][method] || SCA_MATRIX['washed']['medium']['V60'];
+  const scaDefault = {
+    id: 'sca_default_' + method,
+    name: `${method} 기본 레시피`,
+    dripper: method,
+    water_temp: scaMatrix.temp,
+    ratio: scaMatrix.ratio,
+    grind_size: scaMatrix.grind,
+    total_time: scaMatrix.time,
+    steps: METHOD_STEPS[method] || getDefaultSteps(method),
+    is_expert: true,
+    likes: 0,
+    by: 'SCA Golden Cup',
+    badge: 'expert'
+  };
+
+  return [scaDefault, ...saved];
+}
+
+function buildRecipeCard(recipe) {
+  const div = document.createElement('div');
+  div.className = 'recipe-card';
+  div.id = `recipe-${recipe.id}`;
+  if (selectedRecipeId === recipe.id) div.classList.add('selected');
+
+  const badgeHtml = recipe.badge === 'expert'
+    ? `<span class="recipe-badge expert">전문가</span>`
+    : recipe.badge === 'popular'
+    ? `<span class="recipe-badge popular">인기</span>`
+    : `<span class="recipe-badge mine">나의 레시피</span>`;
+
+  const steps = recipe.steps || [];
+  const stepsHtml = steps.map((s, i) => `
+    <div class="step-row">
+      <div class="step-num">${i+1}</div>
+      <div class="step-content">
+        <div class="step-action">${s.action}</div>
+        <div class="step-detail">${s.detail}</div>
+      </div>
+      <div class="step-time">${s.time}</div>
+    </div>
+  `).join('');
+
+  div.innerHTML = `
+    <div class="recipe-card-header" onclick="toggleRecipe('${recipe.id}', ${JSON.stringify(recipe).replace(/"/g,'&quot;')})">
+      <div class="recipe-icon">${recipe.is_expert ? '⭐' : '📋'}</div>
+      <div class="recipe-meta">
+        <div class="recipe-name">${recipe.name}</div>
+        <div class="recipe-by">by ${recipe.by || recipe.user_nickname || '커뮤니티'}</div>
+      </div>
+      <div class="recipe-right">
+        ${badgeHtml}
+        ${recipe.likes ? `<span class="recipe-likes">♥ ${recipe.likes}</span>` : ''}
+      </div>
+    </div>
+    <div class="recipe-params">
+      ${recipe.water_temp ? `<div class="param-cell"><div class="param-key">온도</div><div class="param-val">${recipe.water_temp}</div></div>` : ''}
+      ${recipe.ratio ? `<div class="param-cell"><div class="param-key">비율</div><div class="param-val">${recipe.ratio}</div></div>` : ''}
+      ${recipe.grind_size ? `<div class="param-cell"><div class="param-key">분쇄도</div><div class="param-val">${recipe.grind_size}</div></div>` : ''}
+      ${recipe.total_time ? `<div class="param-cell"><div class="param-key">시간</div><div class="param-val">${recipe.total_time}</div></div>` : ''}
+    </div>
+    <div class="recipe-steps" id="steps-${recipe.id}">
+      ${stepsHtml}
+      <div style="padding:12px 16px; display:flex; gap:8px">
+        <button class="btn-secondary" style="flex:1;height:40px;font-size:12px" onclick="event.stopPropagation();selectThisRecipe('${recipe.id}')">이 레시피 선택</button>
+        ${!recipe.is_expert ? `<button class="btn-secondary" style="height:40px;padding:0 12px;font-size:12px;color:var(--text-sub)" onclick="event.stopPropagation();likeRecipe('${recipe.id}', this)">♡</button>` : ''}
+      </div>
+    </div>
+  `;
+
+  return div;
+}
+
+function toggleRecipe(id, recipe) {
+  const stepsEl = document.getElementById(`steps-${id}`);
+  if (!stepsEl) return;
+  const isOpen = stepsEl.classList.contains('open');
+  // 모두 닫기
+  document.querySelectorAll('.recipe-steps.open').forEach(el => el.classList.remove('open'));
+  if (!isOpen) {
+    stepsEl.classList.add('open');
+    selectedRecipeId = id;
+    selectedRecipe = recipe;
+    document.getElementById(`recipe-${id}`).classList.add('selected');
+  } else {
+    selectedRecipeId = null; selectedRecipe = null;
+    document.querySelectorAll('.recipe-card.selected').forEach(el => el.classList.remove('selected'));
+  }
+}
+
+function selectThisRecipe(id) {
+  selectedRecipeId = id;
+  document.querySelectorAll('.recipe-card').forEach(el => el.classList.remove('selected'));
+  document.getElementById(`recipe-${id}`)?.classList.add('selected');
+  showToast('레시피를 선택했습니다');
+  sessionStorage.setItem('selected_recipe_id', id);
+}
+
+function likeRecipe(id, btn) {
+  const recipes = JSON.parse(localStorage.getItem('coffee_note_recipes') || '[]');
+  const idx = recipes.findIndex(r => r.id === id);
+  if (idx >= 0) {
+    recipes[idx].likes = (recipes[idx].likes || 0) + 1;
+    localStorage.setItem('coffee_note_recipes', JSON.stringify(recipes));
+    btn.textContent = `♥ ${recipes[idx].likes}`;
+  }
+}
+
+// ── 장비 변경 ─────────────────────────────────
+function changeGear(type) {
+  const options = type === 'dripper'
+    ? ['V60', '칼리타', '케멕스', '에어로프레스', '프렌치프레스', '에스프레소', '클레버', '모카포트']
+    : ['핸드밀', '전동밀', '코만단테', '바라짜', '기타'];
+
+  const val = prompt(`${type === 'dripper' ? '드리퍼' : '그라인더'}를 선택하세요:\n${options.map((o,i)=>`${i+1}. ${o}`).join('\n')}`);
+  if (!val) return;
+  const idx = parseInt(val) - 1;
+  if (idx >= 0 && idx < options.length) {
+    myGear[type] = options[idx];
+    localStorage.setItem('coffee_note_gear', JSON.stringify(myGear));
+    document.getElementById(`gear${type.charAt(0).toUpperCase()+type.slice(1)}`).textContent = options[idx];
+    if (type === 'dripper') selectMethod(options[idx]);
+    showToast(`${type === 'dripper' ? '드리퍼' : '그라인더'}를 변경했습니다`);
+  }
+}
+
+// ── 레시피 추가 ───────────────────────────────
+function openAddRecipe() {
+  const params = new URLSearchParams(location.search);
+  location.href = `recipe-register.html?coffeeId=${params.get('coffeeId') || ''}&method=${currentMethod}`;
+}
+
+// ── 네비게이션 ────────────────────────────────
+function goSearch() { history.back(); }
+
+function goTasting() {
+  const params = new URLSearchParams(location.search);
+  const coffeeId = params.get('coffeeId') || '0';
+  if (selectedRecipe) {
+    sessionStorage.setItem('tasting_recipe', JSON.stringify(selectedRecipe));
+  }
+  location.href = `tasting.html?coffeeId=${coffeeId}`;
+}
+
+// ── 토스트 ────────────────────────────────────
+function showToast(msg, duration = 2000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), duration);
+}
+</script>
+</body>
+</html>

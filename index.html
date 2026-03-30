@@ -1,511 +1,1453 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>커피 노트</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
-    <link rel="stylesheet" href="common.css" />
-    <script src="config.js"></script>
-  </head>
-  <body>
-    <div class="wrap">
-      <div class="logo-area">
-        <div class="thick-rule"></div>
-        <h1 class="logo">Coffee<br />Note.</h1>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Coffee Note. — 원두 탐색</title>
+  <link rel="stylesheet" href="common.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&display=swap" rel="stylesheet">
+  <style>
+    /* ─── 기반 변수 ─────────────────────────────── */
+    :root {
+      --bg:          #FFFFFF;
+      --text:        #121212;
+      --text-sub:    #888888;
+      --accent:      #121212;
+      --accent-warm: #8C7355;
+      --border:      #E0E0E0;
+      --surface:     #F8F7F5;
+      --nav-h:       60px;
+      --header-h:    56px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Pretendard Variable', 'Pretendard', -apple-system, sans-serif; overflow-x: hidden; }
+
+    /* ─── 헤더 ──────────────────────────────────── */
+    .header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: var(--header-h);
+      background: var(--bg);
+      border-bottom: 1.5px solid var(--text);
+      display: flex; align-items: center; gap: 12px;
+      padding: 0 16px;
+    }
+    .header-logo {
+      font-family: 'Playfair Display', serif;
+      font-weight: 900; font-size: 20px;
+      letter-spacing: -0.5px; color: var(--text);
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .header-logo span { color: var(--accent-warm); }
+
+    /* 검색 바 */
+    .search-wrap {
+      flex: 1; display: flex; align-items: center;
+      border: 1.5px solid var(--text);
+      height: 36px; padding: 0 10px; gap: 8px;
+      background: var(--bg);
+    }
+    .search-wrap input {
+      flex: 1; border: none; outline: none;
+      font-family: inherit; font-size: 14px; font-weight: 500;
+      color: var(--text); background: transparent;
+    }
+    .search-wrap input::placeholder { color: var(--text-sub); }
+    .btn-icon {
+      background: none; border: none; cursor: pointer;
+      padding: 4px; display: flex; align-items: center; justify-content: center;
+      color: var(--text);
+    }
+    .btn-icon svg { width: 18px; height: 18px; }
+
+    /* 헤더 우측 버튼 */
+    .header-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+    /* ─── 본문 스크롤 영역 ───────────────────────── */
+    .wrap {
+      padding-top: calc(var(--header-h) + 8px);
+      padding-bottom: calc(var(--nav-h) + 16px);
+      min-height: 100vh;
+    }
+
+    /* ─── 필터 칩 ───────────────────────────────── */
+    .filter-row {
+      display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px 8px;
+      scrollbar-width: none;
+    }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .chip {
+      flex-shrink: 0;
+      border: 1px solid var(--border); padding: 5px 12px;
+      font-size: 12px; font-weight: 600; color: var(--text-sub);
+      cursor: pointer; background: var(--bg); white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .chip.active {
+      border-color: var(--text); color: var(--text); background: var(--surface);
+    }
+    .chip:active { opacity: 0.7; }
+
+    /* ─── 섹션 제목 ─────────────────────────────── */
+    .section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--text-sub);
+      padding: 12px 16px 8px;
+    }
+    .section-divider { height: 1px; background: var(--border); margin: 0 16px; }
+
+    /* ─── 검색 히스토리 ─────────────────────────── */
+    #recentSection { padding-bottom: 4px; }
+    .recent-list { padding: 0 16px; }
+    .recent-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .recent-item:last-child { border-bottom: none; }
+    .recent-q {
+      font-size: 14px; font-weight: 500; color: var(--text);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .recent-q svg { color: var(--text-sub); flex-shrink: 0; }
+    .btn-del-recent {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-sub); padding: 2px; font-size: 16px; line-height: 1;
+    }
+    .recent-clear {
+      font-size: 12px; color: var(--text-sub); padding: 6px 16px 12px;
+      cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+    }
+
+    /* ─── 검색 결과 목록 ─────────────────────────── */
+    #resultsSection { display: none; }
+    .results-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px 8px;
+    }
+    .results-count { font-size: 12px; color: var(--text-sub); font-weight: 500; }
+
+    /* 원두 카드 */
+    .coffee-card {
+      border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background 0.1s;
+    }
+    .coffee-card:active { background: var(--surface); }
+    .coffee-card-header {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 14px 16px;
+    }
+    .card-icon {
+      width: 44px; height: 44px; flex-shrink: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .card-meta { flex: 1; min-width: 0; }
+    .card-name {
+      font-size: 15px; font-weight: 700; color: var(--text);
+      line-height: 1.3; margin-bottom: 2px;
+    }
+    .card-sub {
+      font-size: 12px; color: var(--text-sub); font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .card-tags { display: flex; gap: 5px; margin-top: 7px; flex-wrap: wrap; }
+    .flavor-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600; padding: 3px 8px;
+      border: 1px solid; border-radius: 0;
+    }
+    .flavor-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+    .card-score {
+      font-size: 13px; font-weight: 700;
+      color: var(--accent-warm);
+    }
+    .card-score small { font-size: 10px; font-weight: 500; color: var(--text-sub); }
+    .card-fav {
+      background: none; border: none; cursor: pointer;
+      font-size: 18px; padding: 0; line-height: 1;
+    }
+
+    /* ─── 원두 상세 패널 ─────────────────────────── */
+    .detail-panel {
+      display: none; background: var(--bg);
+      border-bottom: 2px solid var(--text);
+      overflow: hidden;
+    }
+    .detail-panel.open { display: block; }
+
+    /* 상세 내부 섹션 */
+    .detail-section { padding: 16px 16px 12px; border-bottom: 1px solid var(--border); }
+    .detail-section:last-child { border-bottom: none; }
+
+    /* 신뢰도 배지 */
+    .confidence-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 16px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .confidence-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .confidence-label { font-size: 11px; font-weight: 700; color: var(--text-sub); letter-spacing: 0.5px; }
+    .confidence-text { font-size: 11px; color: var(--text-sub); }
+    .source-tag {
+      margin-left: auto; font-size: 10px; font-weight: 700;
+      letter-spacing: 0.5px; text-transform: uppercase;
+      color: var(--text-sub); padding: 2px 6px; border: 1px solid var(--border);
+    }
+
+    /* 정보 그리드 */
+    .info-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    }
+    .info-cell {
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+    }
+    .info-cell:nth-child(odd) { padding-right: 16px; border-right: 1px solid var(--border); }
+    .info-cell:nth-child(even) { padding-left: 16px; }
+    .info-cell:nth-last-child(-n+2) { border-bottom: none; }
+    .info-key { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-sub); margin-bottom: 3px; }
+    .info-val { font-size: 13px; font-weight: 600; color: var(--text); }
+
+    /* CQI 점수 */
+    .cqi-row {
+      display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+      border-bottom: 1px solid var(--border); background: var(--surface);
+    }
+    .cqi-score {
+      font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 900;
+      color: var(--text); line-height: 1;
+    }
+    .cqi-info { flex: 1; }
+    .cqi-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-sub); }
+    .cqi-desc { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+    .cqi-bar-wrap { margin-top: 6px; height: 3px; background: var(--border); }
+    .cqi-bar-fill { height: 100%; background: var(--accent-warm); }
+
+    /* AI 예측 향미 점수 */
+    .predict-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+      padding: 12px 0 4px;
+    }
+    .predict-item { text-align: center; }
+    .predict-bar-wrap {
+      height: 48px; display: flex; flex-direction: column-reverse;
+      margin: 0 auto 4px; width: 20px; background: var(--border);
+      position: relative;
+    }
+    .predict-bar-fill { width: 100%; background: var(--text); transition: height 0.4s; }
+    .predict-val { font-size: 13px; font-weight: 700; color: var(--text); }
+    .predict-key { font-size: 10px; color: var(--text-sub); font-weight: 600; }
+
+    /* 향미 태그 섹션 */
+    .flavor-tags-wrap { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 0 4px; }
+    .flavor-tag-lg {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 700; padding: 6px 12px;
+      border: 1.5px solid; cursor: default;
+    }
+    .raw-notes-wrap { margin-top: 10px; }
+    .raw-notes-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-sub); margin-bottom: 5px; }
+    .raw-notes-text { font-size: 11px; color: var(--text-sub); font-style: italic; line-height: 1.5; }
+
+    /* 스토리 텍스트 */
+    .story-text {
+      font-size: 13px; color: var(--text); line-height: 1.7;
+      font-weight: 400;
+    }
+    .story-loading {
+      font-size: 13px; color: var(--text-sub); font-style: italic;
+    }
+
+    /* 브루잉 팁 */
+    .brew-tips { font-size: 13px; color: var(--text-sub); line-height: 1.6; }
+    .brew-tip-row { display: flex; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+    .brew-tip-row:last-child { border-bottom: none; }
+    .brew-tip-key { font-size: 11px; font-weight: 700; color: var(--text); min-width: 60px; flex-shrink: 0; }
+    .brew-tip-val { font-size: 12px; color: var(--text-sub); }
+
+    /* 커뮤니티 신호 */
+    .community-row {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .community-stat { text-align: center; flex: 1; }
+    .community-num { font-size: 20px; font-weight: 700; color: var(--text); }
+    .community-key { font-size: 10px; font-weight: 700; color: var(--text-sub); letter-spacing: 0.5px; text-transform: uppercase; margin-top: 2px; }
+    .community-divider { width: 1px; height: 36px; background: var(--border); }
+
+    /* 미니 후기 */
+    .review-card {
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+    }
+    .review-card:last-child { border-bottom: none; }
+    .review-header { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+    .review-avatar {
+      width: 24px; height: 24px; background: var(--text);
+      color: var(--bg); font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .review-nick { font-size: 12px; font-weight: 600; }
+    .review-stars { font-size: 11px; color: var(--accent-warm); margin-left: auto; }
+    .review-text { font-size: 12px; color: var(--text-sub); line-height: 1.5; }
+    .review-tags { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
+    .review-tag { font-size: 10px; color: var(--text-sub); font-weight: 600; }
+
+    /* 액션 버튼 */
+    .detail-actions {
+      display: flex; gap: 8px; padding: 14px 16px 12px;
+    }
+    .btn-primary {
+      flex: 2; height: 48px; background: var(--text); color: var(--bg);
+      border: none; font-family: inherit; font-size: 14px; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.3px; transition: opacity 0.15s;
+    }
+    .btn-primary:active { opacity: 0.8; }
+    .btn-secondary {
+      flex: 1; height: 48px; background: var(--bg); color: var(--text);
+      border: 1.5px solid var(--text); font-family: inherit; font-size: 13px; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.3px; transition: all 0.15s;
+    }
+    .btn-secondary:active { background: var(--surface); }
+    .btn-link {
+      flex: 1; height: 48px; background: var(--bg); color: var(--accent-warm);
+      border: 1.5px solid var(--border); font-family: inherit; font-size: 12px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;
+    }
+    .btn-link:active { background: var(--surface); }
+
+    /* ─── 빈 상태 ────────────────────────────────── */
+    .empty-state {
+      display: none; flex-direction: column; align-items: center;
+      justify-content: center; padding: 60px 32px; text-align: center;
+    }
+    .empty-state.show { display: flex; }
+    .empty-icon { font-size: 40px; margin-bottom: 16px; opacity: 0.3; }
+    .empty-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .empty-desc { font-size: 13px; color: var(--text-sub); line-height: 1.6; }
+    .empty-actions { margin-top: 20px; display: flex; gap: 8px; }
+    .btn-outline {
+      padding: 10px 20px; border: 1.5px solid var(--text);
+      background: var(--bg); color: var(--text);
+      font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+
+    /* ─── 로딩 ───────────────────────────────────── */
+    .loading-wrap {
+      display: none; flex-direction: column; align-items: center;
+      padding: 48px 16px; gap: 12px;
+    }
+    .loading-wrap.show { display: flex; }
+    .loading-bar {
+      width: 100%; max-width: 200px; height: 2px; background: var(--border); overflow: hidden;
+    }
+    .loading-bar-fill {
+      height: 100%; width: 40%; background: var(--text);
+      animation: loading-slide 1.2s ease-in-out infinite;
+    }
+    @keyframes loading-slide {
+      0% { transform: translateX(-200%); }
+      100% { transform: translateX(350%); }
+    }
+    .loading-text { font-size: 12px; color: var(--text-sub); font-weight: 500; }
+
+    /* ─── OCR 카메라 시트 ───────────────────────── */
+    .sheet-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      z-index: 300; display: none; align-items: flex-end;
+    }
+    .sheet-overlay.open { display: flex; }
+    .sheet {
+      width: 100%; background: var(--bg);
+      border-top: 2px solid var(--text);
+      max-height: 85vh; overflow-y: auto;
+      animation: slide-up 0.25s ease;
+    }
+    @keyframes slide-up {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .sheet-handle {
+      width: 36px; height: 3px; background: var(--border);
+      margin: 12px auto 0; border-radius: 2px;
+    }
+    .sheet-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; border-bottom: 1px solid var(--border);
+    }
+    .sheet-title { font-size: 16px; font-weight: 700; }
+    .sheet-close {
+      background: none; border: none; cursor: pointer;
+      font-size: 20px; color: var(--text-sub); padding: 0; line-height: 1;
+    }
+    .sheet-body { padding: 20px 16px; }
+
+    /* OCR 업로드 영역 */
+    .ocr-upload {
+      border: 2px dashed var(--border);
+      padding: 40px 24px; text-align: center; cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .ocr-upload:hover { border-color: var(--text); }
+    .ocr-upload input { display: none; }
+    .ocr-upload-icon { font-size: 36px; margin-bottom: 12px; }
+    .ocr-upload-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .ocr-upload-desc { font-size: 12px; color: var(--text-sub); }
+
+    /* OCR 미리보기 */
+    .ocr-preview-wrap { display: none; }
+    .ocr-preview-wrap.show { display: block; }
+    .ocr-img-preview {
+      width: 100%; max-height: 200px; object-fit: cover;
+      border: 1px solid var(--border); margin-bottom: 12px;
+    }
+    .ocr-result-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px;
+    }
+    .ocr-field {
+      padding: 8px 10px; border: 1px solid var(--border);
+    }
+    .ocr-field-key { font-size: 10px; font-weight: 700; color: var(--text-sub); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 2px; }
+    .ocr-field-val { font-size: 13px; font-weight: 600; color: var(--text); }
+    .ocr-field.detected { border-color: #639922; }
+    .ocr-field.inferred { border-color: var(--border); }
+    .ocr-btn-row { display: flex; gap: 8px; }
+
+    /* ─── 하단 네비 ──────────────────────────────── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+      height: var(--nav-h);
+      display: flex; background: var(--bg);
+      border-top: 1.5px solid var(--text);
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 3px; cursor: pointer; text-decoration: none;
+      color: var(--text-sub); transition: color 0.15s;
+    }
+    .nav-item.active { color: var(--text); }
+    .nav-item svg { width: 20px; height: 20px; }
+    .nav-label { font-size: 9px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+
+    /* ─── 토스트 ─────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: calc(var(--nav-h) + 16px); left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--text); color: var(--bg);
+      padding: 10px 20px; font-size: 13px; font-weight: 600;
+      opacity: 0; transition: all 0.3s; z-index: 400; white-space: nowrap;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ─── 직접 등록 FAB ─────────────────────────── */
+    .fab {
+      position: fixed; bottom: calc(var(--nav-h) + 16px); right: 16px;
+      width: 48px; height: 48px;
+      background: var(--text); color: var(--bg);
+      border: none; cursor: pointer; font-size: 22px;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 150; box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+      transition: transform 0.15s;
+    }
+    .fab:active { transform: scale(0.95); }
+    .fab-tooltip {
+      position: fixed; bottom: calc(var(--nav-h) + 72px); right: 16px;
+      background: var(--text); color: var(--bg);
+      font-size: 11px; font-weight: 700; padding: 5px 10px;
+      white-space: nowrap; pointer-events: none;
+      opacity: 0; transform: translateY(4px); transition: all 0.2s; z-index: 150;
+    }
+    .fab:hover + .fab-tooltip { opacity: 1; transform: translateY(0); }
+
+    /* ─── 확장 화살표 ────────────────────────────── */
+    .expand-arrow {
+      width: 20px; height: 20px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-sub); transition: transform 0.2s;
+    }
+    .coffee-card.expanded .expand-arrow { transform: rotate(180deg); }
+
+    /* 반응형 */
+    @media (min-width: 480px) {
+      .wrap { max-width: 480px; margin: 0 auto; }
+      .header { max-width: 480px; left: 50%; transform: translateX(-50%); right: auto; width: 480px; }
+      .bottom-nav { max-width: 480px; left: 50%; transform: translateX(-50%); right: auto; width: 480px; }
+      .fab { right: calc(50% - 480px/2 + 16px); }
+      .fab-tooltip { right: calc(50% - 480px/2 + 16px); }
+      .toast { max-width: 480px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── 헤더 ── -->
+<header class="header">
+  <div class="header-logo">Coffee<span>.</span></div>
+  <div class="search-wrap">
+    <button class="btn-icon" onclick="handleSearch()" aria-label="검색">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+        <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/>
+      </svg>
+    </button>
+    <input type="text" id="searchInput" placeholder="원두 이름, 산지, 향미로 검색..."
+      autocomplete="off" autocorrect="off"
+      oninput="onSearchInput()" onkeydown="if(event.key==='Enter') handleSearch()">
+    <button class="btn-icon" id="clearBtn" onclick="clearSearch()" style="display:none" aria-label="지우기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="openOcrSheet()" aria-label="카메라 OCR">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<!-- ── 본문 ── -->
+<main class="wrap">
+
+  <!-- 필터 칩 -->
+  <div class="filter-row" id="filterRow">
+    <div class="chip active" onclick="setFilter('all', this)">전체</div>
+    <div class="chip" onclick="setFilter('Ethiopia', this)">에티오피아</div>
+    <div class="chip" onclick="setFilter('Colombia', this)">콜롬비아</div>
+    <div class="chip" onclick="setFilter('Guatemala', this)">과테말라</div>
+    <div class="chip" onclick="setFilter('Kenya', this)">케냐</div>
+    <div class="chip" onclick="setFilter('washed', this)">워시드</div>
+    <div class="chip" onclick="setFilter('natural', this)">내추럴</div>
+    <div class="chip" onclick="setFilter('honey', this)">허니</div>
+    <div class="chip" onclick="setFilter('anaerobic', this)">무산소</div>
+  </div>
+
+  <!-- 최근 검색 -->
+  <div id="recentSection">
+    <div class="section-label">최근 검색</div>
+    <div class="section-divider"></div>
+    <div class="recent-list" id="recentList"></div>
+    <div class="recent-clear" onclick="clearAllRecent()">전체 삭제</div>
+  </div>
+
+  <!-- 로딩 -->
+  <div class="loading-wrap" id="loadingWrap">
+    <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+    <div class="loading-text" id="loadingText">AI가 원두 정보를 검색하는 중...</div>
+  </div>
+
+  <!-- 빈 상태 -->
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon">☕</div>
+    <div class="empty-title">검색 결과가 없습니다</div>
+    <div class="empty-desc">다른 키워드로 검색하거나<br>직접 원두를 등록해보세요</div>
+    <div class="empty-actions">
+      <button class="btn-outline" onclick="openRegister()">직접 등록</button>
+    </div>
+  </div>
+
+  <!-- 검색 결과 -->
+  <div id="resultsSection">
+    <div class="results-header">
+      <div class="results-count" id="resultsCount"></div>
+    </div>
+    <div id="resultsList"></div>
+  </div>
+
+</main>
+
+<!-- ── 직접 등록 FAB ── -->
+<button class="fab" onclick="openRegister()" aria-label="원두 직접 등록">＋</button>
+<div class="fab-tooltip">직접 등록</div>
+
+<!-- ── OCR 카메라 시트 ── -->
+<div class="sheet-overlay" id="ocrSheet" onclick="closeOcrSheet(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">커피 봉지 스캔</div>
+      <button class="sheet-close" onclick="closeOcrSheet()">✕</button>
+    </div>
+    <div class="sheet-body">
+      <!-- 업로드 영역 -->
+      <div class="ocr-upload" id="ocrUploadArea" onclick="document.getElementById('ocrFileInput').click()">
+        <input type="file" id="ocrFileInput" accept="image/*" capture="environment" onchange="handleOcrFile(this)">
+        <div class="ocr-upload-icon">📷</div>
+        <div class="ocr-upload-title">커피 봉지 사진 찍기</div>
+        <div class="ocr-upload-desc">라벨의 원두 정보를 자동으로 인식합니다</div>
+      </div>
+      <div style="text-align:center; padding:10px 0; font-size:12px; color:var(--text-sub)">또는 갤러리에서 선택</div>
+      <div style="text-align:center;">
+        <button class="btn-outline" onclick="document.getElementById('ocrGalleryInput').click()" style="width:100%">갤러리에서 선택</button>
+        <input type="file" id="ocrGalleryInput" accept="image/*" style="display:none" onchange="handleOcrFile(this)">
       </div>
 
-      <div class="search-bar-wrap">
-        <div class="search-bar">
-          <input
-            id="q"
-            class="search-input"
-            type="search"
-            placeholder="원두 이름을 입력하세요"
-            autocomplete="off"
-          />
-          <button type="button" class="camera-btn" id="btnOpenCamera" title="사진으로 검색" aria-label="사진으로 검색">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
-              <circle cx="12" cy="13" r="4" />
-            </svg>
-          </button>
-          <button type="button" class="search-btn" id="searchBtn">검색</button>
+      <!-- 로딩 -->
+      <div id="ocrLoading" style="display:none; padding:24px; text-align:center;">
+        <div class="loading-bar" style="margin:0 auto 12px;"><div class="loading-bar-fill"></div></div>
+        <div style="font-size:13px;color:var(--text-sub)">AI가 라벨을 분석하는 중...</div>
+      </div>
+
+      <!-- 결과 -->
+      <div class="ocr-preview-wrap" id="ocrResult">
+        <img class="ocr-img-preview" id="ocrImgPreview" alt="스캔 이미지">
+        <div class="section-label" style="padding:12px 0 8px;">인식 결과</div>
+        <div class="ocr-result-grid" id="ocrResultGrid"></div>
+        <div class="ocr-btn-row">
+          <button class="btn-secondary" style="flex:1" onclick="handleOcrRetry()">다시 찍기</button>
+          <button class="btn-primary" style="flex:2" onclick="handleOcrConfirm()">이 정보로 검색</button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
 
-      <div id="results" class="results"></div>
+<!-- ── 하단 네비 ── -->
+<nav class="bottom-nav">
+  <a href="home.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+      <polyline points="9,22 9,12 15,12 15,22"/>
+    </svg>
+    <span class="nav-label">홈</span>
+  </a>
+  <a href="index.html" class="nav-item active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+      <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/>
+    </svg>
+    <span class="nav-label">탐색</span>
+  </a>
+  <a href="notes.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+      <polyline points="14,2 14,8 20,8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+      <polyline points="10,9 9,9 8,9"/>
+    </svg>
+    <span class="nav-label">노트</span>
+  </a>
+  <a href="mypage.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+      <circle cx="12" cy="7" r="4"/>
+    </svg>
+    <span class="nav-label">마이</span>
+  </a>
+</nav>
 
-      <div class="register-hint" id="registerHint">
-        찾는 원두가 없나요?
-        <br />
-        <button type="button" class="btn-secondary inline" id="btnRegister">
-          <span style="display: inline-flex; align-items: center; gap: 8px">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            직접 원두 등록하기
-          </span>
+<!-- ── 토스트 ── -->
+<div class="toast" id="toast"></div>
+
+<!-- ── 스크립트 ── -->
+<script src="supabase.js"></script>
+<script src="common.js"></script>
+<script>
+/* ═══════════════════════════════════════════════
+   Coffee Note — index.html (탐색 화면)
+   Phase B-1 | v30
+   ═══════════════════════════════════════════════ */
+
+// ── SCA 향미 카테고리 컬러 맵 ──────────────────
+const SCA_COLORS = {
+  'Fruity':'#E24B4A','과일향':'#E24B4A',
+  'Floral':'#D4537E','꽃향':'#D4537E',
+  'Sweet':'#EF9F27','단맛':'#EF9F27',
+  'Nutty/Cocoa':'#854F0B','견과/코코아':'#854F0B',
+  'Spices':'#993C1D','향신료':'#993C1D',
+  'Roasted':'#5F5E5A','로스티드':'#5F5E5A',
+  'Green/Vegetative':'#639922','풀/식물향':'#639922',
+  'Sour/Fermented':'#D85A30','신맛/발효':'#D85A30',
+  'Other':'#888888','기타':'#888888'
+};
+
+// 향미 → 카테고리 매핑 (주요 향미)
+const NOTE_TO_CAT = {
+  'Blueberry':'Fruity','블루베리':'Fruity','Raspberry':'Fruity','라즈베리':'Fruity',
+  'Strawberry':'Fruity','딸기':'Fruity','Cherry':'Fruity','체리':'Fruity',
+  'Peach':'Fruity','복숭아':'Fruity','Citrus':'Fruity','시트러스':'Fruity',
+  'Lemon':'Fruity','레몬':'Fruity','Orange':'Fruity','오렌지':'Fruity',
+  'Grape':'Fruity','포도':'Fruity','Apple':'Fruity','사과':'Fruity',
+  'Jasmine':'Floral','자스민':'Floral','Rose':'Floral','장미':'Floral',
+  'Lavender':'Floral','라벤더':'Floral','Floral':'Floral','꽃향':'Floral',
+  'Honey':'Sweet','꿀':'Sweet','Caramel':'Sweet','카라멜':'Sweet',
+  'Vanilla':'Sweet','바닐라':'Sweet','Maple':'Sweet','메이플':'Sweet',
+  'Brown Sugar':'Sweet','흑설탕':'Sweet','Chocolate':'Nutty/Cocoa',
+  'Hazelnut':'Nutty/Cocoa','헤이즐넛':'Nutty/Cocoa',
+  'Almond':'Nutty/Cocoa','아몬드':'Nutty/Cocoa',
+  'Cocoa':'Nutty/Cocoa','코코아':'Nutty/Cocoa',
+  'Cinnamon':'Spices','시나몬':'Spices','Cardamom':'Spices','카다멈':'Spices',
+  'Smoky':'Roasted','스모키':'Roasted','Roasted':'Roasted',
+  'Green':'Green/Vegetative','Herb':'Green/Vegetative','허브':'Green/Vegetative',
+  'Winey':'Sour/Fermented','와인':'Sour/Fermented',
+  'Fermented':'Sour/Fermented','발효':'Sour/Fermented'
+};
+
+function getNoteColor(note) {
+  const cat = NOTE_TO_CAT[note] || 'Other';
+  return SCA_COLORS[cat] || '#888888';
+}
+
+// ── 상태 ──────────────────────────────────────
+let activeFilter = 'all';
+let currentResults = [];
+let expandedIndex = -1;
+let ocrData = null;
+let searchTimer = null;
+
+// ── 초기화 ────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  renderRecent();
+  handleUrlParams();
+});
+
+function handleUrlParams() {
+  const params = new URLSearchParams(location.search);
+  const q = params.get('q') || params.get('query');
+  const coffeeId = params.get('coffeeId');
+  const expand = params.get('expand');
+
+  if (q) {
+    document.getElementById('searchInput').value = q;
+    updateClearBtn();
+    handleSearch();
+  } else if (coffeeId !== null) {
+    const coffees = getCoffeesLocal();
+    const idx = parseInt(coffeeId);
+    if (coffees[idx]) {
+      showResults([coffees[idx]], idx, expand === '1');
+    } else {
+      showRecentSection();
+    }
+  } else {
+    showRecentSection();
+  }
+}
+
+// ── 로컬 커피 불러오기 ─────────────────────────
+function getCoffeesLocal() {
+  try {
+    // common.js의 getCoffees() 사용 (없으면 직접 읽기)
+    if (typeof getCoffees === 'function') return getCoffees();
+    return JSON.parse(localStorage.getItem('coffee_note_coffees') || '[]');
+  } catch { return []; }
+}
+
+function saveCoffeeLocal(coffee) {
+  try {
+    if (typeof saveCoffee === 'function') return saveCoffee(coffee);
+    const list = getCoffeesLocal();
+    list.unshift(coffee);
+    localStorage.setItem('coffee_note_coffees', JSON.stringify(list));
+    return list.length - 1;
+  } catch { return -1; }
+}
+
+// ── 필터 ──────────────────────────────────────
+function setFilter(val, el) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  activeFilter = val;
+  if (currentResults.length > 0) applyFilter();
+}
+
+function applyFilter() {
+  let filtered = currentResults;
+  if (activeFilter !== 'all') {
+    const f = activeFilter.toLowerCase();
+    filtered = currentResults.filter(c => {
+      const haystack = `${c.country} ${c.process} ${c.region} ${c.variety}`.toLowerCase();
+      return haystack.includes(f);
+    });
+  }
+  renderList(filtered);
+}
+
+// ── 검색 인풋 핸들러 ──────────────────────────
+function onSearchInput() {
+  const val = document.getElementById('searchInput').value;
+  updateClearBtn();
+  clearTimeout(searchTimer);
+  if (val.length === 0) { showRecentSection(); return; }
+  if (val.length >= 2) {
+    searchTimer = setTimeout(handleSearch, 600);
+  }
+}
+
+function updateClearBtn() {
+  const val = document.getElementById('searchInput').value;
+  document.getElementById('clearBtn').style.display = val ? 'flex' : 'none';
+}
+
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  updateClearBtn();
+  showRecentSection();
+  document.getElementById('searchInput').focus();
+}
+
+// ── 검색 실행 ─────────────────────────────────
+async function handleSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) { showRecentSection(); return; }
+
+  saveRecent(q);
+  showLoading('AI가 원두 정보를 검색하는 중...');
+  hideAll();
+
+  // 1차: 로컬 DB 검색
+  const localResults = searchLocal(q);
+  if (localResults.length > 0) {
+    setLoading(false);
+    showResults(localResults);
+    return;
+  }
+
+  // 2차: API 검색
+  try {
+    setLoading(true, 'AI가 원두 정보를 찾는 중...');
+    const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    const data = await res.json();
+
+    if (data.coffee) {
+      // 결과를 로컬에 캐시
+      const coffees = getCoffeesLocal();
+      const existing = coffees.findIndex(c =>
+        c.name && c.name.toLowerCase() === (data.coffee.name || '').toLowerCase()
+      );
+      if (existing === -1) {
+        saveCoffeeLocal(data.coffee);
+      }
+      setLoading(false);
+      showResults([data.coffee], 0, true, data);
+    } else {
+      setLoading(false);
+      showEmpty();
+    }
+  } catch(e) {
+    console.warn('API 검색 실패:', e);
+    setLoading(false);
+    showEmpty();
+  }
+}
+
+function searchLocal(q) {
+  const coffees = getCoffeesLocal();
+  const kw = q.toLowerCase();
+  return coffees.filter(c => {
+    const text = `${c.name} ${c.country} ${c.region} ${c.variety} ${c.process} ${(c.cup_notes||[]).join(' ')}`.toLowerCase();
+    return text.includes(kw);
+  });
+}
+
+// ── 화면 상태 제어 ────────────────────────────
+function hideAll() {
+  document.getElementById('recentSection').style.display = 'none';
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('emptyState').classList.remove('show');
+  document.getElementById('loadingWrap').classList.remove('show');
+}
+
+function showRecentSection() {
+  hideAll();
+  currentResults = [];
+  expandedIndex = -1;
+  document.getElementById('recentSection').style.display = 'block';
+}
+
+function showLoading(text) {
+  hideAll();
+  document.getElementById('loadingText').textContent = text || 'Loading...';
+  document.getElementById('loadingWrap').classList.add('show');
+}
+
+function setLoading(on, text) {
+  const wrap = document.getElementById('loadingWrap');
+  if (on) {
+    wrap.classList.add('show');
+    if (text) document.getElementById('loadingText').textContent = text;
+  } else {
+    wrap.classList.remove('show');
+  }
+}
+
+function showEmpty() {
+  hideAll();
+  document.getElementById('emptyState').classList.add('show');
+}
+
+function showResults(results, autoExpandIdx = -1, autoExpand = false, apiData = null) {
+  hideAll();
+  currentResults = results;
+  document.getElementById('resultsSection').style.display = 'block';
+  document.getElementById('resultsCount').textContent =
+    results.length === 1 ? '1개의 원두' : `${results.length}개의 원두`;
+
+  renderList(results, autoExpandIdx, autoExpand, apiData);
+}
+
+// ── 결과 목록 렌더링 ──────────────────────────
+function renderList(results, autoExpandIdx = -1, autoExpand = false, apiData = null) {
+  const list = document.getElementById('resultsList');
+  list.innerHTML = '';
+
+  if (results.length === 0) { showEmpty(); return; }
+
+  results.forEach((coffee, idx) => {
+    const card = buildCard(coffee, idx, apiData);
+    list.appendChild(card);
+    if (idx === autoExpandIdx && autoExpand) {
+      expandCard(idx, apiData);
+    }
+  });
+}
+
+function buildCard(coffee, idx, apiData) {
+  const wrap = document.createElement('div');
+  wrap.className = 'coffee-card';
+  wrap.id = `card-${idx}`;
+
+  const notes = coffee.cup_notes || coffee.cupNotes || [];
+  const tagHtml = notes.slice(0, 3).map(n => {
+    const color = getNoteColor(n);
+    return `<span class="flavor-tag" style="color:${color};border-color:${color}20;background:${color}10">
+      <span class="flavor-dot" style="background:${color}"></span>${n}
+    </span>`;
+  }).join('');
+
+  const score = coffee.sca_score || (apiData && apiData.cqi && apiData.cqi.total_score);
+  const isFav = isFavorite(idx);
+
+  wrap.innerHTML = `
+    <div class="coffee-card-header" onclick="toggleCard(${idx})">
+      <div class="card-icon">☕</div>
+      <div class="card-meta">
+        <div class="card-name">${coffee.name || '이름 없음'}</div>
+        <div class="card-sub">${[coffee.roaster, coffee.country, coffee.process].filter(Boolean).join(' · ')}</div>
+        ${tagHtml ? `<div class="card-tags">${tagHtml}</div>` : ''}
+      </div>
+      <div class="card-right">
+        ${score ? `<div class="card-score">${parseFloat(score).toFixed(1)}<small> pts</small></div>` : ''}
+        <button class="card-fav" onclick="event.stopPropagation(); toggleFav(${idx}, this)" aria-label="즐겨찾기">
+          ${isFav ? '♥' : '♡'}
         </button>
+        <span class="expand-arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+            <polyline points="6,9 12,15 18,9"/>
+          </svg>
+        </span>
+      </div>
+    </div>
+    <div class="detail-panel" id="detail-${idx}"></div>
+  `;
+
+  return wrap;
+}
+
+// ── 카드 토글 ─────────────────────────────────
+function toggleCard(idx) {
+  if (expandedIndex === idx) {
+    collapseCard(idx);
+  } else {
+    if (expandedIndex >= 0) collapseCard(expandedIndex);
+    expandCard(idx);
+  }
+}
+
+function collapseCard(idx) {
+  const card = document.getElementById(`card-${idx}`);
+  const panel = document.getElementById(`detail-${idx}`);
+  if (!card || !panel) return;
+  card.classList.remove('expanded');
+  panel.classList.remove('open');
+  expandedIndex = -1;
+}
+
+async function expandCard(idx, apiData = null) {
+  const card = document.getElementById(`card-${idx}`);
+  const panel = document.getElementById(`detail-${idx}`);
+  if (!card || !panel) return;
+
+  card.classList.add('expanded');
+  expandedIndex = idx;
+
+  const coffee = currentResults[idx];
+  if (!coffee) return;
+
+  // 이미 렌더링된 경우 바로 열기
+  if (panel.dataset.rendered) {
+    panel.classList.add('open');
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return;
+  }
+
+  panel.classList.add('open');
+  panel.innerHTML = buildDetailHTML(coffee, idx, apiData);
+  panel.dataset.rendered = '1';
+
+  // 스크롤
+  setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+
+  // 스토리 비동기 로드 (없으면)
+  if (!coffee.story && !coffee.description) {
+    loadStory(coffee, panel);
+  }
+
+  // CQI 점수 비동기 조회 (없으면)
+  if (!coffee.sca_score && !apiData?.cqi) {
+    loadCqi(coffee, panel);
+  }
+}
+
+// ── 상세 HTML 빌더 ────────────────────────────
+function buildDetailHTML(coffee, idx, apiData) {
+  const notes = coffee.cup_notes || coffee.cupNotes || [];
+  const raw = coffee.raw_notes || coffee.rawNotes || [];
+  const conf = coffee.confidence || 'medium';
+  const confColors = { high:'#639922', medium:'#EF9F27', low:'#888888' };
+  const confText = { high:'높음 — 신뢰할 수 있는 정보', medium:'보통 — 일부 추정 포함', low:'낮음 — AI 추정 정보' };
+  const cqiScore = coffee.sca_score || (apiData?.cqi?.total_score);
+  const community = apiData?.community || coffee.community || {};
+
+  const aroma = coffee.aroma || 0;
+  const acidity = coffee.acidity || 0;
+  const sweetness = coffee.sweetness || 0;
+  const body = coffee.body || 0;
+  const aftertaste = coffee.aftertaste || 0;
+
+  const hasPredicts = aroma || acidity || sweetness || body || aftertaste;
+
+  return `
+    <!-- 신뢰도 배지 -->
+    <div class="confidence-bar">
+      <span class="confidence-dot" style="background:${confColors[conf]}"></span>
+      <span class="confidence-label">데이터 신뢰도</span>
+      <span class="confidence-text">${confText[conf]}</span>
+      <span class="source-tag">${coffee.source === 'user_created' ? '직접등록' : 'AI'}</span>
+    </div>
+
+    <!-- CQI 점수 -->
+    ${cqiScore ? `
+    <div class="cqi-row">
+      <div class="cqi-score">${parseFloat(cqiScore).toFixed(1)}</div>
+      <div class="cqi-info">
+        <div class="cqi-label">SCA / CQI Score</div>
+        <div class="cqi-desc">${getCqiGrade(cqiScore)}</div>
+        <div class="cqi-bar-wrap"><div class="cqi-bar-fill" style="width:${Math.min((cqiScore-60)/40*100,100)}%"></div></div>
+      </div>
+    </div>
+    ` : `<div id="cqiRow-${idx}" class="cqi-row" style="display:none"></div>`}
+
+    <!-- 원산지 정보 그리드 -->
+    <div class="detail-section">
+      <div class="section-label" style="padding:0 0 10px;">원산지 정보</div>
+      <div class="info-grid">
+        ${coffee.country ? `<div class="info-cell"><div class="info-key">국가</div><div class="info-val">${coffee.country}</div></div>` : ''}
+        ${coffee.region ? `<div class="info-cell"><div class="info-key">지역</div><div class="info-val">${coffee.region}</div></div>` : ''}
+        ${coffee.farm ? `<div class="info-cell"><div class="info-key">농장/워싱스테이션</div><div class="info-val">${coffee.farm}</div></div>` : ''}
+        ${coffee.altitude ? `<div class="info-cell"><div class="info-key">고도</div><div class="info-val">${coffee.altitude}</div></div>` : ''}
+        ${coffee.process ? `<div class="info-cell"><div class="info-key">가공방식</div><div class="info-val">${coffee.process}</div></div>` : ''}
+        ${coffee.variety ? `<div class="info-cell"><div class="info-key">품종</div><div class="info-val">${coffee.variety}</div></div>` : ''}
       </div>
     </div>
 
-    <div id="globalToast" class="toast"></div>
+    <!-- 향미 노트 -->
+    <div class="detail-section">
+      <div class="section-label" style="padding:0 0 0;">AI 예측 향미</div>
+      <div class="flavor-tags-wrap">
+        ${notes.map(n => {
+          const color = getNoteColor(n);
+          return `<span class="flavor-tag-lg" style="color:${color};border-color:${color};background:${color}15">
+            <span class="flavor-dot" style="background:${color}"></span>${n}
+          </span>`;
+        }).join('')}
+        ${notes.length === 0 ? '<span style="font-size:12px;color:var(--text-sub)">향미 정보 없음</span>' : ''}
+      </div>
+      ${raw.length > 0 ? `
+        <div class="raw-notes-wrap">
+          <div class="raw-notes-label">원본 라벨 텍스트</div>
+          <div class="raw-notes-text">${raw.join(', ')}</div>
+        </div>
+      ` : ''}
+    </div>
 
-      <nav id="bottomNav" class="bottom-nav">
-    <a href="home.html" class="nav-item" data-nav="home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-label">홈</span></a>
-    <a href="index.html" class="nav-item" data-nav="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><span class="nav-label">검색</span></a>
-    <a href="notes.html" class="nav-item" data-nav="notes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg><span class="nav-label">노트</span></a>
-    <a href="#" class="nav-item" data-nav="map" onclick="CoffeeNote.openCoffeeMap();return false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg><span class="nav-label">커피맵</span></a>
-    <a href="mypage.html" class="nav-item" data-nav="mypage"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">마이</span></a>
-  </nav>
+    <!-- AI 향미 강도 예측 -->
+    ${hasPredicts ? `
+    <div class="detail-section">
+      <div class="section-label" style="padding:0 0 4px;">AI 향미 예측 프로파일</div>
+      <div class="predict-grid">
+        ${[['아로마',aroma],['산미',acidity],['단맛',sweetness],['바디',body],['여운',aftertaste]].map(([k,v]) => `
+          <div class="predict-item">
+            <div class="predict-bar-wrap">
+              <div class="predict-bar-fill" style="height:${v*10}%"></div>
+            </div>
+            <div class="predict-val">${v}</div>
+            <div class="predict-key">${k}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    ` : ''}
 
-    <script src="common.js"></script>
-    <script>
-      // TODO: Supabase 연동 시 검색/OCR 결과를 서버에 전송·동기화
-      (function () {
-        var CN = window.CoffeeNote;
-        var $q = document.getElementById("q");
-        var $results = document.getElementById("results");
-        var expandedIndex = null;
+    <!-- 브루잉 팁 -->
+    ${coffee.brew_tips ? `
+    <div class="detail-section">
+      <div class="section-label" style="padding:0 0 10px;">추출 가이드</div>
+      <div class="brew-tips">
+        ${buildBrewTips(coffee.brew_tips)}
+      </div>
+    </div>
+    ` : ''}
 
-        CN.renderBottomNav("search");
-        CN.consumeScanIntent();
+    <!-- 원두 스토리 -->
+    <div class="detail-section">
+      <div class="section-label" style="padding:0 0 10px;">원두 이야기</div>
+      <div class="story-text" id="storyText-${idx}">
+        ${coffee.story || coffee.description ||
+          `<span class="story-loading">이 원두의 이야기를 불러오는 중...</span>`}
+      </div>
+    </div>
 
-        // home.html에서 OCR 완료 후 넘어온 경우 처리
-        (function() {
-          var params = new URLSearchParams(location.search);
-          if (params.get("from") === "ocr") {
-            try {
-              var pending = sessionStorage.getItem("ocr_pending");
-              if (pending) {
-                sessionStorage.removeItem("ocr_pending");
-                var detail = JSON.parse(pending);
-                var ev = new CustomEvent("coffeeNote:ocrText", { detail: detail });
-                setTimeout(function(){ document.dispatchEvent(ev); }, 100);
-              }
-            } catch(ex) {}
-          }
-        })();
+    <!-- 커뮤니티 신호 -->
+    <div class="detail-section">
+      <div class="section-label" style="padding:0 0 12px;">커뮤니티</div>
+      <div class="community-row">
+        <div class="community-stat">
+          <div class="community-num">${community.count || 0}</div>
+          <div class="community-key">기록</div>
+        </div>
+        <div class="community-divider"></div>
+        <div class="community-stat">
+          <div class="community-num">${community.avg_rating ? parseFloat(community.avg_rating).toFixed(1) : '—'}</div>
+          <div class="community-key">평점</div>
+        </div>
+        <div class="community-divider"></div>
+        <div class="community-stat">
+          <div class="community-num">${community.count === 0 ? '첫번째' : '+'}</div>
+          <div class="community-key">기록자</div>
+        </div>
+      </div>
+      ${(community.recent || []).length > 0 ? `
+        <div style="margin-top:14px">
+          ${community.recent.slice(0,2).map(r => `
+            <div class="review-card">
+              <div class="review-header">
+                <div class="review-avatar">${(r.nickname||'?')[0].toUpperCase()}</div>
+                <span class="review-nick">${r.nickname || '익명'}</span>
+                <span class="review-stars">${'★'.repeat(Math.round(r.rating||0))}</span>
+              </div>
+              <div class="review-text">${r.memo || ''}</div>
+              <div class="review-tags">${(r.flavor_tags||[]).slice(0,3).map(t=>`<span class="review-tag">· ${t}</span>`).join('')}</div>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>
 
-        document.getElementById("btnOpenCamera").addEventListener("click", function () {
-          CN.openCamera();
-        });
-        document.getElementById("btnRegister").addEventListener("click", function () {
-          location.href = "register-coffee.html";
-        });
+    <!-- 외부 링크 -->
+    ${(coffee.roaster_url || coffee.farm_url || coffee.purchase_url) ? `
+    <div class="detail-section">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${coffee.roaster_url ? `<a href="${coffee.roaster_url}" target="_blank" class="btn-link" style="flex:1;text-decoration:none">🔗 로스터리</a>` : ''}
+        ${coffee.farm_url ? `<a href="${coffee.farm_url}" target="_blank" class="btn-link" style="flex:1;text-decoration:none">🌱 농장</a>` : ''}
+        ${coffee.purchase_url ? `<a href="${coffee.purchase_url}" target="_blank" class="btn-link" style="flex:1;text-decoration:none">🛒 구매</a>` : ''}
+      </div>
+    </div>
+    ` : ''}
 
-        function starsBlock(score) {
-          return '<div class="rating">' + CN.starsHtml(score) + "</div>";
+    <!-- 액션 버튼 -->
+    <div class="detail-actions">
+      <button class="btn-secondary" onclick="goRecipe(${idx})">레시피</button>
+      <button class="btn-primary" onclick="goTasting(${idx})">기록하기</button>
+    </div>
+  `;
+}
+
+function buildBrewTips(tips) {
+  if (typeof tips === 'string') {
+    // 줄바꿈으로 구분된 팁들
+    return tips.split('\n').filter(Boolean).map(line => {
+      const parts = line.split(':');
+      if (parts.length >= 2) {
+        return `<div class="brew-tip-row">
+          <span class="brew-tip-key">${parts[0].trim()}</span>
+          <span class="brew-tip-val">${parts.slice(1).join(':').trim()}</span>
+        </div>`;
+      }
+      return `<div class="brew-tip-row"><span class="brew-tip-val">${line}</span></div>`;
+    }).join('');
+  }
+  return `<div class="brew-tip-val">${String(tips)}</div>`;
+}
+
+function getCqiGrade(score) {
+  if (score >= 90) return 'Outstanding — 최상급 스페셜티';
+  if (score >= 85) return 'Excellent — 우수 스페셜티';
+  if (score >= 80) return 'Very Good — 스페셜티 등급';
+  if (score >= 75) return 'Good — 고품질 커피';
+  return 'Standard — 일반 커피';
+}
+
+// ── 비동기 스토리 로드 ─────────────────────────
+async function loadStory(coffee, panel) {
+  const storyEl = panel.querySelector('[id^="storyText-"]');
+  if (!storyEl) return;
+  try {
+    const res = await fetch(`/api/story?name=${encodeURIComponent(coffee.name || '')}&country=${encodeURIComponent(coffee.country || '')}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.story) storyEl.textContent = data.story;
+    }
+  } catch {}
+}
+
+// ── 비동기 CQI 로드 ───────────────────────────
+async function loadCqi(coffee, panel) {
+  try {
+    const q = new URLSearchParams({
+      country: coffee.country || '',
+      process: coffee.process || '',
+      variety: coffee.variety || ''
+    });
+    const res = await fetch(`/api/cqi?${q}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.score) {
+        const cqiRow = panel.querySelector('[id^="cqiRow-"]');
+        if (cqiRow) {
+          cqiRow.style.display = 'flex';
+          cqiRow.innerHTML = `
+            <div class="cqi-score">${parseFloat(data.score).toFixed(1)}</div>
+            <div class="cqi-info">
+              <div class="cqi-label">CQI 기준 점수 (평균)</div>
+              <div class="cqi-desc">${getCqiGrade(data.score)}</div>
+              <div class="cqi-bar-wrap"><div class="cqi-bar-fill" style="width:${Math.min((data.score-60)/40*100,100)}%"></div></div>
+            </div>
+          `;
         }
+      }
+    }
+  } catch {}
+}
 
-        function processLine(c) {
-          return escapeHtml(CN.formatProcessDisplay(c));
-        }
+// ── 네비게이션 ────────────────────────────────
+function goTasting(idx) {
+  const coffee = currentResults[idx];
+  if (!coffee) return;
 
-        function renderResults(pairs) {
-          if (!pairs.length) {
-            $results.innerHTML =
-              '<div class="empty">검색 결과가 없습니다. 예: 예가체프, 게이샤, 케냐<br /><br />직접 등록도 가능합니다.</div>';
-            return;
-          }
-          $results.innerHTML = pairs
-            .map(function (row) {
-              var c = row.coffee;
-              var idx = row.index;
-              var exp = expandedIndex === idx;
-              var heart = CN.heartIconHtml(CN.isFavorite(idx));
-              return (
-                '<article class="coffeeCard result-card' +
-                (exp ? " expanded" : "") +
-                '" data-idx="' +
-                idx +
-                '">' +
-                '<button type="button" class="favBtn" data-fav-idx="' +
-                idx +
-                '" aria-label="즐겨찾기">' +
-                heart +
-                "</button>" +
-                '<div class="summary" data-toggle-idx="' +
-                idx +
-                '">' +
-                '<h3 class="name">' +
-                escapeHtml(c.name) +
-                "</h3>" +
-                '<div class="meta"><span>' +
-                escapeHtml(c.roaster || "") +
-                "</span><span>· " +
-                escapeHtml(c.altitude || "") +
-                '</span><span>· ' +
-                processLine(c) +
-                "</span></div></div>" +
-                '<div class="details">' +
-                // ── SCREEN 2: 원두 정보 (목업 스타일) ──
-                '<h2 class="detailName">' + escapeHtml(c.name) + '</h2>' +
-                '<div class="detailRoaster">' + escapeHtml(c.roaster || '') + '</div>' +
-                starsBlock(c.rating || 0) +
-                // 신뢰도 배지
-                (c.confidence ? '<div style="margin:8px 0">' +
-                  '<span class="sourceTag ' + (c.confidence==='high'?'sourceHigh':c.confidence==='medium'?'sourceMed':'sourceLow') + '">' +
-                  (c.confidence==='high'?'✓ 높은 신뢰도':c.confidence==='medium'?'△ AI 추론 기반':'○ 정보 부족') +
-                  '</span></div>' : '') +
-                // 예상 향미 태그
-                '<p class="section-heading" style="margin-top:14px">예상 향미</p>' +
-                '<div class="tagWrap">' +
-                (c.notes || []).map(function(n,i){ return '<span class="tag ' + CN.toneClass(i) + '">' + escapeHtml(n) + '</span>'; }).join('') +
-                '</div>' +
-                // OCR 필드 그리드 (목업 Screen 2)
-                '<p class="section-heading" style="margin-top:14px">산지 정보</p>' +
-                '<div class="grid">' +
-                cell('지역', c.region) + cell('농장/워싱스테이션', c.farm) +
-                cell('고도', c.altitude) + cell('가공방식', CN.formatProcessDisplay(c) + (c.processDetail?' ('+c.processDetail+')':'')) +
-                cell('품종', c.variety) + cell('가격대', c.price) +
-                '</div>' +
-                (c.description ? '<p style="font-size:13px;line-height:1.7;color:var(--text-sub);margin:10px 0">' + escapeHtml(c.description) + '</p>' : '') +
-                // ── SCREEN 3: AI 추천 레시피 (목업 스타일) ──
-                (c.brewTips ? (
-                  '<hr class="thin-rule">' +
-                  '<p class="section-heading">최적 레시피 <span style="font-size:10px;color:var(--text-sub);font-weight:400">AI 분석 · ' + escapeHtml(c.name||'') + '</span></p>' +
-                  buildRecipePanel(c) +
-                  buildCommunityBrewBars(c)
-                ) : '') +
-                // AI 예측 감각 수치 그리드
-                (c.acidity || c.sweetness || c.body || c.aroma ? (
-                  '<p class="section-heading" style="margin-top:14px">AI 예측 감각 수치</p>' +
-                  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border);border-left:1px solid var(--border);margin-bottom:4px">' +
-                  (c.acidity   ? '<div style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 14px"><div style="font-size:10px;color:var(--text-sub);margin-bottom:3px">산미</div><div style="font-size:20px;font-weight:800">' + c.acidity + '<span style="font-size:11px;color:var(--text-sub)">/10</span></div></div>' : '') +
-                  (c.sweetness ? '<div style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 14px"><div style="font-size:10px;color:var(--text-sub);margin-bottom:3px">단맛</div><div style="font-size:20px;font-weight:800">' + c.sweetness + '<span style="font-size:11px;color:var(--text-sub)">/10</span></div></div>' : '') +
-                  (c.body      ? '<div style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 14px"><div style="font-size:10px;color:var(--text-sub);margin-bottom:3px">바디감</div><div style="font-size:20px;font-weight:800">' + c.body + '<span style="font-size:11px;color:var(--text-sub)">/10</span></div></div>' : '') +
-                  (c.aroma     ? '<div style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 14px"><div style="font-size:10px;color:var(--text-sub);margin-bottom:3px">아로마</div><div style="font-size:20px;font-weight:800">' + c.aroma + '<span style="font-size:11px;color:var(--text-sub)">/10</span></div></div>' : '') +
-                  '</div><p style="font-size:11px;color:var(--text-sub);margin-bottom:12px">↑ AI가 이 원두의 특성으로 예측한 값 · 테이스팅 후 비교해보세요</p>'
-                ) : '') +
-                // 커뮤니티 섹션
-                '<p class="section-heading">다른 사용자 후기</p>' +
-                (c._community && c._community.count > 0 ? (
-                  '<div class="communityBox">' +
-                  '<div class="communityRow"><span class="communityLabel">기록한 사람</span><span>' + c._community.count + '명</span></div>' +
-                  (c._community.avgRating ? '<div class="communityRow"><span class="communityLabel">평균 별점</span><span>' + c._community.avgRating + ' / 5.0</span></div>' : '') +
-                  (c._community.topFlavors && c._community.topFlavors.length ? '<div class="communityRow"><span class="communityLabel">많이 느낀 향미</span><div class="tagWrap" style="margin-top:6px">' + c._community.topFlavors.map(function(f,i){ return '<span class="tag ' + CN.toneClass(i) + '">' + escapeHtml(f) + '</span>'; }).join("") + '</div></div>' : '') +
-                  (c._community.topBrewMethods && c._community.topBrewMethods.length ? '<div class="communityRow"><span class="communityLabel">인기 추출법</span><span>' + c._community.topBrewMethods.map(function(b){ return escapeHtml(b.method) + ' (' + b.count + ')'; }).join(', ') + '</span></div>' : '') +
-                  '</div>'
-                ) : '<div style="padding:12px 16px;margin-bottom:12px;font-size:13px;color:#888;background:#f8f6f3;border:1px dashed #ddd;text-align:center">아직 후기가 없어요. 이 커피를 마시고 첫 번째로 기록해보세요!</div>') +
-                '<p class="section-heading">지도</p>' +
-                '<div class="mapBox">' +
-                escapeHtml(c.mapText || "지도 연동 예정") +
-                "</div>" +
-                // ── rawNotes (원본 컵노트) ──
-                (c.rawNotes && c.rawNotes.length ? (
-                  '<p class="section-heading">원본 컵노트</p>' +
-                  '<div class="tagWrap" style="margin-bottom:4px">' +
-                  (c.rawNotes||[]).map(function(n){ return '<span class="tag" style="background:var(--bg);border:1px solid var(--border);color:var(--text-sub);font-size:12px">' + escapeHtml(n) + '</span>'; }).join("") +
-                  '</div><p style="font-size:11px;color:var(--text-sub);margin-bottom:12px">↑ 이미지/라벨 원본 · SCA 표준 노트는 상단 태그 참조</p>'
-                ) : '') +
-                // ── 커뮤니티 후기 카드 ──
-                (c._recentNotes && c._recentNotes.length ? (
-                  '<p class="section-heading">최근 후기</p>' +
-                  '<div class="recentNotesList">' +
-                  c._recentNotes.slice(0,3).map(function(n){
-                    var tags = Array.isArray(n.flavor_tags)?n.flavor_tags:[];
-                    var rating = n.rating ? CN.starHtml(n.rating) : '';
-                    return '<div class="recentNoteCard">' +
-                      '<div class="recentNoteHeader">' + rating +
-                      (n.brew_method ? '<span class="recentBrew">' + escapeHtml(n.brew_method) + '</span>' : '') + '</div>' +
-                      (tags.length ? '<div class="tagWrap recentTags">' + tags.slice(0,4).map(function(t,i){return '<span class="tag '+CN.toneClass(i)+'">'+escapeHtml(t)+'</span>';}).join("") + '</div>' : '') +
-                      (n.memo ? '<p class="recentMemo">' + escapeHtml(n.memo.slice(0,80)) + (n.memo.length>80?'…':'') + '</p>' : '') +
-                      '</div>';
-                  }).join("") +
-                  '</div>'
-                ) : '') +
-                // ── 링크 · 구매 ──
-                '<p class="section-heading">링크 · 구매</p>' +
-                '<div class="links">' +
-                (c.roasterUrl ? '<a href="' + c.roasterUrl + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>로스터리 웹사이트</a>' : '') +
-                (c.farmUrl    ? '<a href="' + c.farmUrl    + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>농장/생산자 웹사이트</a>' : '') +
-                (c.purchaseUrl ? '<a href="' + c.purchaseUrl + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>구매 페이지</a>' : '') +
-                '<a href="https://www.google.com/search?q=' + encodeURIComponent((c.roaster||c.name||"")+" 커피 구매") + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px;color:#4A86E8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>구글에서 검색</a>' +
-                '</div>' +
-                (c.purchaseUrl || c.roasterUrl ? (
-                  '<a href="' + (c.purchaseUrl || c.roasterUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:block;text-align:center;margin:12px 0;padding:14px;background:#121212;color:#fff;font-size:14px;font-weight:600;letter-spacing:0.04em;text-decoration:none;font-family:inherit">이 원두 구매하기 →</a>'
-                ) : (
-                  '<a href="https://www.google.com/search?q=' + encodeURIComponent((c.roaster||"")+" "+(c.name||"")+" 원두 구매") + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:block;text-align:center;margin:12px 0;padding:14px;background:#3D3D3D;color:#fff;font-size:14px;font-weight:600;letter-spacing:0.04em;text-decoration:none;font-family:inherit">구글에서 구매처 찾기 →</a>'
-                )) +
-                '<div class="actionRow">' +
-                '<button type="button" class="btn-secondary" data-add-idx="' +
-                idx +
-                '">목록에 추가</button>' +
-                '<button type="button" class="btn-primary" data-taste-idx="' +
-                idx +
-                '">이 커피 마시기</button>' +
-                "</div></div></article>"
-              );
-            })
-            .join("");
+  // AI 예측 데이터를 sessionStorage에 저장 (tasting.html에서 사용)
+  sessionStorage.setItem('tasting_coffee', JSON.stringify(coffee));
+  sessionStorage.setItem('tasting_coffeeIdx', String(idx));
 
-          bindCardEvents(pairs);
-        }
+  // 커피가 로컬 DB에 없으면 저장
+  const coffees = getCoffeesLocal();
+  const existIdx = coffees.findIndex(c => c.name === coffee.name);
+  const realIdx = existIdx >= 0 ? existIdx : (() => {
+    saveCoffeeLocal(coffee);
+    return getCoffeesLocal().findIndex(c => c.name === coffee.name);
+  })();
 
-        function cell(label, val) {
-          return (
-            '<div class="gridItem"><div class="gridLabel caption">' +
-            escapeHtml(label) +
-            '</div><div class="gridValue">' +
-            escapeHtml(val || "-") +
-            "</div></div>"
-          );
-        }
+  location.href = `tasting.html?coffeeId=${realIdx}`;
+}
 
-        function escapeHtml(s) {
-          return String(s || "")
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;");
-        }
+function goRecipe(idx) {
+  const coffee = currentResults[idx];
+  if (!coffee) return;
+  sessionStorage.setItem('recipe_coffee', JSON.stringify(coffee));
+  const coffees = getCoffeesLocal();
+  const realIdx = coffees.findIndex(c => c.name === coffee.name);
+  location.href = `recipe.html?coffeeId=${realIdx >= 0 ? realIdx : 0}`;
+}
 
-        /* ── 목업 Screen 3: AI 추천 레시피 패널 ── */
-        function buildRecipePanel(c) {
-          // brewTips에서 구조화된 정보 파싱 시도, 없으면 텍스트 그대로
-          var tips = c.brewTips || "";
-          // 기본값 추정 (acidity/body 기반)
-          var acid = c.acidity || 7;
-          var body = c.body    || 5;
-          var temp = acid >= 7 ? "92–94°C" : "88–91°C";
-          var ratio = body >= 7 ? "1:15" : "1:16";
-          var grind = "중간 (커맨단테 26–30클릭)";
-          var time  = "2:30–3:00";
-          // process 기반 추정
-          var proc = (c.processCategory || c.process || "").toLowerCase();
-          if (proc.includes("내추럴") || proc.includes("natural")) { temp="90–92°C"; ratio="1:15.5"; }
-          if (proc.includes("무산소") || proc.includes("anaerobic")) { temp="88–90°C"; ratio="1:15"; time="2:00–2:30"; }
+function openRegister() {
+  location.href = 'register-coffee.html';
+}
 
-          var rows = [
-            ["물 온도", temp,  "워시드 → 고온 / 내추럴 → 중온 권장"],
-            ["원두·물", ratio, "g 기준 · V60 기본값"],
-            ["분쇄도",  grind, "중간 입자 · 추출 시간으로 조정"],
-            ["총 시간", time,  "뜸들이기 30초 포함"],
-          ];
+// ── 즐겨찾기 ──────────────────────────────────
+function isFavorite(idx) {
+  try {
+    const favs = JSON.parse(localStorage.getItem('coffee_note_favorites') || '[]');
+    return favs.includes(idx);
+  } catch { return false; }
+}
 
-          var html = rows.map(function(r) {
-            return '<div class="recipe-row" style="display:grid;grid-template-columns:72px 1fr;gap:8px;align-items:start;padding:8px 0;border-bottom:0.5px solid #F0EDE8">' +
-              '<div><div style="font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">' + r[0] + '</div>' +
-              '<div style="font-size:13px;font-weight:700;color:#111">' + r[1] + '</div></div>' +
-              '<div style="font-size:11px;color:#888;line-height:1.5;padding-top:2px">' + r[2] + '</div></div>';
-          }).join('');
+function toggleFav(idx, btn) {
+  try {
+    let favs = JSON.parse(localStorage.getItem('coffee_note_favorites') || '[]');
+    if (favs.includes(idx)) {
+      favs = favs.filter(i => i !== idx);
+      btn.textContent = '♡';
+      showToast('즐겨찾기에서 제거했습니다');
+    } else {
+      favs.push(idx);
+      btn.textContent = '♥';
+      showToast('즐겨찾기에 추가했습니다');
+    }
+    localStorage.setItem('coffee_note_favorites', JSON.stringify(favs));
+  } catch {}
+}
 
-          if (tips) {
-            html += '<div style="padding:10px 0 4px;border-top:0.5px solid #E8E5E0;margin-top:4px">' +
-              '<div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8C7355;margin-bottom:4px">AI 브루잉 팁</div>' +
-              '<p style="font-size:13px;line-height:1.65;color:#333">' + escapeHtml(tips) + '</p></div>';
-          }
-          return html;
-        }
+// ── 검색 히스토리 ─────────────────────────────
+function getRecent() {
+  try { return JSON.parse(localStorage.getItem('coffee_note_recent') || '[]'); }
+  catch { return []; }
+}
 
-        /* ── 커뮤니티 추출법 비율 바 ── */
-        function buildCommunityBrewBars(c) {
-          var methods = (c._community && c._community.topBrewMethods) || [];
-          if (!methods.length) {
-            // 샘플 데이터 (실제 서비스 시 Supabase 집계값으로 교체)
-            methods = [{method:"V60",count:62},{method:"에어로프레스",count:23},{method:"칼리타",count:15}];
-          }
-          var total = methods.reduce(function(a,b){return a+b.count;},0);
-          var html = '<hr class="thin-rule">' +
-            '<div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;margin-bottom:8px">커뮤니티 추출 방법</div>';
-          methods.slice(0,4).forEach(function(m,i) {
-            var pct = total ? Math.round(m.count/total*100) : 0;
-            var col = i===0 ? "#111" : i===1 ? "#888" : "#ccc";
-            html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">' +
-              '<div style="font-size:9px;color:#888;width:48px;flex-shrink:0">' + escapeHtml(m.method) + '</div>' +
-              '<div style="flex:1;height:5px;background:#F0EDE8"><div style="width:'+pct+'%;height:100%;background:'+col+'"></div></div>' +
-              '<div style="font-size:9px;font-weight:700;color:'+col+';width:24px;text-align:right">' + pct + '%</div>' +
-            '</div>';
-          });
-          return html;
-        }
+function saveRecent(q) {
+  let list = getRecent().filter(r => r !== q);
+  list.unshift(q);
+  list = list.slice(0, 10);
+  localStorage.setItem('coffee_note_recent', JSON.stringify(list));
+  renderRecent();
+}
 
-        function bindCardEvents(pairs) {
-          $results.querySelectorAll("[data-toggle-idx]").forEach(function (el) {
-            el.addEventListener("click", function () {
-              var idx = Number(el.getAttribute("data-toggle-idx"));
-              expandedIndex = expandedIndex === idx ? null : idx;
-              renderResults(pairs);
-            });
-          });
-          $results.querySelectorAll("[data-fav-idx]").forEach(function (el) {
-            el.addEventListener("click", function (e) {
-              e.stopPropagation();
-              var idx = Number(el.getAttribute("data-fav-idx"));
-              var added = CN.toggleFavorite(idx);
-              CN.showToast(added ? "즐겨찾기에 추가했습니다." : "즐겨찾기에서 제거했습니다.");
-              renderResults(pairs);
-            });
-          });
-          $results.querySelectorAll("[data-add-idx]").forEach(function (el) {
-            el.addEventListener("click", function () {
-              CN.showToast("내 커피 목록에 추가했습니다.");
-            });
-          });
-          $results.querySelectorAll("[data-taste-idx]").forEach(function (el) {
-            el.addEventListener("click", function () {
-              var idx = parseInt(el.getAttribute("data-taste-idx"));
-              var coffee = CN.getCoffeeByIndex(idx);
-              // AI 예측 점수를 sessionStorage에 저장 → tasting.html 레이더에서 사용
-              if (coffee && (coffee.acidity || coffee.sweetness || coffee.body || coffee.aroma)) {
-                try {
-                  sessionStorage.setItem("ai_prediction", JSON.stringify({
-                    scores: {
-                      아로마:   coffee.aroma      || 7,
-                      산미:     coffee.acidity    || 7,
-                      단맛:     coffee.sweetness  || 6,
-                      바디감:   coffee.body       || 5,
-                      여운:     coffee.aroma      || 7
-                    },
-                    flavors:    coffee.notes     || [],
-                    brewTips:   coffee.brewTips  || "",
-                    confidence: coffee.confidence || "medium",
-                    coffeeName: coffee.name       || ""
-                  }));
-                } catch(e) {}
-              }
-              location.href = "tasting.html?coffeeId=" + encodeURIComponent(idx);
-            });
-          });
-        }
+function deleteRecent(q) {
+  let list = getRecent().filter(r => r !== q);
+  localStorage.setItem('coffee_note_recent', JSON.stringify(list));
+  renderRecent();
+}
 
-        // ─── AI 검색 + 자동 등록 ─────────────────────────
-        var aiSearchTimer = null;
+function clearAllRecent() {
+  localStorage.setItem('coffee_note_recent', '[]');
+  renderRecent();
+}
 
-        function runSearch() {
-          var query = $q.value.trim();
-          if (!query) return;
-          CN.addSearchHistory(query);
-          expandedIndex = null;
-          var pairs = CN.searchCoffeePairs(query);
-          if (pairs.length > 0) {
-            renderResults(pairs);
-          } else {
-            // 로컬 DB에 없으면 AI 검색
-            runAiSearch(query);
-          }
-        }
+function renderRecent() {
+  const list = getRecent();
+  const el = document.getElementById('recentList');
+  const section = document.getElementById('recentSection');
 
-        function runAiSearch(query, context) {
-          $results.innerHTML = '<div class="empty" id="aiSearchStatus"><span style="display:inline-block;animation:spin 1s linear infinite;margin-right:6px">⟳</span> AI 검색 중…</div>';
-          fetch("/api/search", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: query, context: context || null })
-          })
-          .then(function(res) { return res.json(); })
-          .then(function(data) {
-            if (data.error || !data.coffee) {
-              $results.innerHTML = '<div class="empty">검색 결과가 없습니다.<br/>직접 등록도 가능합니다.</div>';
-              return;
-            }
-            var coffee = data.coffee;
-            // DB에 자동 저장
-            CN.addCoffee(coffee);
-            var allCoffees = CN.getCoffees();
-            var newIdx = allCoffees.length - 1;
-            CN.showToast("✨ AI가 원두 정보를 찾았어요!");
-            expandedIndex = newIdx;
-            renderResults([{ coffee: coffee, index: newIdx }]);
-          })
-          .catch(function(err) {
-            $results.innerHTML = '<div class="empty">검색 중 오류가 발생했습니다. 다시 시도해주세요.</div>';
-            console.error("[AI Search]", err);
-          });
-        }
+  if (list.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+  el.innerHTML = list.map(q => `
+    <div class="recent-item">
+      <div class="recent-q" onclick="clickRecent('${q.replace(/'/g,"\\'")}')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+          <polyline points="1,4 1,10 7,10"/>
+          <path d="M3.51 15a9 9 0 1 0 .49-3.51"/>
+        </svg>
+        ${q}
+      </div>
+      <button class="btn-del-recent" onclick="deleteRecent('${q.replace(/'/g,"\\'")}')">×</button>
+    </div>
+  `).join('');
+}
 
-        document.getElementById("searchBtn").addEventListener("click", runSearch);
-        $q.addEventListener("keydown", function (e) {
-          if (e.key === "Enter") runSearch();
-        });
+function clickRecent(q) {
+  document.getElementById('searchInput').value = q;
+  updateClearBtn();
+  handleSearch();
+}
 
-        // ─── OCR 결과 처리 ───────────────────────────────
-        document.addEventListener("coffeeNote:ocrText", function (e) {
-          var detail = e.detail || {};
-          var text = detail.text || "";
-          var coffee = detail.coffee || null;
+// ── OCR 카메라 ────────────────────────────────
+function openOcrSheet() {
+  document.getElementById('ocrSheet').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
 
-          // 구조화된 커피 데이터가 있으면 바로 등록
-          if (coffee && coffee.name) {
-            // 로컬 DB에 중복 확인
-            var existing = CN.searchCoffeePairs(coffee.name);
-            if (existing.length > 0) {
-              CN.showToast("📷 이미 등록된 원두예요!");
-              expandedIndex = existing[0].index;
-              renderResults(existing);
-            } else {
-              CN.addCoffee(coffee);
-              var allCoffees = CN.getCoffees();
-              var newIdx = allCoffees.length - 1;
-              expandedIndex = newIdx;
-              $q.value = coffee.name;
-              CN.showToast("✨ 카드에서 원두 정보를 등록했어요!");
-              renderResults([{ coffee: coffee, index: newIdx }]);
-            }
-            return;
-          }
+function closeOcrSheet(e) {
+  if (e && e.target !== document.getElementById('ocrSheet')) return;
+  document.getElementById('ocrSheet').classList.remove('open');
+  document.body.style.overflow = '';
+}
 
-          // 텍스트만 있는 경우 (fallback) — AI 검색으로
-          if (!text) { CN.showToast("인식된 텍스트가 없습니다."); return; }
-          var lines = text.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
-          var coffeeName = "";
-          for (var i = 0; i < lines.length; i++) {
-            if (/원두명|원두\s*이름|name/i.test(lines[i])) {
-              coffeeName = lines[i].replace(/.*[:：]/, "").trim();
-              break;
-            }
-          }
-          if (!coffeeName && lines.length > 0) coffeeName = lines[0].replace(/.*[:：]/, "").trim();
-          if (!coffeeName) { CN.showToast("원두 이름을 인식하지 못했어요."); return; }
+async function handleOcrFile(input) {
+  const file = input.files[0];
+  if (!file) return;
 
-          $q.value = coffeeName;
-          CN.showToast("📷 인식 완료! AI로 검색 중...");
-          var pairs = CN.searchCoffeePairs(coffeeName);
-          if (pairs.length > 0) {
-            expandedIndex = null;
-            renderResults(pairs);
-          } else {
-            // OCR에서 넘어온 맥락 정보를 AI 검색에 전달
-            var ocrContext = (detail.coffee) ? {
-              country: detail.coffee.country || "",
-              region:  detail.coffee.region  || "",
-              farm:    detail.coffee.farm    || ""
-            } : null;
-            runAiSearch(coffeeName, ocrContext);
-          }
-        });
+  // 미리보기
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target.result;
+    document.getElementById('ocrImgPreview').src = base64;
+    document.getElementById('ocrUploadArea').style.display = 'none';
+    document.getElementById('ocrLoading').style.display = 'block';
 
-        function initFromQuery() {
-          var params = new URLSearchParams(location.search);
-          var qParam = params.get("q");
-          var coffeeId = params.get("coffeeId");
-          var expand = params.get("expand");
-          if (qParam) {
-            $q.value = qParam;
-            runSearch();
-            return;
-          }
-          if (coffeeId !== null && coffeeId !== "") {
-            var idx = Number(coffeeId);
-            var c = CN.getCoffeeByIndex(idx);
-            if (c) {
-              $q.value = c.name;
-              expandedIndex = expand === "1" ? idx : null;
-              renderResults([{ coffee: c, index: idx }]);
-              return;
-            }
-          }
-          $results.innerHTML = '<div class="empty">원두 이름을 검색해보세요.<br />예: 예가체프, 게이샤, 케냐</div>';
-        }
+    try {
+      const res = await fetch('/api/ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64.split(',')[1] })
+      });
+      const data = await res.json();
+      ocrData = data.coffee || data;
+      document.getElementById('ocrLoading').style.display = 'none';
+      renderOcrResult(ocrData, data.rawText || '');
+    } catch(err) {
+      document.getElementById('ocrLoading').style.display = 'none';
+      showToast('인식에 실패했습니다. 다시 시도해주세요.');
+      handleOcrRetry();
+    }
+  };
+  reader.readAsDataURL(file);
+}
 
-        initFromQuery();
-      })();
-    </script>
-  </body>
+function renderOcrResult(coffee, rawText) {
+  const grid = document.getElementById('ocrResultGrid');
+  const fields = [
+    ['name', '원두명'], ['country', '국가'], ['region', '지역'],
+    ['farm', '농장'], ['process', '가공방식'], ['variety', '품종'],
+    ['altitude', '고도'], ['roaster', '로스터리']
+  ];
+  grid.innerHTML = fields.filter(([k]) => coffee[k]).map(([k, label]) => `
+    <div class="ocr-field detected">
+      <div class="ocr-field-key">${label}</div>
+      <div class="ocr-field-val">${coffee[k]}</div>
+    </div>
+  `).join('');
+  if (rawText) {
+    grid.innerHTML += `
+      <div class="ocr-field" style="grid-column:1/-1">
+        <div class="ocr-field-key">원본 텍스트</div>
+        <div class="ocr-field-val" style="font-size:11px;color:var(--text-sub)">${rawText}</div>
+      </div>
+    `;
+  }
+  document.getElementById('ocrResult').classList.add('show');
+}
+
+function handleOcrRetry() {
+  ocrData = null;
+  document.getElementById('ocrResult').classList.remove('show');
+  document.getElementById('ocrUploadArea').style.display = 'block';
+  document.getElementById('ocrFileInput').value = '';
+  document.getElementById('ocrGalleryInput').value = '';
+}
+
+function handleOcrConfirm() {
+  if (!ocrData) return;
+  const q = ocrData.name || ocrData.country || '';
+  document.getElementById('ocrSheet').classList.remove('open');
+  document.body.style.overflow = '';
+  document.getElementById('searchInput').value = q;
+  updateClearBtn();
+  // OCR 결과를 sessionStorage에 저장 후 검색
+  sessionStorage.setItem('ocr_result', JSON.stringify(ocrData));
+  handleSearch();
+}
+
+// ── 토스트 ────────────────────────────────────
+function showToast(msg, duration = 2000) {
+  // common.js의 showToast가 있으면 그것 사용
+  if (typeof window.showToastCommon === 'function') {
+    window.showToastCommon(msg); return;
+  }
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), duration);
+}
+
+// common.js의 showToast 오버라이드 방지를 위한 초기화 완료 플래그
+window._indexReady = true;
+</script>
+</body>
 </html>
