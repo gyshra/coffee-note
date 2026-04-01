@@ -144,6 +144,7 @@
   <script src="tasting-wheel.js"></script>
   <script src="tasting-radar.js"></script>
   <script src="card-generator.js"></script>
+  <script src="shared-utils.js"></script>
   <script>
 (function(){
   var CN=window.CoffeeNote;
@@ -157,7 +158,6 @@
   var selectedShopBrew="";
   var flavorIntensities={},flavorMemos={},baseMemos={},photos=[],starVal=0,pentaChart=null;
   document.getElementById("btnBack").addEventListener("click",function(){if(history.length>1)history.back();else location.href="notes.html";});
-  function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 
   var editIdx=params.get("editIdx")!=null?Number(params.get("editIdx")):NaN;
   var editRecord=Number.isInteger(editIdx)?CN.getTastingRecords()[editIdx]:null;

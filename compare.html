@@ -350,6 +350,7 @@
 <!-- ── 스크립트 ── -->
 <script src="supabase.js"></script>
 <script src="common.js"></script>
+<script src="shared-utils.js"></script>
 <script>
 /* ═══════════════════════════════════════════════
    Coffee Note — compare.html (비교 결과 화면)
@@ -783,14 +784,6 @@ function goTasting() {
   const params = new URLSearchParams(location.search);
   const coffeeId = params.get('coffeeId') || tastingData?.coffeeIndex || '0';
   location.href = `tasting.html?coffeeId=${coffeeId}`;
-}
-
-// ── 토스트 ────────────────────────────────────
-function showToast(msg, duration = 2000) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), duration);
 }
 
 // 화면 리사이즈 시 레이더 재렌더

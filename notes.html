@@ -34,6 +34,7 @@
   </nav>
 
   <script src="common.js"></script>
+  <script src="shared-utils.js"></script>
   <script>
 (function(){
   var CN=window.CoffeeNote;
@@ -47,8 +48,6 @@
     if(type==="half") return '<svg width="12" height="12" viewBox="0 0 24 24"><defs><clipPath id="hc"><rect x="0" y="0" width="12" height="24"/></clipPath></defs><polygon points="'+STAR_PTS+'" fill="none" stroke="#E0E0E0" stroke-width="1.5"/><polygon points="'+STAR_PTS+'" fill="#8C7355" stroke="#8C7355" clip-path="url(#hc)"/></svg>';
     return '<svg width="12" height="12" viewBox="0 0 24 24"><polygon points="'+STAR_PTS+'" fill="none" stroke="#E0E0E0" stroke-width="1.5"/></svg>';
   }
-
-  function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 
   function starsHtml(rating){
     if(!rating)return"";

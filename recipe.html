@@ -411,6 +411,7 @@
 <!-- ── 스크립트 ── -->
 <script src="supabase.js"></script>
 <script src="common.js"></script>
+<script src="shared-utils.js"></script>
 <script>
 /* ═══════════════════════════════════════════════
    Coffee Note — recipe.html (레시피 화면)
@@ -816,13 +817,6 @@ function goTasting() {
   location.href = `tasting.html?coffeeId=${coffeeId}`;
 }
 
-// ── 토스트 ────────────────────────────────────
-function showToast(msg, duration = 2000) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), duration);
-}
 </script>
 </body>
 </html>

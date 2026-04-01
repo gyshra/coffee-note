@@ -145,11 +145,11 @@
   </nav>
 
   <script src="common.js"></script>
+  <script src="shared-utils.js"></script>
   <script>
 (function(){
   var CN=window.CoffeeNote;
   CN.renderBottomNav("home");
-  function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 
   // 오늘 날짜
   var now=new Date();

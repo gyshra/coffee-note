@@ -119,6 +119,7 @@
 
     <script src="common.js"></script>
     <script src="supabase.js"></script>
+    <script src="shared-utils.js"></script>
     <script>
       // ─── Supabase 인증 + 마이페이지 초기화 ───────────────
       (function () {
@@ -536,13 +537,6 @@
           });
         });
 
-        function esc(s) {
-          return String(s || "")
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;");
-        }
         var params = new URLSearchParams(location.search);
         var tabParam = params.get("tab");
         if (tabParam === "notes" || tabParam === "sensory" || tabParam === "records" || tabParam === "beans" || tabParam === "recipes") {

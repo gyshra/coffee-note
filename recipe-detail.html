@@ -27,12 +27,12 @@
     <a href="mypage.html" class="nav-item" data-nav="mypage"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">마이</span></a>
   </nav>
   <script src="common.js"></script>
+  <script src="shared-utils.js"></script>
   <script>
 (function(){
   var CN=window.CoffeeNote;
   CN.renderBottomNav("notes");
   document.getElementById("btnBack").addEventListener("click",function(){if(history.length>1)history.back();else location.href="notes.html?tab=recipes";});
-  function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
   function cell(l,v){return'<div class="rd-cell"><span class="rd-label">'+l+'</span><span class="rd-value">'+esc(v||"-")+'</span></div>';}
 
   var params=new URLSearchParams(location.search);
