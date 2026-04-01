@@ -152,14 +152,13 @@
   </div>
 </div>
 
-<nav class="app-nav">
-  <div class="app-nav__in">
-    <a href="home.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg><span class="nav-label">홈</span></a>
-    <a href="index.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg><span class="nav-label">탐색</span></a>
-    <a href="notes.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span class="nav-label">노트</span></a>
-    <a href="mypage.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">마이</span></a>
-  </div>
-</nav>
+<nav id="bottomNav" class="bottom-nav">
+    <a href="home.html" class="nav-item" data-nav="home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-label">홈</span></a>
+    <a href="index.html" class="nav-item" data-nav="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><span class="nav-label">검색</span></a>
+    <a href="notes.html" class="nav-item" data-nav="notes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg><span class="nav-label">노트</span></a>
+    <a href="#" class="nav-item" data-nav="map" onclick="CoffeeNote.openCoffeeMap();return false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg><span class="nav-label">커피맵</span></a>
+    <a href="mypage.html" class="nav-item" data-nav="mypage"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">마이</span></a>
+  </nav>
 
 <div class="app-toast" id="toast"></div>
 
@@ -172,7 +171,7 @@
 <script src="ui-coffee-card.js"></script>
 <script>
 let activeFilter='all',results=[],expandedIdx=-1,searchTimer=null;
-document.addEventListener('DOMContentLoaded',()=>{renderRecent();const p=new URLSearchParams(location.search);const q=p.get('q')||p.get('query');const cid=p.get('coffeeId');if(q){document.getElementById('searchInput').value=q;syncClear();doSearch();}else if(cid!==null){const list=localDB();const idx=parseInt(cid);if(list[idx])showResults([list[idx]],idx,p.get('expand')==='1');else showRecent();}else showRecent();});
+document.addEventListener('DOMContentLoaded',()=>{if(window.CoffeeNote&&window.CoffeeNote.renderBottomNav)window.CoffeeNote.renderBottomNav("search");renderRecent();const p=new URLSearchParams(location.search);const q=p.get('q')||p.get('query');const cid=p.get('coffeeId');if(q){document.getElementById('searchInput').value=q;syncClear();doSearch();}else if(cid!==null){const list=localDB();const idx=parseInt(cid);if(list[idx])showResults([list[idx]],idx,p.get('expand')==='1');else showRecent();}else showRecent();});
 function localDB(){return FeatureSearch.getLocalCoffees();}
 function onInput(){syncClear();clearTimeout(searchTimer);const v=document.getElementById('searchInput').value.trim();if(!v){showRecent();return;}if(v.length>=2)searchTimer=setTimeout(doSearch,550);}
 function syncClear(){document.getElementById('clearBtn').style.display=document.getElementById('searchInput').value?'block':'none';}
@@ -208,10 +207,11 @@ function closeOcr(){document.getElementById('ocrOverlay').classList.remove('open
 function overlayTap(e){if(e.target===document.getElementById('ocrOverlay'))closeOcr();}
 function triggerCam(){document.getElementById('camInput').click();}
 function triggerGallery(){document.getElementById('galInput').click();}
-async function handleFile(input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=async e=>{const b64=e.target.result;document.getElementById('ocrPreview').src=b64;document.getElementById('ocrPick').style.display='none';document.getElementById('ocrLoading').style.display='block';FeatureOCR.processImage(b64,function(payload,rawText){renderOcrGrid(payload,rawText);document.getElementById('ocrLoading').style.display='none';},function(){resetOcr();toast('인식 실패. 다시 시도해주세요.');document.getElementById('ocrLoading').style.display='none';});};reader.readAsDataURL(file);}
+function compressImage(dataUrl,maxSize,quality){return new Promise(function(resolve){var img=new Image();img.onload=function(){var w=img.width,h=img.height;if(w>maxSize||h>maxSize){if(w>h){h=Math.round(h*(maxSize/w));w=maxSize;}else{w=Math.round(w*(maxSize/h));h=maxSize;}}var cvs=document.createElement('canvas');cvs.width=w;cvs.height=h;cvs.getContext('2d').drawImage(img,0,0,w,h);resolve(cvs.toDataURL('image/jpeg',quality));};img.onerror=function(){resolve(dataUrl);};img.src=dataUrl;});}
+async function handleFile(input){var file=input.files[0];if(!file)return;var reader=new FileReader();reader.onload=async function(e){var raw=e.target.result;var b64;try{b64=await compressImage(raw,1024,0.7);}catch(err){b64=raw;}document.getElementById('ocrPreview').src=b64;document.getElementById('ocrPick').style.display='none';document.getElementById('ocrLoading').style.display='block';try{await FeatureOCR.processImage(b64,function(payload,rawText){renderOcrGrid(payload,rawText);document.getElementById('ocrLoading').style.display='none';},function(){resetOcr();toast('인식 실패. 다시 시도해주세요.');document.getElementById('ocrLoading').style.display='none';});}catch(err){document.getElementById('ocrLoading').style.display='none';resetOcr();toast('서버 오류가 발생했습니다. 다시 시도해주세요.');}};reader.readAsDataURL(file);}
 function renderOcrGrid(c,raw){const gd=FeatureOCR.buildGridData(c,raw);document.getElementById('ocrGrid').innerHTML=gd.cells.map(function(cell){return '<div class="ocr-cell ok"><div class="ocr-cell-k">'+cell.label+'</div><div class="ocr-cell-v">'+cell.value+'</div></div>';}).join('')+(gd.rawText?'<div class="ocr-cell na" style="grid-column:1/-1"><div class="ocr-cell-k">원본</div><div class="ocr-cell-v" style="font-size:11px;color:var(--text-sub)">'+gd.rawText+'</div></div>':'');document.getElementById('ocrResult').classList.add('show');}
 function resetOcr(){FeatureOCR.reset();document.getElementById('ocrResult').classList.remove('show');document.getElementById('ocrPick').style.display='block';['camInput','galInput'].forEach(id=>document.getElementById(id).value='');}
-function confirmOcr(){const result=FeatureOCR.confirm();if(!result)return;sessionStorage.setItem('ocr_result',JSON.stringify(result.payload));closeOcr();document.getElementById('searchInput').value=result.query;syncClear();doSearch();}
+function confirmOcr(){const result=FeatureOCR.confirm();if(!result)return;sessionStorage.setItem('ocr_result',JSON.stringify(result.payload));closeOcr();location.href='register-coffee.html?from=ocr';}
 </script>
 </body>
 </html>

@@ -247,6 +247,35 @@
           document.getElementById("fPrice").value = c.price || "";
           document.getElementById("fMemo").value = c.memo || "";
           syncProcessDetailVisibility();
+        } else if (params.get("from") === "ocr") {
+          var ocrRaw = sessionStorage.getItem("ocr_result");
+          if (ocrRaw) {
+            try {
+              var ocr = JSON.parse(ocrRaw);
+              if (ocr.name) document.getElementById("fName").value = ocr.name;
+              if (ocr.roaster) document.getElementById("fRoaster").value = ocr.roaster;
+              if (ocr.country) {
+                var cSel = document.getElementById("fCountry");
+                var cOpts = cSel.querySelectorAll("option");
+                var cFound = false;
+                for (var ci = 0; ci < cOpts.length; ci++) {
+                  if (cOpts[ci].value === ocr.country || cOpts[ci].textContent === ocr.country) {
+                    cSel.value = cOpts[ci].value; cFound = true; break;
+                  }
+                }
+                if (!cFound) cSel.value = ocr.country;
+              }
+              if (ocr.region) document.getElementById("fRegion").value = ocr.region;
+              if (ocr.farm) document.getElementById("fFarm").value = ocr.farm;
+              if (ocr.altitude) document.getElementById("fAlt").value = ocr.altitude;
+              if (ocr.variety) document.getElementById("fVariety").value = ocr.variety;
+              if (ocr.process) document.getElementById("fProcessDetail").value = ocr.process;
+              if (ocr.notes && Array.isArray(ocr.notes)) document.getElementById("fNotes").value = ocr.notes.join(", ");
+              syncProcessDetailVisibility();
+              document.getElementById("pageTitle").textContent = "OCR 인식 결과 확인";
+            } catch (e) { /* JSON 파싱 실패 시 무시 */ }
+            sessionStorage.removeItem("ocr_result");
+          }
         }
 
         document.getElementById("form").addEventListener("submit", function (e) {
