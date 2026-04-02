@@ -125,6 +125,7 @@ const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY"; // 예: eyJhbGciOi...
           memo: record.memo || null,
           rating: record.rating || null,
           created_at: record.createdAt || new Date().toISOString(),
+          updated_at: record.updatedAt || new Date().toISOString(),
           raw_data: JSON.stringify(record),   // 전체 원본 보존
         };
 

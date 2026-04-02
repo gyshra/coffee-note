@@ -26,20 +26,20 @@ var UICoffeeCard = (function () {
     if (notes.length) {
       tagsHtml = '<div class="card-tags">' +
         notes.slice(0, 3).map(function (n) {
-          return '<span class="tag-sm">' + n + '</span>';
+          return '<span class="tag-sm">' + esc(n) + '</span>';
         }).join('') + '</div>';
     }
     var scoreHtml = score
-      ? '<div class="card-score">' + parseFloat(score).toFixed(1) + '</div>'
+      ? '<div class="card-score">' + esc(parseFloat(score).toFixed(1)) + '</div>'
       : '';
     var favIcon = isFavorite ? '♥' : '♡';
 
     return '<div class="card-row" onclick="toggleCard(' + idx + ')">' +
       '<div class="card-ico">☕</div>' +
       '<div class="card-body">' +
-        '<div class="card-name">' + (coffee.name || '이름 없음') + '</div>' +
+        '<div class="card-name">' + esc(coffee.name || '이름 없음') + '</div>' +
         '<div class="card-sub">' +
-          [coffee.roaster, coffee.country, coffee.process].filter(Boolean).join(' · ') +
+          esc([coffee.roaster, coffee.country, coffee.process].filter(Boolean).join(' · ')) +
         '</div>' +
         tagsHtml +
       '</div>' +
@@ -75,7 +75,7 @@ var UICoffeeCard = (function () {
     var flavorHtml;
     if (notes.length) {
       flavorHtml = notes.map(function (n, i) {
-        return '<span class="' + (i < 3 ? 'tag-filled' : 'tag-outline-lg') + '">' + n + '</span>';
+        return '<span class="' + (i < 3 ? 'tag-filled' : 'tag-outline-lg') + '">' + esc(n) + '</span>';
       }).join('');
     } else {
       flavorHtml = '<span style="font-size:12px;color:var(--text-sub)">정보 없음</span>';
@@ -83,7 +83,7 @@ var UICoffeeCard = (function () {
 
     // 정보 행 헬퍼
     function ir(k, v) {
-      return v ? '<div class="info-row"><span class="info-k">' + k + '</span><span class="info-v">' + v + '</span></div>' : '';
+      return v ? '<div class="info-row"><span class="info-k">' + esc(k) + '</span><span class="info-v">' + esc(v) + '</span></div>' : '';
     }
 
     // 검증 배지
@@ -93,7 +93,7 @@ var UICoffeeCard = (function () {
 
     // SCA 점수 행
     var scoreRow = score
-      ? '<div class="info-row"><span class="info-k">SCA점수</span><span class="info-v big">' + parseFloat(score).toFixed(1) + '</span></div>'
+      ? '<div class="info-row"><span class="info-k">SCA점수</span><span class="info-v big">' + esc(parseFloat(score).toFixed(1)) + '</span></div>'
       : '';
 
     // AI 예측 강도 바
@@ -102,30 +102,34 @@ var UICoffeeCard = (function () {
       var axes = [['아로마', ar], ['산미', ac], ['단맛', sw], ['바디', bo], ['여운', af]];
       predictHtml = '<div class="more-sec"><div class="more-sec-lbl">AI 향미 강도 예측</div>' +
         axes.map(function (pair) {
+          var pct = Math.max(0, Math.min(100, pair[1] * 10));
           return '<div class="predict-row">' +
-            '<span class="predict-key">' + pair[0] + '</span>' +
-            '<div class="predict-track"><div class="predict-fill" style="width:' + (pair[1] * 10) + '%"></div></div>' +
-            '<span class="predict-val">' + pair[1] + '</span></div>';
+            '<span class="predict-key">' + esc(pair[0]) + '</span>' +
+            '<div class="predict-track"><div class="predict-fill" style="width:' + pct + '%"></div></div>' +
+            '<span class="predict-val">' + esc(pair[1]) + '</span></div>';
         }).join('') + '</div>';
     }
 
-    // 링크 행
+    // 링크 행 (URL 새니타이징 적용)
     var linkHtml = '';
-    if (c.roaster_url || c.farm_url || c.purchase_url) {
+    var safeRoasterUrl = sanitizeUrl(c.roaster_url);
+    var safeFarmUrl = sanitizeUrl(c.farm_url);
+    var safePurchaseUrl = sanitizeUrl(c.purchase_url);
+    if (safeRoasterUrl || safeFarmUrl || safePurchaseUrl) {
       linkHtml = '<div class="link-row">' +
-        (c.roaster_url ? '<a href="' + c.roaster_url + '" target="_blank" class="btn-link-sm">🔗 로스터리</a> ' : '') +
-        (c.farm_url ? '<a href="' + c.farm_url + '" target="_blank" class="btn-link-sm">🌱 농장</a> ' : '') +
-        (c.purchase_url ? '<a href="' + c.purchase_url + '" target="_blank" class="btn-link-sm">🛒 구매</a>' : '') +
+        (safeRoasterUrl ? '<a href="' + safeRoasterUrl + '" target="_blank" rel="noopener noreferrer" class="btn-link-sm">🔗 로스터리</a> ' : '') +
+        (safeFarmUrl ? '<a href="' + safeFarmUrl + '" target="_blank" rel="noopener noreferrer" class="btn-link-sm">🌱 농장</a> ' : '') +
+        (safePurchaseUrl ? '<a href="' + safePurchaseUrl + '" target="_blank" rel="noopener noreferrer" class="btn-link-sm">🛒 구매</a>' : '') +
         '</div>';
     }
 
     // 스토리 텍스트
-    var storyText = c.story || c.description || '<span style="color:var(--text-sub);font-style:italic">불러오는 중...</span>';
+    var storyText = esc(c.story || c.description || '') || '<span style="color:var(--text-sub);font-style:italic">불러오는 중...</span>';
 
     // 조립
     return '<div class="detail-hero">' + verifiedHtml +
-      '<div class="detail-name">' + (c.name || '—') + '</div>' +
-      '<div class="detail-by">' + [c.roaster, c.process].filter(Boolean).join(' · ') + '</div></div>' +
+      '<div class="detail-name">' + esc(c.name || '—') + '</div>' +
+      '<div class="detail-by">' + esc([c.roaster, c.process].filter(Boolean).join(' · ')) + '</div></div>' +
       ir('산지', [c.region, c.country].filter(Boolean).join(', ')) +
       ir('고도', c.altitude) +
       ir('품종', c.variety) +
@@ -133,7 +137,7 @@ var UICoffeeCard = (function () {
       scoreRow +
       '<div class="flavor-sec"><div class="flavor-sec-lbl">예상 향미</div><div class="flavor-row">' + flavorHtml + '</div></div>' +
       '<div class="recorder-row"><span class="recorder-lbl">이 원두 기록한 사람</span><span class="recorder-cnt">' +
-        (comm.count > 0 ? comm.count + '명' : '첫 번째') + '</span></div>' +
+        (comm.count > 0 ? esc(comm.count) + '명' : '첫 번째') + '</span></div>' +
       '<div class="detail-actions">' +
         '<button class="btn-outline" onclick="goRecipe(' + idx + ')">레시피 보기</button>' +
         '<button class="btn-fill" onclick="goTasting(' + idx + ')">기록하기</button></div>' +

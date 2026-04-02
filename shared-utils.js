@@ -52,3 +52,46 @@ function showToast(msg, duration) {
  * showToast의 별칭. index.html에서 toast()로 호출하던 코드와 호환.
  */
 var toast = showToast;
+
+/**
+ * HTML 속성 컨텍스트용 이스케이프 (싱글 쿼트 포함).
+ * onclick="fn('...')" 등 속성값 내부에 동적 문자열을 넣을 때 사용한다.
+ *
+ * @param {*} s - 이스케이프할 문자열
+ * @returns {string}
+ */
+function escAttr(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * URL 새니타이징.
+ * href 속성에 삽입할 URL을 검증하여 javascript:, data: 등 위험한 프로토콜을 차단한다.
+ * 허용: http://, https://, mailto:, tel:, 상대경로
+ * 차단: javascript:, data:, vbscript:, 기타 모든 위험 스킴
+ *
+ * @param {*} url - 검증할 URL 문자열
+ * @returns {string} 안전한 URL 또는 빈 문자열
+ */
+function sanitizeUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  var trimmed = url.trim();
+  if (!trimmed) return '';
+  // 위험한 프로토콜 차단 (대소문자 무시, 공백/탭 제거 후 검사)
+  var normalized = trimmed.replace(/[\s\t\n\r]+/g, '').toLowerCase();
+  if (/^(javascript|data|vbscript|blob)\s*:/i.test(normalized)) return '';
+  // 절대 URL이면 http(s)만 허용
+  if (/^[a-z][a-z0-9+\-.]*:/i.test(trimmed)) {
+    if (/^https?:\/\//i.test(trimmed) || /^mailto:/i.test(trimmed) || /^tel:/i.test(trimmed)) {
+      return esc(trimmed);
+    }
+    return '';
+  }
+  // 상대 경로는 허용
+  return esc(trimmed);
+}

@@ -629,6 +629,10 @@
   }
 
   function addTastingRecord(record) {
+    var now = new Date().toISOString();
+    if (!record.id) record.id = 'tn_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    if (!record.createdAt) record.createdAt = now;
+    record.updatedAt = now;
     const list = getTastingRecords();
     list.unshift(record);
     saveToStorage(STORAGE_KEYS.TASTING_RECORDS, list);
