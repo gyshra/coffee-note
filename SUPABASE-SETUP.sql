@@ -1,20 +1,7 @@
 
 
 -- =====================================================
--- v29 추가: 누락 테이블 및 컬럼
--- =====================================================
-
--- ─── coffees 테이블 — 누락 컬럼 추가 ─────────────────
-ALTER TABLE public.coffees
-  ADD COLUMN IF NOT EXISTS sca_score     numeric(4,1),
-  ADD COLUMN IF NOT EXISTS raw_notes     text[] DEFAULT '{}',
-  ADD COLUMN IF NOT EXISTS roaster_url   text DEFAULT '',
-  ADD COLUMN IF NOT EXISTS farm_url      text DEFAULT '',
-  ADD COLUMN IF NOT EXISTS purchase_url  text DEFAULT '',
-  ADD COLUMN IF NOT EXISTS acidity       int,
-  ADD COLUMN IF NOT EXISTS sweetness     int,
-  ADD COLUMN IF NOT EXISTS body          int,
-  ADD COLUMN IF NOT EXISTS aroma         int,
+       int,
   ADD COLUMN IF NOT EXISTS brew_tips     text DEFAULT '',
   ADD COLUMN IF NOT EXISTS confidence    text DEFAULT 'medium';
 
@@ -264,3 +251,17 @@ CREATE TRIGGER trg_taxonomy_count
 -- ✅ 실행 후 확인: taxonomy 테이블에 14개 시드 데이터 존재
 -- SELECT COUNT(*) FROM taxonomy;  → 14
 -- =====================================================
+-- v29 추가: 누락 테이블 및 컬럼
+-- =====================================================
+
+-- ─── coffees 테이블 — 누락 컬럼 추가 ─────────────────
+ALTER TABLE public.coffees
+  ADD COLUMN IF NOT EXISTS sca_score     numeric(4,1),
+  ADD COLUMN IF NOT EXISTS raw_notes     text[] DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS roaster_url   text DEFAULT '',
+  ADD COLUMN IF NOT EXISTS farm_url      text DEFAULT '',
+  ADD COLUMN IF NOT EXISTS purchase_url  text DEFAULT '',
+  ADD COLUMN IF NOT EXISTS acidity       int,
+  ADD COLUMN IF NOT EXISTS sweetness     int,
+  ADD COLUMN IF NOT EXISTS body          int,
+  ADD COLUMN IF NOT EXISTS aroma  
