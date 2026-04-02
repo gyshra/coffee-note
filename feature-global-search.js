@@ -82,7 +82,7 @@
         </div>
   
         <!-- 숨겨진 카메라 input -->
-        <input type="file" id="gsFileInput" accept="image/*" capture="environment" style="display:none" />
+        <input type="file" id="gsFileInput" accept="image/*" style="display:none" />
       `;
   
       document.body.appendChild(backdrop);
