@@ -149,6 +149,10 @@
 
   <script src="common.js"></script>
   <script src="shared-utils.js"></script>
+  <script src="supabase.js"></script>
+  <script src="feature-image-compress.js"></script>
+  <script src="feature-global-search.js"></script>
+
   <script>
 (function(){
   var CN=window.CoffeeNote;
@@ -160,17 +164,14 @@
   document.getElementById("todayDate").textContent=
     now.getFullYear()+"년 "+(now.getMonth()+1)+"월 "+now.getDate()+"일 "+days[now.getDay()]+"요일";
 
-  // 카메라/갤러리 → common.js OCR 시트 (index.html과 동일한 흐름)
+  // 카메라/갤러리
   function handlePhoto(file){
     if(!file)return;
-    // OCR 시트를 열고 파일을 바로 처리하도록 이벤트 전달
     CN.openPhotoSearchSheet();
-    // 파일을 시트의 file input에 주입
     setTimeout(function(){
       var galEl = document.getElementById("fileGallery");
       var camEl = document.getElementById("fileCamera");
       if(!galEl && !camEl){ return; }
-      // DataTransfer로 파일 주입
       try {
         var dt = new DataTransfer();
         dt.items.add(file);
@@ -178,7 +179,6 @@
         inputEl.files = dt.files;
         inputEl.dispatchEvent(new Event("change",{bubbles:true}));
       } catch(ex) {
-        // DataTransfer 미지원 브라우저 → 시트만 열기 (수동 선택)
         CN.showToast("이미지를 다시 선택해주세요.");
       }
     }, 200);
@@ -233,7 +233,6 @@
   document.getElementById("camInput").addEventListener("change",function(){handlePhoto(this.files[0]);});
   document.getElementById("galInput").addEventListener("change",function(){handlePhoto(this.files[0]);});
 
-  // OCR 결과를 index.html로 전달 (검색 화면에서 결과 표시)
   document.addEventListener("coffeeNote:ocrText", function(e){
     var detail = e.detail||{};
     var coffee = detail.coffee||null;
@@ -243,7 +242,6 @@
     CN.closePhotoSearchSheet();
     location.href = "index.html?from=ocr";
   });
-  document.getElementById("galInput").addEventListener("change",function(){handlePhoto(this.files[0]);});
 
   // 미니 커피카드
   var records=CN.getTastingRecords();
@@ -274,7 +272,6 @@
         '<div class="mc-name">'+esc(r.coffeeName)+'</div>'+
         '</div></div></div>';
     }).join("");
-    // 끝에 + 카드
     html+='<div class="empty-card" onclick="location.href=\'tasting.html\'" style="background:var(--bg)">'+
       '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'+
       '<span class="empty-card-label">새 기록</span></div>';
@@ -294,7 +291,6 @@
     var daysInMonth=new Date(yr,mo+1,0).getDate();
     var today=(yr===now.getFullYear()&&mo===now.getMonth())?now.getDate():-1;
 
-    // 해당 월 기록 색상
     var dayColors={}, dayCount=0;
     records.forEach(function(r){
       if(!r.createdAt)return;
@@ -317,7 +313,6 @@
     }
     grid.innerHTML=h;
 
-    // Flavor DNA 바
     var dna=document.getElementById("calDna");
     if(!dayCount){dna.innerHTML="";return;}
     var catCount={};
@@ -350,9 +345,5 @@
   renderCalendar();
 })();
   </script>
-  <script src="common.js"></script>
-  <script src="supabase.js"></script>
-  <script src="feature-image-compress.js"></script>
-  <script src="feature-global-search.js"></script>
 </body>
 </html>
