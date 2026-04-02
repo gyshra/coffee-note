@@ -715,24 +715,58 @@
     }, duration);
   }
 
-  /**
-   * 하단 네비 active 표시
-   * @param {"search"|"scan"|"notes"|"map"|"mypage"} activePage
-   */
-  function renderBottomNav(activePage) {
-    const nav = document.getElementById("bottomNav");
-    if (!nav) return;
-    nav.querySelectorAll(".nav-item").forEach(function (item) {
-      const key = item.getAttribute("data-nav");
-      item.classList.toggle("active", Boolean(activePage) && key === activePage);
-    });
+// 1. 네비게이션 아이템 설정 (데이터)
+const NAV_ITEMS = [
+  {
+    key: 'home',
+    label: '홈',
+    href: 'home.html',
+    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`
+  },
+  {
+    key: 'notes',
+    label: '노트',
+    href: 'notes.html',
+    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`
+  },
+  {
+    key: 'recipe',
+    label: '레시피',
+    href: 'recipe.html',
+    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>`
+  },
+  {
+    key: 'my',
+    label: '마이',
+    href: 'mypage.html',
+    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`
+  }
+];
+
+// 2. 네비게이션 그리기 함수
+function renderBottomNav(activeNav) {
+  let container = document.querySelector('.app-nav__in') 
+    || document.querySelector('.app-nav')
+    || document.querySelector('.bottom-nav');
+
+  if (!container) {
+    const nav = document.createElement('nav');
+    nav.className = 'app-nav';
+    nav.innerHTML = '<div class="app-nav__in"></div>';
+    document.body.appendChild(nav);
+    container = nav.querySelector('.app-nav__in');
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // 사진 검색 시트 v2: 2단계 흐름
-  //   Step 1: 사진 선택 → Gemini OCR
-  //   Step 2: 결과 편집 + "AI로 추가 정보 검색" 선택권
-  // ─────────────────────────────────────────────────────────────
+  const html = NAV_ITEMS.map(item => {
+    const isActive = item.key === activeNav;
+    return `<a href="${item.href}" class="nav-tab${isActive ? ' nav-tab--active' : ''}" data-nav="${item.key}">
+      <span class="nav-tab__icon">${item.icon}</span>
+      <span class="nav-tab__label">${item.label}</span>
+    </a>`;
+  }).join('');
+
+  container.innerHTML = html;
+}
   function ensurePhotoScanSheet() {
     if (document.getElementById("photoSearchOverlay")) return;
 

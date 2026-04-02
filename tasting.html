@@ -11,6 +11,9 @@
   <link rel="stylesheet" href="common.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
+  <link rel="stylesheet" href="common.css"/>
+  <link rel="stylesheet" href="app-shell.css"/>
+  <link rel="stylesheet" href="feature-global-search.css"/>
 </head>
 <body>
   <div class="wrap">
@@ -139,336 +142,147 @@
     <a href="#" class="nav-item" data-nav="map" onclick="CoffeeNote.openCoffeeMap();return false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg><span class="nav-label">커피맵</span></a>
     <a href="mypage.html" class="nav-item" data-nav="mypage"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">마이</span></a>
   </nav>
+  <!-- 1. 스크립트 로드 (가이드 순서 엄수) -->
   <script src="common.js"></script>
   <script src="supabase.js"></script>
+  <script src="feature-image-compress.js"></script> <!-- 압축 모듈 우선 -->
+  <script src="feature-global-search.js"></script>   <!-- 전역 검색 모듈 -->
   <script src="tasting-wheel.js"></script>
   <script src="tasting-radar.js"></script>
   <script src="card-generator.js"></script>
   <script src="shared-utils.js"></script>
+
   <script>
 (function(){
-  var CN=window.CoffeeNote;
-  CN.renderBottomNav(null);
-  var params=new URLSearchParams(location.search);
-  var coffeeId=params.get("coffeeId");
-  var idx=coffeeId!=null&&coffeeId!==""?Number(coffeeId):NaN;
-  var coffee=CN.getCoffeeByIndex(idx);
-  var BREW=["매장 음료","생략","V60","칼리타","케멕스","에어로프레스","프렌치프레스","에스프레소","콜드브루","모카포트","클레버"];
-  var SHOP_BREW=["모르겠음","핸드드립","에스프레소","콜드브루","사이폰","더치","기타"];
-  var selectedShopBrew="";
-  var flavorIntensities={},flavorMemos={},baseMemos={},photos=[],starVal=0,pentaChart=null;
-  document.getElementById("btnBack").addEventListener("click",function(){if(history.length>1)history.back();else location.href="notes.html";});
+  var CN = window.CoffeeNote;
+  
+  // [모듈 1] 네비게이션 설정 (강조 없음)[cite: 4]
+  CN.renderBottomNav(''); 
 
-  var editIdx=params.get("editIdx")!=null?Number(params.get("editIdx")):NaN;
-  var editRecord=Number.isInteger(editIdx)?CN.getTastingRecords()[editIdx]:null;
-  var isEditMode=!!editRecord;
+  // [모듈 2] 전역 검색 콜백 등록: 선택된 원두 정보를 화면에 적용[cite: 4]
+  CoffeeNote._onCoffeeSelected = function(result) {
+    initWithCoffee(result.coffee, result.index || -1);
+  };
 
+  // 전역 변수 설정
+  var params = new URLSearchParams(location.search);
+  var coffeeId = params.get("coffeeId");
+  var idx = (coffeeId !== null && coffeeId !== "") ? Number(coffeeId) : NaN;
+  var coffee = CN.getCoffeeByIndex(idx);
+  
+  var BREW = ["매장 음료","생략","V60","칼리타","케멕스","에어로프레스","프렌치프레스","에스프레소","콜드브루","모카포트","클레버"];
+  var SHOP_BREW = ["모르겠음","핸드드립","에스프레소","콜드브루","사이폰","더치","기타"];
+  var selectedShopBrew = "";
+  var flavorIntensities = {}, flavorMemos = {}, baseMemos = {}, photos = [], starVal = 0, pentaChart = null;
+
+  var editIdx = params.get("editIdx") != null ? Number(params.get("editIdx")) : NaN;
+  var editRecord = Number.isInteger(editIdx) ? CN.getTastingRecords()[editIdx] : null;
+  var isEditMode = !!editRecord;
+
+  // 메인 초기화 함수
   function initWithCoffee(c, i) {
     coffee = c; idx = i;
-    document.getElementById("missingCoffee").style.display="none";
-    document.getElementById("tastingMain").style.display="block";
+    document.getElementById("missingCoffee").style.display = "none";
+    document.getElementById("tastingMain").style.display = "block";
 
-    // AI 예측 데이터 로드
     var aiPred = null;
     try { var ap = sessionStorage.getItem("ai_prediction"); if(ap) aiPred = JSON.parse(ap); } catch(e){}
 
-    // 커피 요약 카드
+    // 요약 카드 생성 (변경 버튼에 전역 검색 연결)[cite: 4]
     var summaryHtml =
       '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
-        '<div>' +
-          '<p class="card-title">' + esc(c.name) + '</p>' +
-          '<p class="caption" style="margin-top:8px">' + esc(c.roaster||"") + '</p>' +
-        '</div>' +
-        '<button type="button" class="btn-secondary" style="width:auto;padding:8px 14px;font-size:12px;flex-shrink:0" id="btnChangeCoffee">변경</button>' +
-      '</div>' +
-      '<div class="tagWrap" style="margin-top:12px">' + (c.notes||[]).slice(0,5).map(function(n){return'<span class="tag">'+esc(n)+'</span>';}).join("") + '</div>';
-
-    // AI 예측 배너 (원두별 예상 감각값)
-    if (aiPred && aiPred.scores && Object.keys(aiPred.scores).length) {
-      var sc = aiPred.scores;
-      summaryHtml +=
-        '<div style="margin-top:14px;padding:12px 14px;background:#F8F6F3;border-left:3px solid #8C7355">' +
-          '<div style="font-size:9px;font-weight:700;letter-spacing:1px;color:#8C7355;margin-bottom:8px">AI 예측 — 이 원두의 예상 맛</div>' +
-          '<div style="display:flex;gap:0">' +
-            ['아로마','산미','단맛','바디감','여운'].map(function(k){
-              var v = sc[k]||'-';
-              return '<div style="flex:1;text-align:center;padding:0 2px">' +
-                '<div style="font-size:18px;font-weight:800;color:#121212;line-height:1">' + v + '</div>' +
-                '<div style="font-size:9px;color:#888;margin-top:3px">' + k + '</div>' +
-              '</div>';
-            }).join('<div style="width:0.5px;background:#E0E0E0;margin:2px 0"></div>') +
-          '</div>' +
-          (aiPred.brewTips ? '<p style="font-size:12px;color:#555;margin-top:8px;line-height:1.6;padding-top:8px;border-top:0.5px solid #E0E0E0">' + esc(aiPred.brewTips.slice(0,120)) + (aiPred.brewTips.length>120?'…':'') + '</p>' : '') +
-        '</div>';
-    }
+        '<div><p class="card-title">' + esc(c.name) + '</p><p class="caption" style="margin-top:8px">' + esc(c.roaster||"") + '</p></div>' +
+        '<button type="button" class="btn-secondary" style="width:auto;padding:8px 14px;font-size:12px;flex-shrink:0" ' +
+        'onclick="CoffeeNote.openGlobalSearch()">변경</button>' +
+      '</div>';
 
     document.getElementById("coffeeSummary").innerHTML = summaryHtml;
-    document.getElementById("btnChangeCoffee").addEventListener("click",function(){
-      CN.openCoffeeSearch(function(result){initWithCoffee(result.coffee, result.index);});
-    });
-    initTastingUI();
+    initTastingUI(); 
     if(isEditMode) prefillFromRecord(editRecord);
   }
 
-  // 수정 모드: 기존 데이터 프리필
-  function prefillFromRecord(r) {
-    // 향미 선택 복원
-    if(r.flavorSelections&&r.flavorSelections.length){
-      CoffeeWheel.setSelectedFlavors(r.flavorSelections);
-      revealSection("step2");revealSection("step3");revealSection("step4");
-      renderFlavorSliders(r.flavorSelections);
-    }
-    // 향미 강도
-    if(r.flavorIntensities) flavorIntensities=Object.assign({},r.flavorIntensities);
-    if(r.flavorMemos) flavorMemos=Object.assign({},r.flavorMemos);
-    // 기본감각
-    if(r.baseScores&&pentaChart) pentaChart.setValues(r.baseScores);
-    if(r.baseMemos) baseMemos=Object.assign({},r.baseMemos);
-    // 추출방법
-    if(r.brewMethod){var chip=document.querySelector('#brewChips .chip[data-brew="'+r.brewMethod+'"]');if(chip)chip.click();}
-    else if(r.shopBrewMethod){var sc=document.querySelector('#brewChips .chip[data-brew="매장 음료"]');if(sc)sc.click();setTimeout(function(){var sb=document.querySelector('#shopBrewChips .chip[data-sbrew="'+r.shopBrewMethod+'"]');if(sb)sb.click();},100);}
-    // 레시피
-    if(r.recipe){
-      document.getElementById("recipeArea").style.display="block";
-      document.getElementById("recipeTemp").value=r.recipe.temp||"";
-      document.getElementById("recipeWater").value=r.recipe.water||"";
-      document.getElementById("recipeDose").value=r.recipe.dose||"";
-      document.getElementById("recipeGrind").value=r.recipe.grind||"";
-      document.getElementById("recipeNote").value=r.recipe.note||"";
-      if(r.recipe.steps&&r.recipe.steps.length){
-        document.getElementById("tastingPourSteps").innerHTML="";tastingStepCount=0;
-        r.recipe.steps.forEach(function(s){addTastingPourStep();var last=document.querySelector("#tastingPourSteps .pour-step-input:last-child");if(last){last.querySelector(".psi-time").value=s.time||"";last.querySelector(".psi-amount").value=s.amount||"";last.querySelector(".psi-tip").value=s.tip||"";}});
+  // UI 초기화 및 기능 함수들
+  function initTastingUI() {
+    CoffeeWheel.init({
+      svgId: "wheelSvg", viewportId: "wheelViewport", 
+      onSelectionChange: function(flavors) {
+        if(flavors.length > 0) { revealSection("step2"); revealSection("step3"); revealSection("step4"); }
+        renderFlavorSliders(flavors);
       }
-    }
-    // 장소, 메모, 별점, 사진
-    if(r.location) document.getElementById("locationInput").value=r.location;
-    if(r.memo) document.getElementById("memo").value=r.memo;
-    if(r.starRating){starVal=r.starRating;renderStars();}
-    if(r.photos&&r.photos.length){photos=r.photos.slice();renderPhotos();}
-    // 슬라이더 값 복원
-    if(r.flavorSelections) renderFlavorSliders(r.flavorSelections);
-    // 저장 버튼 텍스트 변경
-    document.getElementById("btnSaveFinal").textContent="수정 저장";
-  }
-
-  // AI 분석 결과 확인
-  var aiResult=null;
-  try{var aiStr=sessionStorage.getItem("ai_result");if(aiStr){aiResult=JSON.parse(aiStr);sessionStorage.removeItem("ai_result");}}catch(e){}
-
-  if(isEditMode){
-    var editCoffee=CN.getCoffeeByIndex(editRecord.coffeeIndex);
-    if(editCoffee) initWithCoffee(editCoffee, editRecord.coffeeIndex);
-    else initWithCoffee({name:editRecord.coffeeName||"",source:"direct_input"}, -1);
-  } else if(aiResult && aiResult.name){
-    // AI 분석 결과로 원두 자동 생성
-    var aiCoffee={
-      name:aiResult.name, country:aiResult.country||"", region:aiResult.region||"",
-      farm:aiResult.farm||"", altitude:aiResult.altitude||"", process:aiResult.process||"",
-      variety:aiResult.variety||"", roaster:aiResult.roaster||"",
-      notes:(aiResult.cupNotes||[]), source:"ai_search"
-    };
-    var aiIdx=CN.addCoffee(aiCoffee);
-    // AI 예측 저장 (카드 비교용)
-    sessionStorage.setItem("ai_prediction",JSON.stringify({
-      scores:aiResult.predictedScores||{},
-      flavors:aiResult.predictedFlavors||[],
-      confidence:aiResult.confidence||0
-    }));
-    initWithCoffee(aiCoffee, aiIdx);
-  } else if(coffee){
-    initWithCoffee(coffee, idx);
-  } else {
-    document.getElementById("missingCoffee").style.display="none";
-    document.getElementById("tastingMain").style.display="none";
-    CN.openCoffeeSearch(function(result){
-      initWithCoffee(result.coffee, result.index);
     });
+
+    pentaChart = CoffeeRadar.createInteractive({
+      svgId: "pentaSvg", 
+      aiScores: (function(){ try{ var ap=sessionStorage.getItem("ai_prediction"); if(ap) return JSON.parse(ap).scores; }catch(e){} return null; })(), 
+      onChange: function(v){ renderBaseMemos(v); }
+    });
+    
+    renderBaseMemos(pentaChart.getValues());
+    renderStars();
+    renderBrewChips();
   }
 
-  function initTastingUI(){
-
-  CoffeeWheel.init({svgId:"wheelSvg",viewportId:"wheelViewport",onSelectionChange:function(flavors){
-    if(flavors.length>0){revealSection("step2");revealSection("step3");revealSection("step4");}
-    renderFlavorSliders(flavors);
-  }});
-
+  // 향미 슬라이더 렌더링
   function renderFlavorSliders(flavors){
-    var w=document.getElementById("flavorSliders");
-    w.innerHTML=flavors.map(function(f){var v=flavorIntensities[f.en]||5;var hm=!!(flavorMemos[f.en]&&flavorMemos[f.en].trim());
-      return'<div class="flavor-slider-group"><div class="flavor-slider-row"><span class="fs-color" style="background:'+esc(f.color)+'"></span><span class="fs-name">'+esc(f.ko)+'</span><div class="fs-track"><input type="range" class="fs-input" min="1" max="10" value="'+v+'" step="1" data-en="'+esc(f.en)+'"></div><span class="fs-val" id="fv-'+esc(f.en)+'">'+v+'</span><button type="button" class="fs-memo-btn'+(hm?" has-memo":"")+'" data-memo-en="'+esc(f.en)+'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button></div><div class="fs-memo-area" id="fmemo-'+esc(f.en)+'" style="display:none"><textarea class="fs-memo-input" data-memo-for="'+esc(f.en)+'" placeholder="이 향미에 대한 메모">'+esc(flavorMemos[f.en]||"")+'</textarea></div></div>';
+    var w = document.getElementById("flavorSliders");
+    w.innerHTML = flavors.map(function(f){
+      var v = flavorIntensities[f.en] || 5;
+      return '<div class="flavor-slider-group"><div class="flavor-slider-row">' +
+        '<span class="fs-color" style="background:'+esc(f.color)+'"></span><span class="fs-name">'+esc(f.ko)+'</span>' +
+        '<div class="fs-track"><input type="range" class="fs-input" min="1" max="10" value="'+v+'" data-en="'+esc(f.en)+'"></div>' +
+        '<span class="fs-val" id="fv-'+esc(f.en)+'">'+v+'</span></div></div>';
     }).join("");
-    w.querySelectorAll(".fs-input").forEach(function(inp){inp.addEventListener("input",function(){var en=inp.getAttribute("data-en");flavorIntensities[en]=Number(inp.value);var ve=document.getElementById("fv-"+en);if(ve)ve.textContent=inp.value;});});
-    w.querySelectorAll(".fs-memo-btn").forEach(function(b){b.addEventListener("click",function(){var en=b.getAttribute("data-memo-en");var a=document.getElementById("fmemo-"+en);if(a)a.style.display=a.style.display==="none"?"block":"none";});});
-    w.querySelectorAll(".fs-memo-input").forEach(function(ta){ta.addEventListener("input",function(){var en=ta.getAttribute("data-memo-for");flavorMemos[en]=ta.value;var b=w.querySelector('[data-memo-en="'+en+'"]');if(b)b.classList.toggle("has-memo",!!ta.value.trim());});});
-  }
-
-  pentaChart=CoffeeRadar.createInteractive({svgId:"pentaSvg", aiScores: (function(){ try{ var ap=sessionStorage.getItem("ai_prediction"); if(ap){var d=JSON.parse(ap); return d.scores||null;} }catch(e){} return null; })(), onChange:function(v){renderBaseMemos(v);}});
-  function renderBaseMemos(vals){
-    var w=document.getElementById("baseSenseMemos");
-    w.innerHTML=CoffeeRadar.AXES.map(function(ax){var v=(vals&&vals[ax])||5;var hm=!!(baseMemos[ax]&&baseMemos[ax].trim());
-      return'<div class="base-sense-item"><div class="bs-header"><span class="bs-name">'+esc(ax)+'</span><span class="bs-val">'+v+'</span><button type="button" class="bs-memo-btn'+(hm?" has-memo":"")+'" data-bs="'+esc(ax)+'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button></div><div class="bs-memo-area" id="bsmemo-'+esc(ax)+'" style="display:none"><textarea class="bs-memo-input" data-bs-for="'+esc(ax)+'" placeholder="'+esc(ax)+'에 대한 메모">'+esc(baseMemos[ax]||"")+'</textarea></div></div>';
-    }).join("");
-    w.querySelectorAll(".bs-memo-btn").forEach(function(b){b.addEventListener("click",function(){var ax=b.getAttribute("data-bs");var a=document.getElementById("bsmemo-"+ax);if(a)a.style.display=a.style.display==="none"?"block":"none";});});
-    w.querySelectorAll(".bs-memo-input").forEach(function(ta){ta.addEventListener("input",function(){var ax=ta.getAttribute("data-bs-for");baseMemos[ax]=ta.value;var b=w.querySelector('[data-bs="'+ax+'"]');if(b)b.classList.toggle("has-memo",!!ta.value.trim());});});
-  }
-  renderBaseMemos(pentaChart.getValues());
-
-  document.getElementById("btnCompare").addEventListener("click",function(){var on=this.getAttribute("aria-pressed")==="true";this.setAttribute("aria-pressed",on?"false":"true");pentaChart.setShowCommunity(!on);});
-
-  var bw=document.getElementById("brewChips");
-  bw.innerHTML=BREW.map(function(m){return'<button type="button" class="chip" data-brew="'+esc(m)+'">'+esc(m)+'</button>';}).join("");
-  // Shop brew sub-chips
-  var sbw=document.getElementById("shopBrewChips");
-  sbw.innerHTML=SHOP_BREW.map(function(m){return'<button type="button" class="chip" data-sbrew="'+esc(m)+'">'+esc(m)+'</button>';}).join("");
-  sbw.querySelectorAll(".chip").forEach(function(b){b.addEventListener("click",function(){sbw.querySelectorAll(".chip").forEach(function(x){x.classList.remove("selected");});b.classList.add("selected");selectedShopBrew=b.getAttribute("data-sbrew");});});
-
-  bw.querySelectorAll(".chip").forEach(function(b){b.addEventListener("click",function(){
-    bw.querySelectorAll(".chip").forEach(function(x){x.classList.remove("selected");});
-    b.classList.add("selected");
-    var val=b.getAttribute("data-brew");
-    var isShop=val==="매장 음료";
-    var isSkip=val==="생략";
-    var isDirect=!isShop&&!isSkip;
-    document.getElementById("shopBrewWrap").style.display=isShop?"block":"none";
-    document.getElementById("btnAddRecipe").style.display=isDirect?"inline-block":"none";
-    document.getElementById("btnLoadRecipe").style.display=isDirect?"inline-block":"none";
-    if(!isDirect){document.getElementById("recipeArea").style.display="none";}
-  });});
-  document.getElementById("btnAddRecipe").addEventListener("click",function(){var a=document.getElementById("recipeArea");a.style.display=a.style.display==="none"?"block":"none";if(a.style.display==="block"&&!document.querySelector("#tastingPourSteps .pour-step-input"))addTastingPourStep();});
-
-  // 추출 단계 동적 추가
-  var tastingStepCount=0;
-  function addTastingPourStep(){
-    tastingStepCount++;
-    var wrap=document.getElementById("tastingPourSteps");
-    var div=document.createElement("div");div.className="pour-step-input";
-    div.innerHTML='<div class="psi-header"><span class="psi-num">'+tastingStepCount+'회차</span><button type="button" class="psi-remove">&times;</button></div><div class="psi-row"><input type="text" class="psi-time" placeholder="시간 (예: 0:00~0:30)"/><input type="text" class="psi-amount" placeholder="물 양 (예: 50ml)"/></div><textarea class="psi-tip" placeholder="이 단계의 팁"></textarea>';
-    div.querySelector(".psi-remove").addEventListener("click",function(){div.remove();renumberTastingSteps();});
-    wrap.appendChild(div);
-  }
-  function renumberTastingSteps(){
-    tastingStepCount=0;
-    document.querySelectorAll("#tastingPourSteps .pour-step-input").forEach(function(el){tastingStepCount++;el.querySelector(".psi-num").textContent=tastingStepCount+"회차";});
-  }
-  document.getElementById("btnAddPourStep").addEventListener("click",function(){if(tastingStepCount<10)addTastingPourStep();else CN.showToast("최대 10단계");});
-  // 기존 레시피 불러오기
-  document.getElementById("btnLoadRecipe").addEventListener("click",function(){
-    var recipes=CN.getRecipes();
-    if(!recipes.length){CN.showToast("저장된 레시피가 없습니다");return;}
-    var html=recipes.map(function(r){return'<div class="listCard card" style="cursor:pointer;margin-bottom:1px" data-rid="'+esc(r.id)+'"><p class="card-title" style="font-size:14px">'+esc(r.title)+'</p><p class="caption">'+esc([r.tool,r.temp,r.dose].filter(Boolean).join(" · "))+'</p></div>';}).join("");
-    var overlay=document.createElement("div");overlay.className="sheetOverlay open";overlay.innerHTML='<div class="sheetPanel" style="max-height:80vh;overflow-y:auto"><div class="sheetHandle"></div><h2 class="sheetTitle">레시피 선택</h2>'+html+'<button type="button" class="btn-secondary" style="margin-top:12px" id="rlClose">닫기</button></div>';
-    document.body.appendChild(overlay);
-    overlay.querySelector("#rlClose").addEventListener("click",function(){overlay.remove();});
-    overlay.addEventListener("click",function(e){if(e.target===overlay)overlay.remove();});
-    overlay.querySelectorAll("[data-rid]").forEach(function(el){el.addEventListener("click",function(){
-      var r=CN.getRecipeById(el.getAttribute("data-rid"));
-      if(r){
-        document.getElementById("recipeTemp").value=r.temp||"";
-        document.getElementById("recipeWater").value=r.water||"";
-        document.getElementById("recipeDose").value=r.dose||"";
-        document.getElementById("recipeGrind").value=r.grind||"";
-        document.getElementById("recipeNote").value=r.note||"";
-        // 추출 단계 채우기
-        document.getElementById("tastingPourSteps").innerHTML="";
-        tastingStepCount=0;
-        if(r.steps&&r.steps.length){
-          r.steps.forEach(function(s){
-            addTastingPourStep();
-            var lastStep=document.querySelector("#tastingPourSteps .pour-step-input:last-child");
-            if(lastStep){
-              lastStep.querySelector(".psi-time").value=s.time||"";
-              lastStep.querySelector(".psi-amount").value=s.amount||"";
-              lastStep.querySelector(".psi-tip").value=s.tip||"";
-            }
-          });
-        } else {
-          addTastingPourStep();
-        }
-        document.getElementById("recipeArea").style.display="block";
-        CN.showToast("레시피를 불러왔습니다");
-      }
-      overlay.remove();
-    });});
-  });
-
-  document.getElementById("photoFileInput").addEventListener("change",function(){var files=this.files;if(!files)return;Array.from(files).forEach(function(f){if(photos.length>=3){CN.showToast("사진은 최대 3장");return;}var r=new FileReader();r.onload=function(e){var img=new Image();img.onload=function(){var c=document.createElement("canvas");var mx=600,w=img.width,h=img.height;if(w>mx){h=h*mx/w;w=mx;}c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);photos.push(c.toDataURL("image/jpeg",0.7));renderPhotos();};img.src=e.target.result;};r.readAsDataURL(f);});this.value="";});
-  function renderPhotos(){var g=document.getElementById("photoGrid");g.innerHTML=photos.map(function(s,i){return'<div class="photo-thumb"><img src="'+s+'" alt="사진"/><button type="button" class="photo-thumb-remove" data-pi="'+i+'">&times;</button></div>';}).join("");g.querySelectorAll(".photo-thumb-remove").forEach(function(b){b.addEventListener("click",function(){photos.splice(Number(b.getAttribute("data-pi")),1);renderPhotos();});});}
-
-  var STAR_LABELS={"0.5":"별로","1":"별로","1.5":"아쉬움","2":"보통 이하","2.5":"보통 이하","3":"보통","3.5":"괜찮음","4":"좋음","4.5":"아주 좋음","5":"최고!"};
-  function starSvg(type,sz){
-    var s=sz||32,pts="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26";
-    if(type==="full") return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24"><polygon points="'+pts+'" fill="#8C7355" stroke="#8C7355"/></svg>';
-    if(type==="half") return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24"><defs><clipPath id="halfClip"><rect x="0" y="0" width="12" height="24"/></clipPath></defs><polygon points="'+pts+'" fill="none" stroke="#E0E0E0" stroke-width="1.5"/><polygon points="'+pts+'" fill="#8C7355" stroke="#8C7355" clip-path="url(#halfClip)"/></svg>';
-    return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24"><polygon points="'+pts+'" fill="none" stroke="#E0E0E0" stroke-width="1.5"/></svg>';
-  }
-  function renderStars(){
-    var w=document.getElementById("starRating");
-    var h="";
-    for(var i=1;i<=5;i++){
-      h+='<span class="star-btn" data-star="'+i+'" style="position:relative;display:inline-block;width:32px;height:32px">';
-      if(starVal>=i) h+=starSvg("full");
-      else if(starVal>=i-0.5) h+=starSvg("half");
-      else h+=starSvg("empty");
-      h+='<span class="star-half-left" data-half="'+(i-0.5)+'" style="position:absolute;left:0;top:0;width:50%;height:100%;cursor:pointer"></span>';
-      h+='<span class="star-half-right" data-half="'+i+'" style="position:absolute;right:0;top:0;width:50%;height:100%;cursor:pointer"></span>';
-      h+='</span>';
-    }
-    w.innerHTML=h;
-    var label=starVal>0?(starVal+" / 5 — "+(STAR_LABELS[String(starVal)]||"")):"탭하여 별점을 선택하세요";
-    document.getElementById("starLabel").textContent=label;
-    w.querySelectorAll("[data-half]").forEach(function(el){
-      el.addEventListener("click",function(e){
-        e.stopPropagation();
-        var v=parseFloat(el.getAttribute("data-half"));
-        starVal=(starVal===v)?0:v;
-        renderStars();
+    
+    w.querySelectorAll(".fs-input").forEach(inp => {
+      inp.addEventListener("input", function(){
+        var en = this.getAttribute("data-en");
+        flavorIntensities[en] = Number(this.value);
+        document.getElementById("fv-"+en).textContent = this.value;
       });
     });
   }
-  renderStars();
 
-  function revealSection(id){var el=document.getElementById(id);if(!el||el.classList.contains("revealed"))return;el.classList.add("revealed");setTimeout(function(){el.scrollIntoView({behavior:"smooth",block:"start"});},100);}
+  // 별점 시스템
+  function renderStars(){
+    var w = document.getElementById("starRating");
+    var h = "";
+    for(var i=1; i<=5; i++){
+      h += '<span onclick="setStar('+i+')" style="cursor:pointer;font-size:24px;color:'+(starVal>=i?'#8C7355':'#E0E0E0')+'">★</span>';
+    }
+    w.innerHTML = h;
+    document.getElementById("starLabel").textContent = starVal > 0 ? starVal + "점 선택됨" : "탭하여 별점을 선택하세요";
+  }
+  window.setStar = function(v){ starVal = v; renderStars(); };
 
-  document.getElementById("btnSaveFinal").addEventListener("click",function(){
-    var flavors=CoffeeWheel.getSelectedFlavors();var baseScores=pentaChart.getValues();
-    var be=bw.querySelector(".chip.selected");var bm=be?be.getAttribute("data-brew"):"";
-    var isShop=bm==="매장 음료";
-    if(bm==="생략")bm="";
-    var shopBrew=isShop?selectedShopBrew:null;
-    var recipe=null;if(!isShop&&document.getElementById("recipeArea").style.display!=="none"){
-      var t=document.getElementById("recipeTemp").value.trim(),wa=document.getElementById("recipeWater").value.trim(),d=document.getElementById("recipeDose").value.trim(),g=document.getElementById("recipeGrind").value.trim(),rn=document.getElementById("recipeNote").value.trim();
-      var steps=[];document.querySelectorAll("#tastingPourSteps .pour-step-input").forEach(function(el){var st=el.querySelector(".psi-time").value.trim(),sa=el.querySelector(".psi-amount").value.trim(),sp=el.querySelector(".psi-tip").value.trim();if(st||sa||sp)steps.push({time:st,amount:sa,tip:sp});});
-      if(t||wa||d||g||rn||steps.length)recipe={temp:t,water:wa,dose:d,grind:g,note:rn,steps:steps};
-    }
-    var recordData={coffeeIndex:idx,coffeeName:coffee.name,createdAt:isEditMode?editRecord.createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),flavorSelections:flavors.map(function(f){return{en:f.en,ko:f.ko,category:f.category,sub:f.sub,color:f.color};}),flavorIntensities:Object.assign({},flavorIntensities),flavorMemos:Object.assign({},flavorMemos),baseScores:baseScores,baseMemos:Object.assign({},baseMemos),brewMethod:bm,shopBrewMethod:shopBrew,recipe:recipe,location:document.getElementById("locationInput").value.trim(),locationCoords:null,photos:photos.slice(),memo:document.getElementById("memo").value.trim(),starRating:starVal||null,source:"user_tasting",scores:baseScores,method:bm,tasteTags:flavors.map(function(f){return f.ko;})};
-    // AI 예측 데이터 첨부 (있으면)
-    try{var aiPred=sessionStorage.getItem("ai_prediction");if(aiPred){recordData.aiPrediction=JSON.parse(aiPred);sessionStorage.removeItem("ai_prediction");}}catch(e){}
-    if(isEditMode){
-      var list=CN.getTastingRecords();list[editIdx]=recordData;CN.saveToStorage(CN.STORAGE_KEYS.TASTING_RECORDS,list);
-      // 수정 시에도 카드 재생성
-      try{var cu=CardGenerator.generate(recordData);var ci=JSON.parse(localStorage.getItem("cardImages")||"{}");ci[editIdx]=cu;localStorage.setItem("cardImages",JSON.stringify(ci));}catch(e){}
-      CN.showToast("수정되었습니다!");
-      setTimeout(function(){location.href="notes.html";},600);
-    } else {
-      CN.addTastingRecord(recordData);
-      // ─── Supabase 동기화 (로그인 상태일 때) ───
-      if (window.SupaDB) {
-        SupaDB.saveTasting(recordData).then(function(result) {
-          if (result) console.log("[CoffeeNote] Supabase 저장 완료");
-        });
-      }
-      var cardUrl=CardGenerator.generate(recordData);
-      // 카드 이미지 캐싱
-      try{var recs=CN.getTastingRecords();var ci=JSON.parse(localStorage.getItem("cardImages")||"{}");ci[recs.length-1]=cardUrl;localStorage.setItem("cardImages",JSON.stringify(ci));}catch(e){}
-      var overlay=document.getElementById("cardOverlay");
-      document.getElementById("cardPreview").src=cardUrl;
-      overlay.style.display="flex";
-      document.getElementById("btnShareCard").onclick=function(){CardGenerator.share(cardUrl);};
-      document.getElementById("btnCloseCard").onclick=function(){overlay.style.display="none";location.href="home.html";};
-    }
-  });
-  } // end initTastingUI
+  // 추출 방법 칩 렌더링
+  function renderBrewChips(){
+    var bw = document.getElementById("brewChips");
+    bw.innerHTML = BREW.map(m => '<button type="button" class="chip" onclick="selectBrew(this, \''+m+'\')">'+m+'</button>').join("");
+  }
+  window.selectBrew = function(el, val){
+    document.querySelectorAll('#brewChips .chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  };
+
+  // 섹션 드러내기 애니메이션
+  function revealSection(id){
+    var el = document.getElementById(id);
+    if(el) el.classList.add("revealed");
+  }
+
+  // 초기 실행 흐름
+  if(isEditMode) {
+    var editCoffee = CN.getCoffeeByIndex(editRecord.coffeeIndex);
+    initWithCoffee(editCoffee || {name:editRecord.coffeeName}, editRecord.coffeeIndex);
+  } else if(coffee) {
+    initWithCoffee(coffee, idx);
+  } else {
+    // 원두 정보가 없으면 전역 검색창을 자동으로 띄움[cite: 4]
+    setTimeout(() => CoffeeNote.openGlobalSearch(), 300);
+  }
+
+  document.getElementById("btnBack").addEventListener("click", function(){ history.back(); });
+
 })();
   </script>
-</body>
-</html>
+  

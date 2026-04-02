@@ -2435,3 +2435,43 @@ input[type="range"]::-moz-range-track {
 .communityRow{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;}
 .communityRow:last-child{border-bottom:none;}
 .communityLabel{color:var(--text-sub);min-width:90px;flex-shrink:0;font-size:12px;}
+.app-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 900;
+  background: #FFFFFF;
+  border-top: 1px solid #E0E0E0;
+}
+.app-nav__in {
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+}
+.nav-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+  text-decoration: none;
+  color: #999;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s;
+}
+.nav-tab--active {
+  color: #121212;
+}
+.nav-tab__icon svg {
+  display: block;
+}
+.nav-tab__label {
+  font-family: 'Pretendard Variable', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  line-height: 1;
+}

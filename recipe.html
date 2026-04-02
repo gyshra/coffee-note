@@ -255,6 +255,9 @@
       .bottom-cta { max-width: 480px; left: 50%; transform: translateX(-50%); right: auto; width: 480px; }
     }
   </style>
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="app-shell.css">
+  <link rel="stylesheet" href="feature-global-search.css">  <!-- ★ 추가 -->
 </head>
 <body>
 
@@ -818,5 +821,10 @@ function goTasting() {
 }
 
 </script>
+<script src="common.js"></script>
+<script src="supabase.js"></script>
+<script src="feature-image-compress.js"></script>
+<script src="feature-global-search.js"></script>
+<script>renderBottomNav('recipe');</script>
 </body>
 </html>

@@ -88,6 +88,9 @@
     .ocr-result { display:none; }
     .ocr-result.show { display:block; }
   </style>
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="app-shell.css">
+  <link rel="stylesheet" href="feature-global-search.css">  <!-- ★ 추가 -->
 </head>
 <body>
 
@@ -213,5 +216,9 @@ function renderOcrGrid(c,raw){const gd=FeatureOCR.buildGridData(c,raw);document.
 function resetOcr(){FeatureOCR.reset();document.getElementById('ocrResult').classList.remove('show');document.getElementById('ocrPick').style.display='block';['camInput','galInput'].forEach(id=>document.getElementById(id).value='');}
 function confirmOcr(){const result=FeatureOCR.confirm();if(!result)return;sessionStorage.setItem('ocr_result',JSON.stringify(result.payload));closeOcr();location.href='register-coffee.html?from=ocr';}
 </script>
+<script src="common.js"></script>
+<script src="supabase.js"></script>
+<script src="feature-image-compress.js"></script>
+<script src="feature-global-search.js"></script>
 </body>
 </html>
