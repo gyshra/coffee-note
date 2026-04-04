@@ -221,18 +221,20 @@ async function _handleFileSelect(e) {
   try {
     const base64 = await compressImage(file, { maxSize: 1024, quality: 0.7 });
 
+    const raw = base64.includes(',') ? base64.split(',')[1] : base64;
+
     const res = await fetch('/api/ocr', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: base64 })
+      body: JSON.stringify({ base64: raw, mimeType: 'image/jpeg' })
     });
 
     if (!res.ok) throw new Error('OCR API ' + res.status);
     const data = await res.json();
 
-    if (data.name || data.results) {
-      const items = data.results || [data];
-      _renderResults(items, resultsEl);
+    const coffee = data.coffee;
+    if (coffee?.name) {
+      _renderResults([coffee], resultsEl);
     } else {
       resultsEl.innerHTML = '<p class="gs-results__empty">원두 정보를 인식하지 못했습니다</p>';
     }
