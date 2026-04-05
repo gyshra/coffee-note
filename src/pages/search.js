@@ -99,7 +99,7 @@ function expandCard(idx) {
 window.toggleMore = function (idx) { const el = document.getElementById(`more-${idx}`); if (!el) return; const open = el.classList.toggle('open'); const t = el.previousElementSibling; if (t) t.textContent = open ? '상세 정보 접기 ↑' : '상세 정보 더보기 ↓'; };
 function loadStory(c, panel, idx) { fetchStory(c.name, c.country, function (story) { var el = panel.querySelector('#story-' + idx); if (el) el.textContent = story; }, function () { var el = panel.querySelector('#story-' + idx); if (el) el.innerHTML = '<span style="color:var(--text-sub);font-style:italic">정보를 불러올 수 없습니다</span>'; }); }
 
-window.goTasting = function (idx) { var c = results[idx] || localDB()[idx]; if (!c) return; var nav = prepareGoTasting(c, localDB()); nav.sessionItems.forEach(function (si) { sessionStorage.setItem(si.key, si.value); }); location.href = nav.url; };
+window.goTasting = function (idx) { var c = results[idx] || localDB()[idx]; if (!c) return; console.log('[Navigation] Moving to Detail Page'); var nav = prepareGoTasting(c, localDB()); nav.sessionItems.forEach(function (si) { sessionStorage.setItem(si.key, si.value); }); location.href = nav.url; };
 window.goRecipe = function (idx) { var c = results[idx] || localDB()[idx]; if (!c) return; var nav = prepareGoRecipe(c, localDB()); nav.sessionItems.forEach(function (si) { sessionStorage.setItem(si.key, si.value); }); location.href = nav.url; };
 
 function isFav(idx) { return window.CoffeeNote.isFavorite(idx); }

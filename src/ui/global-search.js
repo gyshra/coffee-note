@@ -202,9 +202,9 @@ function _renderResults(items, container) {
 }
 
 function _onSelectCoffee(coffee) {
+  const wasOcrFlow = _isOcrFlow; // _close() 전에 저장 — _close()가 _isOcrFlow를 리셋하기 때문
   _close();
-  if (_isOcrFlow) {
-    _isOcrFlow = false;
+  if (wasOcrFlow) {
     try {
       sessionStorage.setItem('ocr_result', JSON.stringify(coffee));
       window.location.href = 'register-coffee.html?from=ocr';
@@ -213,9 +213,11 @@ function _onSelectCoffee(coffee) {
     }
     return;
   }
+  console.log('[Navigation] Moving to Detail Page');
   const ns = window.CoffeeNote || {};
   if (typeof ns._onCoffeeSelected === 'function') {
-    ns._onCoffeeSelected(coffee);
+    // tasting.js는 { coffee, index } 형태를 기대함 — raw 객체 직접 전달 시 루프 발생
+    ns._onCoffeeSelected({ coffee: coffee, index: -1 });
   } else {
     sessionStorage.setItem('gs_selected_coffee', JSON.stringify(coffee));
     window.location.href = 'index.html?fromSearch=1';
