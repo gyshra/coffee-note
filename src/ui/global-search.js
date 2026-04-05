@@ -14,6 +14,7 @@ const BACKDROP_ID = 'globalSearchBackdrop';
 const ANIM_MS     = 280;
 
 let _isOpen     = false;
+let _isOcrFlow  = false;
 let _sheetEl    = null;
 let _backdropEl = null;
 
@@ -118,6 +119,7 @@ function _open(mode) {
 function _close() {
   if (!_isOpen) return;
   _isOpen = false;
+  _isOcrFlow = false;
 
   document.body.style.overflow = '';
   _backdropEl.classList.remove('gs-backdrop--visible');
@@ -201,6 +203,16 @@ function _renderResults(items, container) {
 
 function _onSelectCoffee(coffee) {
   _close();
+  if (_isOcrFlow) {
+    _isOcrFlow = false;
+    try {
+      sessionStorage.setItem('ocr_result', JSON.stringify(coffee));
+      window.location.href = 'register-coffee.html?from=ocr';
+    } catch (e) {
+      showToast('OCR 결과 전달 실패');
+    }
+    return;
+  }
   const ns = window.CoffeeNote || {};
   if (typeof ns._onCoffeeSelected === 'function') {
     ns._onCoffeeSelected(coffee);
@@ -214,14 +226,20 @@ async function _handleFileSelect(e) {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
   e.target.value = '';
+  _isOcrFlow = true;
 
   const resultsEl = document.getElementById('gsResults');
   resultsEl.innerHTML = '<p class="gs-results__loading">이미지 분석 중…</p>';
 
   try {
-    const base64 = await compressImage(file, { maxSize: 1024, quality: 0.7 });
+    let base64 = await compressImage(file, { maxSize: 1600, quality: 0.85 });
+    let raw = base64.includes(',') ? base64.split(',')[1] : base64;
 
-    const raw = base64.includes(',') ? base64.split(',')[1] : base64;
+    // 페이로드 크기 가드: 2MB 초과 시 재압축
+    if (raw.length > 2 * 1024 * 1024) {
+      base64 = await compressImage(file, { maxSize: 1200, quality: 0.75 });
+      raw = base64.includes(',') ? base64.split(',')[1] : base64;
+    }
 
     const res = await fetch('/api/ocr', {
       method: 'POST',
@@ -236,9 +254,11 @@ async function _handleFileSelect(e) {
     if (coffee?.name) {
       _renderResults([coffee], resultsEl);
     } else {
+      _isOcrFlow = false;
       resultsEl.innerHTML = '<p class="gs-results__empty">원두 정보를 인식하지 못했습니다</p>';
     }
   } catch (err) {
+    _isOcrFlow = false;
     console.error('[GlobalSearch:OCR]', err);
     resultsEl.innerHTML = '';
     showToast('이미지 분석 중 오류가 발생했습니다');

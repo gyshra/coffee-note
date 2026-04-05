@@ -156,7 +156,7 @@ window.handleFile = async function (input) {
   reader.onload = async function (e) {
     var raw = e.target.result;
     var b64;
-    try { b64 = await compressImage(raw, 1024, 0.7); } catch (err) { b64 = raw; }
+    try { b64 = await compressImage(raw, 1600, 0.85); } catch (err) { b64 = raw; }
     document.getElementById('ocrPreview').src = b64;
     document.getElementById('ocrPick').style.display = 'none';
     document.getElementById('ocrLoading').style.display = 'block';

@@ -45,9 +45,19 @@ function parse(raw) {
   try { return JSON.parse(raw.replace(/```json|```/g,"").trim()); } catch { return null; }
 }
 
-const PROMPT = `커피 봉지/카드의 텍스트를 정확히 읽어 JSON만 반환. 마크다운 없이.
-규칙: farm = 농장/생산자명 (원두명에 포함된 경우 분리), rawNotes = 이미지 텍스트 그대로
-{"name":"","roaster":"","country":"국가","region":"지역","farm":"농장","altitude":"","process":"가공방식","variety":"","rawNotes":[],"price":"","roasterUrl":"","farmUrl":""}`;
+const PROMPT = `커피 봉지/라벨에서 텍스트를 읽어 아래 JSON 형식으로만 반환하세요. 마크다운 금지.
+
+규칙:
+- 이미지에서 확인되지 않는 항목은 반드시 null (추측 금지)
+- name: 원두명 (브랜드·로스터명 제외, 산지/품종 조합이면 그대로)
+- roaster: 봉지에 표시된 로스터리/브랜드명
+- country/region: 원산지 국가·지역 (영문 표기 우선, 한국어도 허용)
+- farm: 농장·생산자명 (원두명에 포함된 경우 분리)
+- process: 가공방식 (Washed/Natural/Honey/Anaerobic 등 원문 그대로)
+- rawNotes: 라벨에 적힌 향미·컵노트 텍스트 배열 (없으면 [])
+- roasterUrl/farmUrl: 라벨에 URL이 명시된 경우만 입력, 없으면 null
+
+{"name":null,"roaster":null,"country":null,"region":null,"farm":null,"altitude":null,"process":null,"variety":null,"rawNotes":[],"price":null,"roasterUrl":null,"farmUrl":null}`;
 
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin","*");
