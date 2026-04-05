@@ -213,14 +213,28 @@ function _onSelectCoffee(coffee) {
     }
     return;
   }
-  console.log('[Navigation] Moving to Detail Page');
+  console.log('[Session:Debug] GlobalSearch coffee selected:', coffee.name);
   const ns = window.CoffeeNote || {};
   if (typeof ns._onCoffeeSelected === 'function') {
-    // tasting.js는 { coffee, index } 형태를 기대함 — raw 객체 직접 전달 시 루프 발생
+    // tasting.js는 { coffee, index } 형태를 기대함
     ns._onCoffeeSelected({ coffee: coffee, index: -1 });
   } else {
-    sessionStorage.setItem('gs_selected_coffee', JSON.stringify(coffee));
-    window.location.href = 'index.html?fromSearch=1';
+    // 콜백 없는 페이지(index.html 등)에서 클릭 시 루프 방지:
+    // coffee를 localStorage에 upsert 후 coffeeId로 tasting.html로 직접 이동
+    try {
+      const coffees = JSON.parse(localStorage.getItem('coffee_note_coffees') || '[]');
+      let idx = coffees.findIndex(function (c) { return c.name === coffee.name; });
+      if (idx < 0) {
+        coffees.push(coffee);
+        localStorage.setItem('coffee_note_coffees', JSON.stringify(coffees));
+        idx = coffees.length - 1;
+      }
+      console.log('[Session:Debug] Navigating to tasting, coffeeId=' + idx);
+      window.location.href = 'tasting.html?coffeeId=' + idx;
+    } catch (e) {
+      console.error('[Session:Debug] _onSelectCoffee fallback error:', e);
+      showToast('원두 선택 중 오류가 발생했습니다');
+    }
   }
 }
 

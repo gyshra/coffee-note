@@ -123,11 +123,17 @@ import { esc } from '../modules/utils.js';
       var color = CN.getDominantColor(r);
       var date = r.createdAt ? new Date(r.createdAt).toLocaleDateString("ko-KR", { month: "short", day: "numeric" }) : "";
       var flavors = (r.flavorSelections || []).slice(0, 3);
+      var starNum = r.starRating ? Number(r.starRating) : 0;
+      var starLabel = starNum > 0 ? '★' + starNum.toFixed(1) : '';
+      var recipeName = (r.recipe && r.recipe.name) ? r.recipe.name : '';
       return '<div class="mini-card" data-ri="' + i + '">' +
         '<div class="mc-wheel-ring" style="border:8px solid ' + color + ';border-radius:50%"></div>' +
-        '<div class="mc-content"><div class="mc-top"><div class="mc-date">' + esc(date) + '</div></div>' +
+        '<div class="mc-content"><div class="mc-top"><div class="mc-date">' + esc(date) + '</div>' +
+        (starLabel ? '<span class="mc-star-label">' + esc(starLabel) + '</span>' : '') +
+        '</div>' +
         '<div class="mc-bottom"><div class="mc-flavors">' + flavors.map(function (f) { return '<div class="mc-fdot" style="background:' + (f.color || color) + '"></div>'; }).join("") + '</div>' +
         '<div class="mc-name">' + esc(r.coffeeName) + '</div>' +
+        (recipeName ? '<div class="mc-recipe">' + esc(recipeName) + '</div>' : '') +
         '</div></div></div>';
     }).join("");
     html += '<div class="empty-card" onclick="location.href=\'tasting.html\'" style="background:var(--bg)">' +

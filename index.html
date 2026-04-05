@@ -146,7 +146,7 @@
       </div>
       <div id="ocrLoading"><div class="loading-track" style="margin:0 auto 12px"><div class="loading-fill"></div></div><div class="loading-txt">AI가 라벨을 분석 중...</div></div>
       <div class="ocr-result" id="ocrResult">
-        <img class="ocr-img" id="ocrPreview" alt="">
+        <img class="ocr-img" id="ocrPreview" alt="" style="width:100%;max-height:220px;object-fit:contain;border-radius:6px;background:#f0ece6;margin-bottom:10px">
         <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-sub);margin-bottom:8px">인식 결과</div>
         <div class="ocr-grid" id="ocrGrid"></div>
         <div class="ocr-btns"><button class="ocr-retry" onclick="resetOcr()">다시 찍기</button><button class="ocr-confirm" onclick="confirmOcr()">이 정보로 검색</button></div>

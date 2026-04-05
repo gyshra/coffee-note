@@ -14,7 +14,7 @@ import { esc } from '../modules/utils.js';
 (function () {
   var CN = window.CoffeeNote;
 
-  CN.renderBottomNav('');
+  CN.renderBottomNav('notes');
 
   CoffeeNote._onCoffeeSelected = function (result) {
     initWithCoffee(result.coffee, result.index || -1);
@@ -35,10 +35,47 @@ import { esc } from '../modules/utils.js';
   var isEditMode = !!editRecord;
   var currentFlavors = [];
 
+  // 레시피 페이지에서 "이 레시피로 기록하기" 클릭 시 전달되는 Active Session 레시피
+  var activeRecipe = (function () {
+    try {
+      var raw = sessionStorage.getItem('tasting_recipe');
+      if (raw) {
+        var r = JSON.parse(raw);
+        console.log('[Session:Debug] activeRecipe loaded:', r.name || r.id);
+        return r;
+      }
+    } catch (e) { console.error('[Session:Debug] tasting_recipe parse error:', e); }
+    return null;
+  })();
+
   function initWithCoffee(c, i) {
     coffee = c; idx = i;
     document.getElementById("missingCoffee").style.display = "none";
     document.getElementById("tastingMain").style.display = "block";
+
+    // Active Session 배너 표시
+    if (activeRecipe) {
+      var banner = document.getElementById("activeSessionBanner");
+      var detail = document.getElementById("activeSessionDetail");
+      if (banner && detail) {
+        var parts = [];
+        if (activeRecipe.name) parts.push(activeRecipe.name);
+        if (activeRecipe.water_temp || activeRecipe.temp) parts.push('온도 ' + (activeRecipe.water_temp || activeRecipe.temp));
+        if (activeRecipe.ratio) parts.push('비율 ' + activeRecipe.ratio);
+        if (activeRecipe.grind_size || activeRecipe.grind) parts.push('분쇄도 ' + (activeRecipe.grind_size || activeRecipe.grind));
+        detail.textContent = parts.join(' · ');
+        banner.style.display = 'block';
+      }
+      var clearBtn = document.getElementById("btnClearSession");
+      if (clearBtn) {
+        clearBtn.addEventListener("click", function () {
+          activeRecipe = null;
+          sessionStorage.removeItem('tasting_recipe');
+          document.getElementById("activeSessionBanner").style.display = "none";
+          console.log('[Session:Debug] activeRecipe cleared by user');
+        });
+      }
+    }
 
     var summaryHtml =
       '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
@@ -122,6 +159,26 @@ import { esc } from '../modules/utils.js';
     if (record.baseScores && pentaChart) {
       pentaChart.setValues(record.baseScores);
     }
+    // RC-3B: 저장된 향미 선택 복원 → currentFlavors 채우기 + 슬라이더 렌더링
+    if (record.flavorSelections && record.flavorSelections.length > 0) {
+      currentFlavors = record.flavorSelections.slice();
+      console.log('[Session:Debug] prefill flavorSelections:', currentFlavors.length, 'items');
+      renderFlavorSliders(currentFlavors);
+      // selectedFlavors UI: 빈 메시지 숨기고 태그 표시
+      var emptyMsg = document.getElementById("emptyFlavorsMsg");
+      if (emptyMsg) emptyMsg.style.display = "none";
+      var sfEl = document.getElementById("selectedFlavors");
+      if (sfEl) {
+        var tagsHtml = currentFlavors.map(function (f) {
+          return '<span class="flavor-tag selected" style="background:' + esc(f.color) + ';color:#fff;padding:4px 10px;border-radius:20px;font-size:12px;margin:2px">' + esc(f.ko) + '</span>';
+        }).join('');
+        // emptyMsg 뒤에 태그 삽입 (emptyMsg는 이미 숨겨짐)
+        sfEl.insertAdjacentHTML('beforeend', '<div id="prefillFlavors" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">' + tagsHtml + '</div>');
+      }
+      revealSection("step2");
+      revealSection("step3");
+      revealSection("step4");
+    }
   }
 
   function renderStars() {
@@ -175,6 +232,20 @@ import { esc } from '../modules/utils.js';
     var flavors = currentFlavors.slice();
 
     var recipe = (function () {
+      // activeRecipe(레시피 페이지에서 선택)가 있으면 우선 사용
+      if (activeRecipe) {
+        console.log('[Session:Debug] saving with activeRecipe id:', activeRecipe.id);
+        return {
+          recipe_id: activeRecipe.id || null,
+          name: activeRecipe.name || activeRecipe.by || '',
+          temp: activeRecipe.water_temp || activeRecipe.temp || '',
+          water: activeRecipe.water || '',
+          dose: activeRecipe.dose || '',
+          grind: activeRecipe.grind_size || activeRecipe.grind || '',
+          steps: activeRecipe.steps || []
+        };
+      }
+      // 수동 입력 레시피 폼
       var area = document.getElementById("recipeArea");
       if (!area || area.style.display === "none") return null;
       var temp = (document.getElementById("recipeTemp") || {}).value || "";
@@ -182,7 +253,7 @@ import { esc } from '../modules/utils.js';
       var dose = (document.getElementById("recipeDose") || {}).value || "";
       var grind = (document.getElementById("recipeGrind") || {}).value || "";
       if (!temp && !water && !dose) return null;
-      return { temp, water, dose, grind };
+      return { recipe_id: null, temp, water, dose, grind };
     })();
 
     var record = {
@@ -210,7 +281,9 @@ import { esc } from '../modules/utils.js';
       CN.addTastingRecord(record);
     }
 
-    // 비교 화면으로 이동
+    // Active Session 정리 후 비교 화면으로 이동
+    sessionStorage.removeItem('tasting_recipe');
+    console.log('[Session:Debug] record saved, recipe_id:', record.recipe && record.recipe.recipe_id);
     sessionStorage.setItem('last_tasting', JSON.stringify(record));
     sessionStorage.setItem('tasting_coffee', JSON.stringify(coffee));
     location.href = 'compare.html?coffeeId=' + (idx >= 0 ? idx : '');

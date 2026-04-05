@@ -42,15 +42,21 @@
       letter-spacing: 0.5px; text-transform: uppercase; margin-top: 1px;
     }
     .btn-icon {
-      background: none; border: none; cursor: pointer;
-      padding: 4px; display: flex; align-items: center; justify-content: center;
-      color: var(--text);
+      background: var(--text); border: none; cursor: pointer;
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--bg); flex-shrink: 0;
+      transition: opacity 0.15s;
     }
-    .btn-icon svg { width: 20px; height: 20px; }
+    .btn-icon:active { opacity: 0.75; }
+    .btn-icon svg { width: 18px; height: 18px; }
 
     /* ─── 본문 ── */
+    /* app-shell.css가 --header-h를 52px로 override하므로 명시적 값 사용 */
+    :root { --header-h: 56px; }
+    html  { scroll-padding-top: calc(56px + 44px); } /* 헤더+탭바 높이 확보 */
     .wrap {
-      padding-top: calc(var(--header-h) + 8px);
+      padding-top: calc(56px + 16px); /* 헤더(56px) + 여유(16px) */
       padding-bottom: calc(var(--nav-h) + 16px);
     }
 
@@ -88,6 +94,51 @@
     .sca-cell { padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); }
     .sca-key { font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-sub); margin-bottom: 3px; }
     .sca-val { font-size: 14px; font-weight: 700; color: var(--text); }
+
+    /* ─── SCA 가이드 텍스트 ── */
+    .sca-guide-text {
+      font-size: 10px; color: var(--text-sub); margin-top: 3px; line-height: 1.4;
+    }
+
+    /* ─── 원두 용량 입력 행 ── */
+    .sca-bean-row {
+      display: flex; align-items: center; gap: 10px;
+      margin: 10px 0; padding: 10px 12px;
+      background: var(--bg); border: 1.5px solid var(--accent-warm);
+    }
+    .sca-bean-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+      text-transform: uppercase; color: var(--text-sub); flex-shrink: 0;
+    }
+    .sca-bean-input-wrap { display: flex; align-items: center; gap: 4px; }
+    .sca-bean-input {
+      width: 54px; height: 34px;
+      border: 1.5px solid var(--text); background: var(--bg);
+      font-family: inherit; font-size: 20px; font-weight: 700;
+      color: var(--text); text-align: center; padding: 0 4px;
+      -moz-appearance: textfield; outline: none;
+    }
+    .sca-bean-input::-webkit-outer-spin-button,
+    .sca-bean-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .sca-bean-unit { font-size: 13px; font-weight: 700; color: var(--text); }
+    .sca-water-result {
+      flex: 1; text-align: right;
+      font-size: 16px; font-weight: 700; color: var(--accent-warm);
+    }
+
+    /* ─── 추천 로스팅 포인트 ── */
+    .roast-point {
+      display: flex; align-items: center; gap: 10px;
+      margin-top: 10px; padding: 8px 10px;
+      background: var(--bg); border: 1px solid var(--border);
+    }
+    .roast-point-badge {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+      padding: 4px 8px; background: var(--accent-warm); color: var(--bg); flex-shrink: 0;
+    }
+    .roast-point-info { flex: 1; }
+    .roast-point-temp { font-size: 12px; font-weight: 700; color: var(--text); }
+    .roast-point-tip  { font-size: 11px; color: var(--text-sub); margin-top: 2px; line-height: 1.4; }
 
     /* 맛 변화 예측 한 줄 */
     .predict-tips { margin-top: 10px; }
@@ -318,27 +369,57 @@
   <!-- SCA 황금 컵 AI 추천 레시피 -->
   <div class="sca-panel">
     <div class="sca-header">
-      <div class="sca-title">AI 추천 레시피</div>
-      <div class="sca-badge">SCA Golden Cup</div>
+      <div>
+        <div class="sca-title">AI 추천 레시피</div>
+        <div class="sca-guide-text">SCA Golden Cup 기준 · 추출 온도 90–96°C · 비율 1:15–1:18</div>
+      </div>
+      <div class="sca-badge">SCA 인증</div>
     </div>
+
+    <!-- 원두 용량 입력 & 총 물량 실시간 표시 -->
+    <div class="sca-bean-row">
+      <label class="sca-bean-label" for="beanGInput">원두</label>
+      <div class="sca-bean-input-wrap">
+        <input type="number" id="beanGInput" class="sca-bean-input"
+               value="15" min="5" max="60" step="1"
+               oninput="onBeanGChange(this.value)" aria-label="원두 용량(g)">
+        <span class="sca-bean-unit">g</span>
+      </div>
+      <div class="sca-water-result">→&nbsp;<span id="sca-total-water">225</span>&nbsp;ml</div>
+    </div>
+
     <div class="sca-recipe-grid" id="scaGrid">
       <div class="sca-cell"><div class="sca-key">물 온도</div><div class="sca-val" id="sca-temp">93°C</div></div>
       <div class="sca-cell"><div class="sca-key">원두:물 비율</div><div class="sca-val" id="sca-ratio">1:16</div></div>
       <div class="sca-cell"><div class="sca-key">분쇄도</div><div class="sca-val" id="sca-grind">중간</div></div>
       <div class="sca-cell"><div class="sca-key">총 추출 시간</div><div class="sca-val" id="sca-time">2:30</div></div>
     </div>
+
     <div class="predict-tips" id="brewTips">
       <div class="predict-tip">
         <span class="predict-tip-key">로스팅</span>
-        <span class="predict-tip-val">라이트 → 산미 강조 / 미디엄 → 균형 / 다크 → 쓴맛</span>
+        <span class="predict-tip-val" id="tip-roast">라이트 → 산미 강조 / 미디엄 → 균형 / 다크 → 쓴맛</span>
       </div>
       <div class="predict-tip">
         <span class="predict-tip-key">분쇄도</span>
-        <span class="predict-tip-val">굵게 → 연하고 깔끔 / 중간 → 균형 / 곱게 → 진하고 묵직</span>
+        <span class="predict-tip-val" id="tip-grind">추출법 선택 후 업데이트됩니다</span>
+      </div>
+      <div class="predict-tip">
+        <span class="predict-tip-key">클릭 수</span>
+        <span class="predict-tip-val" id="tip-clicks" style="color:var(--accent-warm)">추출법 선택 후 업데이트됩니다</span>
       </div>
       <div class="predict-tip">
         <span class="predict-tip-key">추출법</span>
         <span class="predict-tip-val">V60 → 섬세한 산미 / 에어로 → 진하고 복잡 / 프렌치프레스 → 묵직한 오일감</span>
+      </div>
+    </div>
+
+    <!-- 추천 로스팅 포인트 (원두 정보 있을 때만 표시) -->
+    <div class="roast-point" id="roastPoint" style="display:none">
+      <div class="roast-point-badge" id="roastBadge">미디엄</div>
+      <div class="roast-point-info">
+        <div class="roast-point-temp" id="roastTemp">210–220°C</div>
+        <div class="roast-point-tip"  id="roastTip">SCA Golden Cup 기준에 가장 근접</div>
       </div>
     </div>
   </div>
@@ -376,37 +457,8 @@
   <button class="btn-primary" onclick="goTasting()">이 레시피로 기록하기</button>
 </div>
 
-<!-- ── 하단 네비 ── -->
-<nav class="bottom-nav">
-  <a href="home.html" class="nav-item">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
-      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-      <polyline points="9,22 9,12 15,12 15,22"/>
-    </svg>
-    <span class="nav-label">홈</span>
-  </a>
-  <a href="index.html" class="nav-item">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
-      <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/>
-    </svg>
-    <span class="nav-label">탐색</span>
-  </a>
-  <a href="notes.html" class="nav-item">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
-      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-      <polyline points="14,2 14,8 20,8"/>
-      <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-    </svg>
-    <span class="nav-label">노트</span>
-  </a>
-  <a href="mypage.html" class="nav-item">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
-      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-      <circle cx="12" cy="7" r="4"/>
-    </svg>
-    <span class="nav-label">마이</span>
-  </a>
-</nav>
+<!-- ── 하단 네비 (renderBottomNav('recipe')로 동적 주입) ── -->
+<nav class="bottom-nav"></nav>
 
 <!-- ── 토스트 ── -->
 <div class="toast" id="toast"></div>

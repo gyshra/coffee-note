@@ -84,6 +84,80 @@ function getDefaultSteps(method) {
   ];
 }
 
+// ── 추출법별 물 투입 분배 정의 ──
+// bloom: 뜸들이기(2×원두g), remFrac: 나머지 물의 비율, totalFrac: 총량 대비 비율
+const BREW_WATER_DIST = {
+  V60: [
+    { action:'뜸들이기',    bloom:true },
+    { action:'1차 붓기',    remFrac:0.40 },
+    { action:'2차 붓기',    remFrac:0.35 },
+    { action:'마무리 붓기', remFrac:0.25 },
+    { action:'완료',        noWater:true },
+  ],
+  칼리타: [
+    { action:'뜸들이기',    bloom:true },
+    { action:'1차 붓기',    remFrac:0.45 },
+    { action:'2차 붓기',    remFrac:0.35 },
+    { action:'마무리 붓기', remFrac:0.20 },
+    { action:'완료',        noWater:true },
+  ],
+  케멕스: [
+    { action:'뜸들이기',    bloom:true },
+    { action:'1차 붓기',    remFrac:0.40 },
+    { action:'2차 붓기',    remFrac:0.35 },
+    { action:'마무리 붓기', remFrac:0.25 },
+    { action:'완료',        noWater:true },
+  ],
+  에어로프레스: [
+    { action:'분쇄/예열',  noWater:true },
+    { action:'원두 투입',  noWater:true },
+    { action:'물 붓기',    totalFrac:1.0 },
+    { action:'교반',       noWater:true },
+    { action:'프레스',     noWater:true },
+  ],
+  프렌치프레스: [
+    { action:'예열',       noWater:true },
+    { action:'원두 투입',  noWater:true },
+    { action:'물 붓기',    totalFrac:1.0 },
+    { action:'대기',       noWater:true },
+    { action:'프레스',     noWater:true },
+  ],
+};
+
+// ── 분쇄도 클릭 수 가이드 (Comandante 기준) ──
+const GRIND_GUIDE = {
+  V60:         { clicks:'20–26클릭', size:'중간-가늘게 (600–800µm)', tip:'굵을수록 추출 단축, 가늘수록 바디 증가' },
+  칼리타:      { clicks:'22–28클릭', size:'중간 (700–900µm)',        tip:'균일한 분쇄가 핵심 — 세팅 후 시험 추출 권장' },
+  케멕스:      { clicks:'28–34클릭', size:'굵게-중간 (850–1100µm)',  tip:'두꺼운 필터 감안해 일반보다 1–2단계 굵게' },
+  에어로프레스: { clicks:'12–18클릭', size:'중간-가늘게 (500–700µm)', tip:'압력 추출이므로 에스프레소보다 굵게 설정' },
+  프렌치프레스: { clicks:'32–40클릭', size:'굵게 (900–1200µm)',       tip:'고운 분쇄는 쓴맛 과추출 원인 — 굵게 유지 필수' },
+  에스프레소:  { clicks:'5–10클릭',  size:'매우 가늘게 (200–350µm)', tip:'0.5클릭 조정에도 추출 시간 5초 이상 변화 가능' },
+  콜드브루:    { clicks:'34–42클릭', size:'굵게 (1000–1300µm)',       tip:'장시간 접촉이므로 굵은 분쇄로 과추출 방지' },
+  모카포트:    { clicks:'10–16클릭', size:'중간-가늘게 (400–600µm)', tip:'에스프레소보다 조금 굵게 — 스팀압으로 추출' },
+};
+
+// ── 로스팅 포인트 가이드 ──
+const ROAST_GUIDE = {
+  light: {
+    label: '라이트 로스트',
+    point: '원두 내부 195–205°C (1차 크랙 직후)',
+    flavor: '산미·과일향·플로럴 강조',
+    tip: '섬세한 향미를 위해 낮은 추출 온도(88–92°C) 권장',
+  },
+  medium: {
+    label: '미디엄 로스트',
+    point: '원두 내부 210–220°C',
+    flavor: '산미·바디·단맛 균형',
+    tip: 'SCA Golden Cup 기준에 가장 근접, 폭넓은 추출법에 적합',
+  },
+  dark: {
+    label: '다크 로스트',
+    point: '원두 내부 225°C+ (2차 크랙 이후)',
+    flavor: '쓴맛·초콜릿·스모키 강조',
+    tip: '낮은 추출 온도(85–90°C)로 쓴맛 조절, 짧은 추출 시간 권장',
+  },
+};
+
 // ── 상태 ──
 let currentCoffee = null;
 let currentMethod = 'V60';
@@ -91,8 +165,19 @@ let selectedRecipeId = null;
 let selectedRecipe = null;
 let myGear = { dripper: 'V60', grinder: '핸드밀' };
 
+// ── recipeState: Phase 4 타이머에서 그대로 활용 가능한 계산 결과 구조 ──
+const recipeState = {
+  beanG:      15,       // 원두 그람 (사용자 입력)
+  totalWater: 225,      // 계산된 총 물 용량 (ml)
+  ratio:      '1:15',   // 현재 비율 문자열
+  ratioNum:   15,       // 파싱된 비율 숫자 (배수)
+  method:     'V60',    // 추출법
+  steps:      [],       // [{ action, detail, waterMl, time }] — 타이머 스텝 배열
+};
+
 // ── 초기화 ──
 document.addEventListener('DOMContentLoaded', () => {
+  if (window.CoffeeNote) window.CoffeeNote.renderBottomNav('recipe');
   loadGear();
   loadCoffee();
 });
@@ -144,18 +229,125 @@ function renderCoffeeBanner(coffee) {
   }
 }
 
-function updateScaRecipe() {
-  if (!currentCoffee) return;
-  const process = detectProcess(currentCoffee.process);
-  const roast = detectRoast(currentCoffee.roast_level || currentCoffee.roast || 'medium');
-  const matrix = SCA_MATRIX[process]?.[roast]?.[currentMethod]
-              || SCA_MATRIX['washed']['medium'][currentMethod];
+// ── 레시피 계산 엔진 ──
 
-  if (matrix) {
-    document.getElementById('sca-temp').textContent = matrix.temp;
-    document.getElementById('sca-ratio').textContent = matrix.ratio;
-    document.getElementById('sca-grind').textContent = matrix.grind;
-    document.getElementById('sca-time').textContent = matrix.time;
+/**
+ * 비율 문자열 파싱 → 물 배수 숫자
+ * '1:15' → 15 / '1:2.5' → 2.5
+ */
+function parseRatio(ratioStr) {
+  const m = String(ratioStr).match(/1[:\s]([\d.]+)/);
+  return m ? parseFloat(m[1]) : 15;
+}
+
+/**
+ * 원두 g × 비율 배수 → 총 물량 (ml, 소수점 1자리)
+ */
+function calcTotalWater(beanG, ratioNum) {
+  return Math.round(beanG * ratioNum * 10) / 10;
+}
+
+/**
+ * 추출법별 차수별 물 투입량 계산
+ * @returns { totalWater, ratioNum, steps: [{ action, detail, waterMl, time }] }
+ * Phase 4 타이머: recipeState.steps 배열을 그대로 활용
+ */
+function calculateWaterSteps(beanG, method, ratioStr) {
+  const ratioNum   = parseRatio(ratioStr);
+  const totalWater = calcTotalWater(beanG, ratioNum);
+  const dist       = BREW_WATER_DIST[method];
+  const baseSteps  = METHOD_STEPS[method] || getDefaultSteps(method);
+
+  if (!dist) {
+    // 계산 템플릿 없는 추출법 → 기존 스텝 + 총량 안내
+    return {
+      totalWater, ratioNum,
+      steps: baseSteps.map(s => ({ ...s, waterMl: null })),
+    };
+  }
+
+  const bloom     = Math.round(beanG * 2 * 10) / 10; // 뜸들이기: 원두 2배
+  const remaining = Math.round((totalWater - bloom) * 10) / 10;
+  let cumulative  = 0;
+
+  const steps = dist.map((item, i) => {
+    const base = baseSteps[i] || { time: '—' };
+    let waterMl = null;
+    let detail  = '';
+
+    if (item.bloom) {
+      waterMl    = bloom;
+      cumulative = bloom;
+      detail     = `${waterMl}ml 물을 붓고 30초 뜸들입니다 (원두 2배)`;
+    } else if (item.remFrac) {
+      waterMl     = Math.round(remaining * item.remFrac * 10) / 10;
+      cumulative  = Math.round((cumulative + waterMl) * 10) / 10;
+      detail      = `${waterMl}ml 붓기 → 누적 ${cumulative}ml / ${totalWater}ml`;
+    } else if (item.totalFrac) {
+      waterMl    = Math.round(totalWater * item.totalFrac * 10) / 10;
+      cumulative = waterMl;
+      detail     = `${waterMl}ml 전량 붓기`;
+    } else {
+      detail = base.detail || '';
+    }
+
+    return { action: item.action, detail, time: base.time || '—', waterMl };
+  });
+
+  return { totalWater, ratioNum, steps };
+}
+
+function updateScaRecipe() {
+  const process = currentCoffee ? detectProcess(currentCoffee.process) : 'washed';
+  const roast   = currentCoffee
+    ? detectRoast(currentCoffee.roast_level || currentCoffee.roast || 'medium')
+    : 'medium';
+  const matrix  = SCA_MATRIX[process]?.[roast]?.[currentMethod]
+               || SCA_MATRIX['washed']['medium'][currentMethod];
+
+  if (!matrix) return;
+
+  document.getElementById('sca-temp').textContent  = matrix.temp;
+  document.getElementById('sca-ratio').textContent = matrix.ratio;
+  document.getElementById('sca-grind').textContent = matrix.grind;
+  document.getElementById('sca-time').textContent  = matrix.time;
+
+  // ── 물 계산 업데이트 ──
+  const beanGEl = document.getElementById('beanGInput');
+  const beanG   = beanGEl ? (parseFloat(beanGEl.value) || recipeState.beanG) : recipeState.beanG;
+
+  const waterResult       = calculateWaterSteps(beanG, currentMethod, matrix.ratio);
+  recipeState.beanG       = beanG;
+  recipeState.method      = currentMethod;
+  recipeState.ratio       = matrix.ratio;
+  recipeState.ratioNum    = waterResult.ratioNum;
+  recipeState.totalWater  = waterResult.totalWater;
+  recipeState.steps       = waterResult.steps;
+
+  const waterEl = document.getElementById('sca-total-water');
+  if (waterEl) waterEl.textContent = waterResult.totalWater;
+
+  // ── 분쇄도 클릭 수 가이드 ──
+  const guide = GRIND_GUIDE[currentMethod];
+  if (guide) {
+    const tipGrind  = document.getElementById('tip-grind');
+    const tipClicks = document.getElementById('tip-clicks');
+    if (tipGrind)  tipGrind.textContent  = `${matrix.grind} · ${guide.size}`;
+    if (tipClicks) tipClicks.textContent = `${guide.clicks} (Comandante 기준) — ${guide.tip}`;
+  }
+
+  // ── 로스팅 포인트 (원두 정보 있을 때) ──
+  const roastEl = document.getElementById('roastPoint');
+  if (roastEl && currentCoffee) {
+    const roastInfo = ROAST_GUIDE[roast];
+    if (roastInfo) {
+      document.getElementById('roastBadge').textContent = roastInfo.label;
+      document.getElementById('roastTemp').textContent  = roastInfo.point;
+      document.getElementById('roastTip').textContent   = roastInfo.tip;
+      roastEl.style.display = 'flex';
+    }
+  } else if (roastEl) {
+    roastEl.style.display = 'none';
   }
 }
 
@@ -232,17 +424,44 @@ function renderRecipeList() {
         <button class="btn-secondary" style="margin-top:16px" onclick="openAddRecipe()">+ 레시피 등록</button>
       </div>
     `;
-    return;
+  } else {
+    recipes.forEach(r => { list.appendChild(buildRecipeCard(r)); });
   }
 
-  recipes.forEach(r => { list.appendChild(buildRecipeCard(r)); });
+  // ── 나의 레시피 전체 섹션: 현재 탭과 무관하게 저장된 모든 사용자 레시피 표시 ──
+  const shownIds = new Set(recipes.map(r => r.id));
+  const allMine = getAllUserRecipes().filter(r => !shownIds.has(r.id));
+  if (allMine.length > 0) {
+    const divider = document.createElement('div');
+    divider.innerHTML =
+      '<div class="section-label" style="padding:18px 0 8px;">나의 레시피 전체</div>' +
+      '<div class="section-divider"></div>';
+    list.appendChild(divider);
+    allMine.forEach(r => { list.appendChild(buildRecipeCard(r)); });
+  }
+}
+
+function getAllUserRecipes() {
+  try {
+    return JSON.parse(localStorage.getItem('coffee_note_recipes') || '[]');
+  } catch { return []; }
 }
 
 function getRecipesForMethod(method) {
   const saved = JSON.parse(localStorage.getItem('coffee_note_recipes') || '[]')
     .filter(r => r.dripper === method || r.brew_method === method);
 
-  const scaMatrix = SCA_MATRIX['washed']['medium'][method] || SCA_MATRIX['washed']['medium']['V60'];
+  const process   = currentCoffee ? detectProcess(currentCoffee.process) : 'washed';
+  const roast     = currentCoffee
+    ? detectRoast(currentCoffee.roast_level || currentCoffee.roast || 'medium')
+    : 'medium';
+  const scaMatrix = SCA_MATRIX[process]?.[roast]?.[method]
+                 || SCA_MATRIX['washed']['medium'][method]
+                 || SCA_MATRIX['washed']['medium']['V60'];
+
+  // 현재 beanG로 차수별 물 투입량 계산
+  const waterResult = calculateWaterSteps(recipeState.beanG, method, scaMatrix.ratio);
+
   const scaDefault = {
     id: 'sca_default_' + method,
     name: `${method} 기본 레시피`,
@@ -251,11 +470,11 @@ function getRecipesForMethod(method) {
     ratio: scaMatrix.ratio,
     grind_size: scaMatrix.grind,
     total_time: scaMatrix.time,
-    steps: METHOD_STEPS[method] || getDefaultSteps(method),
+    steps: waterResult.steps,     // ← 계산된 스텝 (waterMl 포함)
     is_expert: true,
     likes: 0,
     by: 'SCA Golden Cup',
-    badge: 'expert'
+    badge: 'expert',
   };
 
   return [scaDefault, ...saved];
@@ -364,6 +583,15 @@ window.changeGear = function (type) {
     if (type === 'dripper') window.selectMethod(options[idx]);
     toast(`${type === 'dripper' ? '드리퍼' : '그라인더'}를 변경했습니다`);
   }
+};
+
+// ── 원두 용량 입력 핸들러 (실시간 계산) ──
+window.onBeanGChange = function (val) {
+  const beanG = parseFloat(val);
+  if (isNaN(beanG) || beanG < 1) return;
+  recipeState.beanG = beanG;
+  updateScaRecipe();    // 총 물량 + 분쇄 가이드 갱신
+  renderRecipeList();   // SCA 기본 레시피 스텝 재렌더
 };
 
 window.openAddRecipe = function () {

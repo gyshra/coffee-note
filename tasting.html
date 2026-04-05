@@ -24,6 +24,15 @@
       <h1 class="title">테이스팅 기록</h1>
     </header>
 
+    <!-- Active Session: 레시피 페이지에서 "이 레시피로 기록하기" 진입 시 표시 -->
+    <div id="activeSessionBanner" style="display:none;margin:8px 0 0;padding:10px 14px;background:#F5F0EA;border-left:3px solid #8C7355;border-radius:6px;font-size:13px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:600;color:#8C7355">📋 레시피 적용 중</span>
+        <button type="button" id="btnClearSession" style="background:none;border:none;font-size:11px;color:#999;cursor:pointer;padding:2px 6px">해제</button>
+      </div>
+      <div id="activeSessionDetail" style="margin-top:4px;color:#555;line-height:1.5"></div>
+    </div>
+
     <div id="missingCoffee" class="empty" style="display:none">원두 정보를 찾을 수 없습니다.</div>
 
     <div id="tastingMain" style="display:none">

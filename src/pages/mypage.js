@@ -101,18 +101,11 @@ import { esc } from '../modules/utils.js';
       var coffee = CN.getCoffeeByIndex(idx);
       var origin = coffee && (coffee.region || coffee.country) ? coffee.region || coffee.country : "기타";
       originCount[origin] = (originCount[origin] || 0) + 1;
-      var sc = r.baseScores || r.scores;
-      if (sc) {
-        var vals = SLIDER_ORDER.map(function (k) {
-          return Number(sc[k]) || 0;
-        });
-        var m = vals.reduce(function (a, b) {
-          return a + b;
-        }, 0);
-        if (vals.length) {
-          sumAvg += m / vals.length;
-          countAvg++;
-        }
+      // Task C: starRating(5점 만점) 기준으로 평균 계산
+      var star = Number(r.starRating || r.rating || 0);
+      if (star > 0) {
+        sumAvg += star;
+        countAvg++;
       }
     });
     var topOrigin = "—";
@@ -123,7 +116,8 @@ import { esc } from '../modules/utils.js';
         topOrigin = o;
       }
     }
-    var avgLabel = countAvg ? (sumAvg / countAvg).toFixed(1) + " / 10" : "—";
+    // Score_avg = ΣScore / Count (5점 만점)
+    var avgLabel = countAvg ? (sumAvg / countAvg).toFixed(1) + " / 5" : "—";
     document.getElementById("statsRow").innerHTML =
       '<div class="statCard card"><div class="label caption">총 기록 수</div><div class="value">' +
       total +
