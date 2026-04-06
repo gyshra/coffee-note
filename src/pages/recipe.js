@@ -493,6 +493,8 @@ function buildRecipeCard(recipe) {
     : `<span class="recipe-badge mine">나의 레시피</span>`;
 
   const steps = recipe.steps || [];
+  window._brewStepsMap = window._brewStepsMap || {};
+  window._brewStepsMap[recipe.id] = steps;
   const stepsHtml = steps.map((s, i) => `
     <div class="step-row">
       <div class="step-num">${i + 1}</div>
@@ -526,6 +528,7 @@ function buildRecipeCard(recipe) {
       ${stepsHtml}
       <div style="padding:12px 16px; display:flex; gap:8px">
         <button class="btn-secondary" style="flex:1;height:40px;font-size:12px" onclick="event.stopPropagation();selectThisRecipe('${recipe.id}')">이 레시피 선택</button>
+        <button class="btn-secondary" style="height:40px;padding:0 14px;font-size:13px;background:var(--text);color:var(--bg);border-color:var(--text)" onclick="event.stopPropagation();openBrewPanel('${recipe.id}')">▶</button>
         ${!recipe.is_expert ? `<button class="btn-secondary" style="height:40px;padding:0 12px;font-size:12px;color:var(--text-sub)" onclick="event.stopPropagation();likeRecipe('${recipe.id}', this)">♡</button>` : ''}
       </div>
     </div>
@@ -609,3 +612,604 @@ window.goTasting = function () {
   }
   location.href = `tasting.html?coffeeId=${coffeeId}`;
 };
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 4 — Brew Timer
+// ═══════════════════════════════════════════════════════════════
+
+class BrewTimer {
+  constructor(steps) {
+    this.steps = steps;
+    this._parseStepMs(steps);
+    this.status = 'idle'; // idle | running | paused | finished
+    this.stepIndex = 0;
+    this.totalElapsedMs = 0;
+    this.stepElapsedMs = 0;
+    this._rafId = null;
+    this._startWall = 0;
+    this._startTotal = 0;
+    this.onTick = null;
+    this.onStepChange = null;
+    this.onFinish = null;
+  }
+
+  _parseStepMs(steps) {
+    const toMs = t => {
+      if (!t || t === '—') return null;
+      const parts = String(t).split(':');
+      if (parts.length === 2) return (parseInt(parts[0]) * 60 + parseInt(parts[1])) * 1000;
+      return null;
+    };
+    this.cumulativeMs = steps.map(s => toMs(s.time));
+    this.stepDurations = this.cumulativeMs.map((ms, i) => {
+      if (ms === null) return 0;
+      const prev = i > 0 ? (this.cumulativeMs[i - 1] || 0) : 0;
+      return Math.max(0, ms - prev);
+    });
+    const valid = this.cumulativeMs.filter(ms => ms !== null);
+    this.plannedTotalMs = valid.length > 0 ? Math.max(...valid) : 0;
+  }
+
+  get stepDuration() { return this.stepDurations[this.stepIndex] || 0; }
+
+  get stepRemainingMs() { return Math.max(0, this.stepDuration - this.stepElapsedMs); }
+
+  get state() {
+    return {
+      status: this.status,
+      stepIndex: this.stepIndex,
+      totalElapsedMs: this.totalElapsedMs,
+      stepElapsedMs: this.stepElapsedMs,
+      stepRemainingMs: this.stepRemainingMs,
+      stepDuration: this.stepDuration,
+      plannedTotalMs: this.plannedTotalMs,
+    };
+  }
+
+  start() {
+    if (this.status !== 'idle') return;
+    this.status = 'running';
+    this._startWall = performance.now();
+    this._startTotal = 0;
+    this._tick();
+  }
+
+  pause() {
+    if (this.status !== 'running') return;
+    this.status = 'paused';
+    cancelAnimationFrame(this._rafId);
+    if (this.onTick) this.onTick(this.state);
+  }
+
+  resume() {
+    if (this.status !== 'paused') return;
+    this.status = 'running';
+    this._startWall = performance.now();
+    this._startTotal = this.totalElapsedMs;
+    this._tick();
+  }
+
+  forceNextStep() {
+    if (this.status === 'idle') {
+      this.status = 'running';
+      this._startWall = performance.now();
+      this._startTotal = 0;
+    }
+    cancelAnimationFrame(this._rafId);
+    this._advance();
+  }
+
+  reset() {
+    cancelAnimationFrame(this._rafId);
+    this.status = 'idle';
+    this.stepIndex = 0;
+    this.totalElapsedMs = 0;
+    this.stepElapsedMs = 0;
+  }
+
+  _tick() {
+    this._rafId = requestAnimationFrame(() => {
+      if (this.status !== 'running') return;
+      const now = performance.now();
+      this.totalElapsedMs = this._startTotal + (now - this._startWall);
+      const stepStart = this.stepIndex > 0 ? (this.cumulativeMs[this.stepIndex - 1] || 0) : 0;
+      this.stepElapsedMs = this.totalElapsedMs - stepStart;
+
+      const dur = this.stepDuration;
+      if (dur > 0 && this.stepElapsedMs >= dur) {
+        this._advance();
+        return;
+      }
+
+      if (this.onTick) this.onTick(this.state);
+      this._tick();
+    });
+  }
+
+  _advance() {
+    const next = this.stepIndex + 1;
+    if (next >= this.steps.length) {
+      this.status = 'finished';
+      if (this.onTick) this.onTick(this.state);
+      if (this.onFinish) this.onFinish(this.totalElapsedMs);
+      return;
+    }
+    this.stepIndex = next;
+    if (this.onStepChange) this.onStepChange(this.stepIndex);
+    if (this.onTick) this.onTick(this.state);
+    if (this.stepDuration === 0) { this._advance(); return; }
+    if (this.status === 'running') this._tick();
+  }
+}
+
+// ─── VoiceSync ───────────────────────────────────────────────
+
+class VoiceSync {
+  constructor(options = {}) {
+    this.onResult = options.onResult || null;
+    this.onFallback = options.onFallback || null;
+    this.timerGetter = options.timerGetter || null;
+    this._recognition = null;
+    this._captureTime = 0;
+    this._active = false;
+  }
+
+  start() {
+    const Recog = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Recog) { if (this.onFallback) this.onFallback(); return; }
+
+    this._recognition = new Recog();
+    this._recognition.lang = 'ko-KR';
+    this._recognition.continuous = false;
+    this._recognition.interimResults = false;
+
+    const startWall = performance.now();
+
+    this._recognition.onstart = () => {
+      this._captureTime = this.timerGetter ? this.timerGetter() : 0;
+      this._active = true;
+    };
+
+    this._recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript.trim();
+      const waterMl = this._parseNumber(transcript);
+      const latency = performance.now() - startWall;
+      if (waterMl !== null && waterMl > 0) {
+        const actualTime = Math.max(0, this._captureTime - latency);
+        if (this.onResult) this.onResult(waterMl, this._captureTime, latency, actualTime);
+      } else {
+        if (this.onFallback) this.onFallback();
+      }
+      this._active = false;
+    };
+
+    this._recognition.onerror = () => { if (this.onFallback) this.onFallback(); this._active = false; };
+    this._recognition.onend = () => { this._active = false; };
+
+    try { this._recognition.start(); } catch { if (this.onFallback) this.onFallback(); }
+  }
+
+  stop() {
+    if (this._recognition) { try { this._recognition.abort(); } catch {} }
+    this._active = false;
+  }
+
+  get isActive() { return this._active; }
+
+  _parseNumber(text) {
+    const numMatch = text.match(/(\d+(\.\d+)?)/);
+    if (numMatch) return parseFloat(numMatch[1]);
+
+    const korMap = { '영':0,'일':1,'이':2,'삼':3,'사':4,'오':5,'육':6,'칠':7,'팔':8,'구':9,'십':10,'백':100 };
+    let result = 0; let current = 0;
+    for (const ch of text) {
+      const n = korMap[ch];
+      if (n === undefined) continue;
+      if (n === 100) { result += (current || 1) * 100; current = 0; }
+      else if (n === 10) { result += (current || 1) * 10; current = 0; }
+      else { current = n; }
+    }
+    result += current;
+    return result > 0 ? result : null;
+  }
+}
+
+// ─── 브루 패널 상태 ──────────────────────────────────────────
+
+let _brewTimer = null;
+let _voiceSync = null;
+let _auditLog = [];
+let _currentBrewSteps = [];
+
+// ─── 패널 열기/닫기 ─────────────────────────────────────────
+
+window.openBrewPanel = function (recipeId) {
+  const steps = (window._brewStepsMap || {})[recipeId];
+  if (!steps || steps.length === 0) { toast('스텝 정보가 없습니다'); return; }
+
+  _currentBrewSteps = steps;
+  _auditLog = [];
+
+  const nameEl = document.querySelector(`#recipe-${recipeId} .recipe-name`);
+  const label = nameEl ? nameEl.textContent : currentMethod;
+
+  _brewTimer = new BrewTimer(steps);
+  _brewTimer.onTick = _onBrewTick;
+  _brewTimer.onStepChange = _onBrewStepChange;
+  _brewTimer.onFinish = _onBrewFinish;
+
+  _voiceSync = new VoiceSync({
+    timerGetter: () => _brewTimer ? _brewTimer.totalElapsedMs : 0,
+    onResult: (waterMl, captureTime, latency, actualTime) => {
+      _recordAudit(waterMl, captureTime, latency, actualTime, 'voice');
+      _closeManualSheet();
+      _updateVoiceBtn(false);
+    },
+    onFallback: () => { openManualInput(); _updateVoiceBtn(false); },
+  });
+
+  const panel = document.getElementById('brewPanel');
+  const timerView = document.getElementById('timerView');
+  const reportView = document.getElementById('reportView');
+
+  reportView.classList.remove('open');
+  timerView.style.display = 'flex';
+  timerView.style.opacity = '1';
+  panel.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  document.getElementById('brewMethodLabel').textContent = label;
+  document.getElementById('brewTotalClock').textContent = '0:00';
+  document.getElementById('brewStepClock').textContent = '0:00';
+  document.getElementById('brewProgressFill').style.width = '0%';
+
+  _renderBrewStep(0);
+  _updatePlayBtn(false);
+};
+
+window.closeBrewPanel = function () {
+  if (_brewTimer) { _brewTimer.reset(); _brewTimer = null; }
+  if (_voiceSync) { _voiceSync.stop(); _voiceSync = null; }
+  document.getElementById('brewPanel').classList.remove('open');
+  document.getElementById('reportView').classList.remove('open');
+  document.body.style.overflow = '';
+  _closeManualSheet();
+};
+
+// ─── 컨트롤 ────────────────────────────────────────────────
+
+window.toggleBrewPlay = function () {
+  if (!_brewTimer) return;
+  if (_brewTimer.status === 'idle') {
+    _brewTimer.start(); _updatePlayBtn(true);
+  } else if (_brewTimer.status === 'running') {
+    _brewTimer.pause(); _updatePlayBtn(false);
+  } else if (_brewTimer.status === 'paused') {
+    _brewTimer.resume(); _updatePlayBtn(true);
+  }
+};
+
+window.triggerVoice = function () {
+  if (!_voiceSync) return;
+  if (_voiceSync.isActive) { _voiceSync.stop(); _updateVoiceBtn(false); return; }
+  const step = _currentBrewSteps[_brewTimer ? _brewTimer.stepIndex : 0];
+  if (!step || step.waterMl === null) { toast('이 스텝은 물 입력이 없습니다'); return; }
+  _updateVoiceBtn(true);
+  _voiceSync.start();
+  setTimeout(() => _updateVoiceBtn(false), 6000);
+};
+
+window.skipStep = function () {
+  if (!_brewTimer) return;
+  const idx = _brewTimer.stepIndex;
+  _recordAudit(null, _brewTimer.totalElapsedMs, 0, _brewTimer.totalElapsedMs, 'skipped');
+  _brewTimer.forceNextStep();
+  _updatePlayBtn(_brewTimer.status === 'running');
+};
+
+window.openManualInput = function () {
+  const sheet = document.getElementById('brewManualSheet');
+  if (!sheet) return;
+  sheet.classList.add('open');
+  document.getElementById('manualWaterInput').value = '';
+  setTimeout(() => document.getElementById('manualWaterInput').focus(), 350);
+};
+
+function _closeManualSheet() {
+  document.getElementById('brewManualSheet')?.classList.remove('open');
+}
+
+window.submitManualWater = function () {
+  const val = parseFloat(document.getElementById('manualWaterInput').value);
+  if (isNaN(val) || val <= 0) { toast('올바른 값을 입력하세요'); return; }
+  const now = _brewTimer ? _brewTimer.totalElapsedMs : 0;
+  _recordAudit(val, now, 0, now, 'manual');
+  _closeManualSheet();
+};
+
+// ─── 감사 로그 ──────────────────────────────────────────────
+
+function _recordAudit(actualWaterMl, captureTimeMs, latencyMs, actualTimeMs, method) {
+  const idx = _brewTimer ? _brewTimer.stepIndex : 0;
+  const step = _currentBrewSteps[idx];
+  _auditLog[idx] = {
+    stepIndex: idx,
+    action: step ? step.action : '',
+    expectedWaterMl: step ? step.waterMl : null,
+    actualWaterMl,
+    captureTimeMs,
+    latencyMs,
+    actualTimeMs,
+    inputMethod: method,
+  };
+}
+
+// ─── 타이머 콜백 ────────────────────────────────────────────
+
+function _onBrewTick(state) {
+  document.getElementById('brewTotalClock').textContent = _fmtMs(state.totalElapsedMs);
+  document.getElementById('brewStepClock').textContent = _fmtMs(state.stepRemainingMs);
+  const pct = state.stepDuration > 0
+    ? Math.min(100, (state.stepElapsedMs / state.stepDuration) * 100)
+    : 0;
+  document.getElementById('brewProgressFill').style.width = pct + '%';
+}
+
+function _onBrewStepChange(idx) { _renderBrewStep(idx); }
+
+function _onBrewFinish(totalElapsedMs) {
+  _updatePlayBtn(false);
+  const timerView = document.getElementById('timerView');
+  timerView.style.transition = 'opacity 0.3s';
+  timerView.style.opacity = '0';
+  setTimeout(() => {
+    timerView.style.display = 'none';
+    timerView.style.opacity = '';
+    timerView.style.transition = '';
+    const reportView = document.getElementById('reportView');
+    reportView.innerHTML = _buildReportHtml(totalElapsedMs);
+    reportView.classList.add('open');
+  }, 320);
+}
+
+// ─── 스텝 렌더 ──────────────────────────────────────────────
+
+function _renderBrewStep(idx) {
+  const steps = _currentBrewSteps;
+  const step = steps[idx];
+  if (!step) return;
+
+  const els = ['brewStepName', 'brewStepDetail', 'brewStepNum', 'brewWaterBadge']
+    .map(id => document.getElementById(id));
+
+  els.forEach(el => {
+    if (!el) return;
+    el.style.transition = 'opacity 0.2s, transform 0.2s';
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(8px)';
+  });
+
+  setTimeout(() => {
+    document.getElementById('brewStepNum').textContent = `STEP ${idx + 1} / ${steps.length}`;
+    document.getElementById('brewStepName').textContent = step.action;
+    document.getElementById('brewStepDetail').textContent = step.detail;
+
+    const waterEl = document.getElementById('brewWaterBadge');
+    if (step.waterMl !== null && step.waterMl !== undefined) {
+      waterEl.textContent = `${step.waterMl} ml`;
+      waterEl.style.display = 'block';
+    } else {
+      waterEl.style.display = 'none';
+    }
+
+    const nextHint = document.getElementById('brewNextHint');
+    const next = steps[idx + 1];
+    if (next) {
+      nextHint.style.display = 'block';
+      document.getElementById('brewNextName').textContent = next.action;
+    } else {
+      nextHint.style.display = 'none';
+    }
+
+    if (_brewTimer) {
+      document.getElementById('brewStepClock').textContent =
+        _fmtMs(_brewTimer.stepDurations[idx] || 0);
+    }
+
+    els.forEach(el => {
+      if (!el) return;
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+    });
+  }, 220);
+
+  _renderDots(idx, steps.length);
+}
+
+function _renderDots(current, total) {
+  const el = document.getElementById('brewStepDots');
+  if (!el) return;
+  el.innerHTML = Array.from({ length: total }, (_, i) => {
+    const cls = i < current ? 'brew-dot done' : i === current ? 'brew-dot active' : 'brew-dot';
+    return `<div class="${cls}"></div>`;
+  }).join('');
+}
+
+function _updatePlayBtn(playing) {
+  const icon = document.getElementById('playIcon');
+  if (!icon) return;
+  icon.innerHTML = playing
+    ? '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>'
+    : '<polygon points="5,3 19,12 5,21"/>';
+}
+
+function _updateVoiceBtn(active) {
+  const btn = document.getElementById('voiceBtn');
+  if (!btn) return;
+  btn.style.borderColor = active ? '#c8a06e' : 'rgba(240,237,232,0.15)';
+  btn.style.color = active ? '#c8a06e' : 'rgba(240,237,232,0.6)';
+}
+
+function _fmtMs(ms) {
+  if (!isFinite(ms) || ms < 0) ms = 0;
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+// ─── 리포트 ─────────────────────────────────────────────────
+
+function _buildReportHtml(totalElapsedMs) {
+  const steps = _currentBrewSteps;
+  const plannedMs = _brewTimer ? _brewTimer.plannedTotalMs : 0;
+  const timeVar = plannedMs > 0
+    ? Math.round(Math.abs(totalElapsedMs - plannedMs) / plannedMs * 100)
+    : 0;
+  const timeOk = timeVar <= 10;
+  const methodLabel = document.getElementById('brewMethodLabel')?.textContent || '';
+
+  const stepRows = steps.map((step, i) => {
+    const rec = _auditLog[i];
+    let varHtml = '<span class="report-step-variance" style="color:rgba(240,237,232,0.3)">—</span>';
+    if (rec && rec.inputMethod === 'skipped') {
+      varHtml = '<span class="report-step-variance" style="color:rgba(240,237,232,0.3)">건너뜀</span>';
+    } else if (rec && step.waterMl !== null && rec.actualWaterMl !== null) {
+      const v = Math.round(Math.abs(rec.actualWaterMl - step.waterMl) / step.waterMl * 100);
+      const dir = rec.actualWaterMl > step.waterMl ? '+' : '-';
+      const cls = v <= 10 ? 'ok' : 'warn';
+      varHtml = `<span class="report-step-variance ${cls}">${v > 0 ? dir : ''}${v}%</span>`;
+    }
+    const planNote = step.waterMl !== null
+      ? `<span style="color:rgba(240,237,232,0.4);font-size:11px;font-weight:400"> ${step.waterMl}ml</span>`
+      : '';
+    return `
+      <div class="report-step-row">
+        <div class="report-step-num">${i + 1}</div>
+        <div class="report-step-action">${step.action}${planNote}</div>
+        ${varHtml}
+      </div>`;
+  }).join('');
+
+  const insights = _generateInsights(steps, _auditLog, totalElapsedMs, plannedMs);
+  const insightsHtml = insights.length
+    ? `<div class="report-section-label">인사이트</div>
+       ${insights.map(ins => `<div class="report-insight ${ins.severity}">${ins.message}</div>`).join('')}`
+    : '';
+
+  const svgChart = _buildSvgChart(steps, _auditLog);
+  const chartHtml = svgChart
+    ? `<div class="report-section-label">물 투입 차트</div><div class="report-chart-wrap">${svgChart}</div>`
+    : '';
+
+  return `
+    <div class="report-header">
+      <div class="report-title">Brew Report</div>
+      <div class="report-subtitle">${methodLabel} · ${new Date().toLocaleDateString('ko-KR')}</div>
+    </div>
+    <div class="report-summary-row">
+      <div class="report-summary-cell">
+        <div class="report-summary-key">실제 시간</div>
+        <div class="report-summary-val ${timeOk ? 'ok' : 'warn'}">${_fmtMs(totalElapsedMs)}</div>
+      </div>
+      <div class="report-summary-cell">
+        <div class="report-summary-key">계획 시간</div>
+        <div class="report-summary-val">${_fmtMs(plannedMs)}</div>
+      </div>
+      <div class="report-summary-cell">
+        <div class="report-summary-key">시간 편차</div>
+        <div class="report-summary-val ${timeOk ? 'ok' : 'warn'}">${timeVar}%</div>
+      </div>
+    </div>
+    ${insightsHtml}
+    <div class="report-section-label">스텝별 분석</div>
+    ${stepRows}
+    ${chartHtml}
+    <button class="report-close-btn" onclick="closeBrewPanel()">완료</button>
+  `;
+}
+
+function _generateInsights(steps, auditLog, totalMs, plannedMs) {
+  const out = [];
+  const timeDiff = totalMs - plannedMs;
+  const timeVar = plannedMs > 0 ? Math.round(Math.abs(timeDiff) / plannedMs * 100) : 0;
+  const timeOver = timeVar > 10;
+  const isLate = timeDiff > 0;
+
+  steps.forEach((step, i) => {
+    if (step.waterMl === null) return;
+    const rec = auditLog[i];
+    if (!rec || rec.actualWaterMl === null) return;
+    const waterDiff = rec.actualWaterMl - step.waterMl;
+    const waterVar = Math.round(Math.abs(waterDiff) / step.waterMl * 100);
+    const waterOver = waterVar > 10;
+    const isMore = waterDiff > 0;
+
+    if (waterOver && timeOver) {
+      out.push({
+        message: `${step.action}: 물 ${isMore ? '과다' : '부족'} ${waterVar}% + 시간 ${isLate ? '초과' : '단축'} ${timeVar}%. `
+          + `다음엔 물을 ${isMore ? '줄이고' : '늘리고'} 페이스를 ${isLate ? '높여보세요' : '조절해보세요'}.`,
+        severity: 'warn',
+      });
+      return;
+    }
+    if (waterOver) {
+      out.push({
+        message: `${step.action}: 물 ${isMore ? '과다' : '부족'} ${waterVar}% (계획 ${step.waterMl}ml → 실제 ${rec.actualWaterMl}ml)`,
+        severity: 'warn',
+      });
+    }
+  });
+
+  if (timeOver && !out.some(o => o.message.includes('시간'))) {
+    out.push({
+      message: `총 시간 ${isLate ? '초과' : '단축'} ${timeVar}%. ${isLate ? '다음엔 붓는 속도를 높여보세요.' : '조금 더 천천히 진행해보세요.'}`,
+      severity: timeVar > 20 ? 'warn' : 'good',
+    });
+  }
+
+  if (out.length === 0) {
+    out.push({ message: '훌륭한 추출입니다! 모든 스텝이 계획과 근접했습니다.', severity: 'good' });
+  }
+  return out;
+}
+
+function _buildSvgChart(steps, auditLog) {
+  const indices = steps.reduce((acc, s, i) => { if (s.waterMl !== null) acc.push(i); return acc; }, []);
+  if (indices.length === 0) return '';
+
+  const barW = 28, gap = 18, maxH = 100, labelH = 20, padTop = 6, legendH = 20;
+  const svgW = Math.max(280, indices.length * (barW * 2 + gap) + 40);
+  const svgH = maxH + labelH + padTop + legendH;
+
+  const maxWater = Math.max(...indices.map(i => {
+    const rec = auditLog[i];
+    return Math.max(steps[i].waterMl, rec && rec.actualWaterMl ? rec.actualWaterMl : 0);
+  }));
+
+  const bars = indices.map((si, xi) => {
+    const step = steps[si];
+    const rec = auditLog[si];
+    const plan = step.waterMl;
+    const actual = rec && rec.actualWaterMl !== null ? rec.actualWaterMl : null;
+    const x = 20 + xi * (barW * 2 + gap);
+    const planH = maxWater > 0 ? Math.round((plan / maxWater) * maxH) : 0;
+    const actualH = actual !== null && maxWater > 0 ? Math.round((actual / maxWater) * maxH) : 0;
+    const varPct = actual !== null ? Math.round(Math.abs(actual - plan) / plan * 100) : null;
+    const aColor = varPct !== null && varPct > 10 ? '#f2994a' : '#6fcf97';
+
+    return `
+      <rect x="${x}" y="${padTop + maxH - planH}" width="${barW}" height="${planH}" fill="rgba(240,237,232,0.15)" rx="2"/>
+      ${actual !== null ? `<rect x="${x + barW + 2}" y="${padTop + maxH - actualH}" width="${barW}" height="${actualH}" fill="${aColor}" rx="2" opacity="0.8"/>` : ''}
+      <text x="${x + barW}" y="${padTop + maxH + 14}" text-anchor="middle" font-size="8" fill="rgba(240,237,232,0.4)">${step.action.slice(0, 4)}</text>
+    `;
+  }).join('');
+
+  return `
+    <svg viewBox="0 0 ${svgW} ${svgH}" width="100%" style="min-width:${Math.min(svgW, 280)}px;display:block">
+      ${bars}
+      <rect x="20" y="${svgH - 14}" width="8" height="8" fill="rgba(240,237,232,0.15)" rx="1"/>
+      <text x="32" y="${svgH - 7}" font-size="9" fill="rgba(240,237,232,0.4)">계획</text>
+      <rect x="64" y="${svgH - 14}" width="8" height="8" fill="#6fcf97" rx="1" opacity="0.8"/>
+      <text x="76" y="${svgH - 7}" font-size="9" fill="rgba(240,237,232,0.4)">실제</text>
+    </svg>
+  `;
+}

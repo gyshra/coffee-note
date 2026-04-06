@@ -305,6 +305,212 @@
       .bottom-nav { max-width: 480px; left: 50%; transform: translateX(-50%); right: auto; width: 480px; }
       .bottom-cta { max-width: 480px; left: 50%; transform: translateX(-50%); right: auto; width: 480px; }
     }
+
+    /* ─── 브루 패널 (Phase 4 타이머) ─── */
+    #brewPanel {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: #080808; color: #F0EDE8; flex-direction: column;
+      font-family: 'Pretendard Variable', 'Pretendard', -apple-system, sans-serif;
+    }
+    #brewPanel.open { display: flex; }
+
+    #timerView { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    .brew-top-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; flex-shrink: 0;
+    }
+    .brew-close-btn {
+      background: none; border: none; cursor: pointer;
+      color: rgba(240,237,232,0.5); font-family: inherit;
+      font-size: 14px; font-weight: 600; padding: 8px 0;
+    }
+    .brew-method-label {
+      font-size: 12px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: rgba(240,237,232,0.4);
+      max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .brew-total-time {
+      font-size: 13px; color: rgba(240,237,232,0.5);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .brew-step-area {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px; position: relative; overflow: hidden;
+    }
+    .brew-step-num {
+      font-size: 11px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: #c8a06e; margin-bottom: 16px;
+      transition: opacity 0.25s, transform 0.25s;
+    }
+    .brew-step-name {
+      font-size: 32px; font-weight: 700; text-align: center;
+      line-height: 1.2; color: #F0EDE8; margin-bottom: 12px;
+      transition: opacity 0.25s, transform 0.25s;
+    }
+    .brew-step-detail {
+      font-size: 15px; color: rgba(240,237,232,0.6); text-align: center;
+      line-height: 1.5; max-width: 320px;
+      transition: opacity 0.25s, transform 0.25s;
+    }
+    .brew-water-badge {
+      margin-top: 20px; padding: 8px 18px;
+      border: 1px solid #c8a06e; color: #c8a06e;
+      font-size: 16px; font-weight: 700;
+      transition: opacity 0.25s, transform 0.25s;
+    }
+    .brew-next-hint {
+      margin-top: 28px; font-size: 12px;
+      color: rgba(240,237,232,0.3); text-align: center;
+    }
+    .brew-next-hint span { color: rgba(240,237,232,0.5); }
+
+    .brew-progress-wrap { padding: 0 20px 8px; flex-shrink: 0; }
+    .brew-progress-track { height: 2px; background: rgba(240,237,232,0.15); }
+    .brew-progress-fill {
+      height: 100%; background: #c8a06e;
+      transition: width 0.12s linear; width: 0%;
+    }
+    .brew-step-dots {
+      display: flex; gap: 6px; margin-top: 10px; justify-content: center;
+    }
+    .brew-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: rgba(240,237,232,0.2); transition: background 0.3s;
+    }
+    .brew-dot.done { background: #c8a06e; }
+    .brew-dot.active { background: #F0EDE8; }
+
+    .brew-timer-display { text-align: center; padding: 16px 20px; flex-shrink: 0; }
+    .brew-step-clock {
+      font-size: 48px; font-weight: 700; letter-spacing: -2px;
+      color: #F0EDE8; font-variant-numeric: tabular-nums; line-height: 1;
+    }
+    .brew-step-clock-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: rgba(240,237,232,0.3); margin-top: 4px;
+    }
+
+    .brew-controls {
+      display: flex; gap: 12px; padding: 16px 20px;
+      flex-shrink: 0; align-items: center; justify-content: center;
+    }
+    .brew-btn-play {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: #c8a06e; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.15s, transform 0.15s; flex-shrink: 0;
+    }
+    .brew-btn-play:active { opacity: 0.8; transform: scale(0.95); }
+    .brew-btn-play svg { width: 28px; height: 28px; color: #080808; }
+    .brew-btn-side {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: rgba(240,237,232,0.08);
+      border: 1px solid rgba(240,237,232,0.15);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: rgba(240,237,232,0.6); transition: all 0.15s; flex-shrink: 0;
+    }
+    .brew-btn-side:active { background: rgba(240,237,232,0.15); }
+    .brew-btn-side svg { width: 20px; height: 20px; }
+
+    .brew-manual-sheet {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: #111; border-top: 1px solid rgba(240,237,232,0.15);
+      padding: 20px; transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1); z-index: 10;
+    }
+    .brew-manual-sheet.open { transform: translateY(0); }
+    .brew-manual-title {
+      font-size: 13px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: rgba(240,237,232,0.6); margin-bottom: 12px;
+    }
+    .brew-manual-row { display: flex; gap: 10px; align-items: center; }
+    .brew-manual-input {
+      flex: 1; height: 48px; background: rgba(240,237,232,0.08);
+      border: 1px solid rgba(240,237,232,0.2); color: #F0EDE8;
+      font-family: inherit; font-size: 20px; font-weight: 700;
+      text-align: center; outline: none; -moz-appearance: textfield;
+    }
+    .brew-manual-input::-webkit-outer-spin-button,
+    .brew-manual-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .brew-manual-unit { font-size: 14px; font-weight: 700; color: rgba(240,237,232,0.5); }
+    .brew-manual-confirm {
+      height: 48px; padding: 0 20px;
+      background: #c8a06e; border: none; cursor: pointer;
+      color: #080808; font-family: inherit; font-size: 14px; font-weight: 700;
+    }
+
+    #reportView {
+      display: none; flex: 1; flex-direction: column;
+      overflow-y: auto; background: #080808;
+    }
+    #reportView.open { display: flex; }
+    .report-header { padding: 24px 20px 16px; border-bottom: 1px solid rgba(240,237,232,0.1); }
+    .report-title {
+      font-size: 22px; font-weight: 700; color: #F0EDE8;
+      font-family: 'Playfair Display', serif;
+    }
+    .report-subtitle {
+      font-size: 12px; color: rgba(240,237,232,0.4); margin-top: 4px;
+      letter-spacing: 1px; text-transform: uppercase;
+    }
+    .report-summary-row {
+      display: flex; border-bottom: 1px solid rgba(240,237,232,0.1);
+    }
+    .report-summary-cell {
+      flex: 1; padding: 16px 20px;
+      border-right: 1px solid rgba(240,237,232,0.1);
+    }
+    .report-summary-cell:last-child { border-right: none; }
+    .report-summary-key {
+      font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: rgba(240,237,232,0.4); margin-bottom: 4px;
+    }
+    .report-summary-val {
+      font-size: 18px; font-weight: 700; color: #F0EDE8;
+      font-variant-numeric: tabular-nums;
+    }
+    .report-summary-val.ok { color: #6fcf97; }
+    .report-summary-val.warn { color: #f2994a; }
+    .report-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: rgba(240,237,232,0.35);
+      padding: 20px 20px 10px;
+    }
+    .report-insight {
+      margin: 0 20px 10px; padding: 12px 14px;
+      border-left: 3px solid #c8a06e;
+      background: rgba(200,160,110,0.08);
+      font-size: 13px; color: rgba(240,237,232,0.8); line-height: 1.5;
+    }
+    .report-insight.warn { border-left-color: #f2994a; background: rgba(242,153,74,0.08); }
+    .report-insight.good { border-left-color: #6fcf97; background: rgba(111,207,151,0.08); }
+    .report-step-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 20px; border-bottom: 1px solid rgba(240,237,232,0.06);
+    }
+    .report-step-num {
+      width: 22px; height: 22px; background: rgba(240,237,232,0.1);
+      color: rgba(240,237,232,0.5); font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .report-step-action { flex: 1; font-size: 13px; font-weight: 600; color: #F0EDE8; }
+    .report-step-variance {
+      font-size: 11px; font-weight: 700; padding: 2px 8px;
+      background: rgba(240,237,232,0.08);
+    }
+    .report-step-variance.ok { color: #6fcf97; }
+    .report-step-variance.warn { color: #f2994a; }
+    .report-chart-wrap { padding: 0 20px 20px; overflow-x: auto; }
+    .report-close-btn {
+      margin: 20px; height: 48px;
+      background: rgba(240,237,232,0.08); border: 1px solid rgba(240,237,232,0.2);
+      color: #F0EDE8; font-family: inherit; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .report-close-btn:active { background: rgba(240,237,232,0.15); }
   </style>
   <link rel="stylesheet" href="common.css">
   <link rel="stylesheet" href="app-shell.css">
@@ -462,6 +668,78 @@
 
 <!-- ── 토스트 ── -->
 <div class="toast" id="toast"></div>
+
+<!-- ── 브루 패널 (Phase 4 타이머) ── -->
+<div id="brewPanel">
+
+  <!-- 타이머 뷰 -->
+  <div id="timerView">
+    <div class="brew-top-bar">
+      <button class="brew-close-btn" onclick="closeBrewPanel()">✕ 닫기</button>
+      <div class="brew-method-label" id="brewMethodLabel">V60</div>
+      <div class="brew-total-time" id="brewTotalClock">0:00</div>
+    </div>
+
+    <div class="brew-step-area">
+      <div class="brew-step-num" id="brewStepNum">STEP 1 / 5</div>
+      <div class="brew-step-name" id="brewStepName">준비</div>
+      <div class="brew-step-detail" id="brewStepDetail">▶ 버튼을 눌러 시작하세요</div>
+      <div class="brew-water-badge" id="brewWaterBadge" style="display:none">0 ml</div>
+      <div class="brew-next-hint" id="brewNextHint" style="display:none">
+        다음: <span id="brewNextName"></span>
+      </div>
+
+      <!-- 수동 입력 시트 -->
+      <div class="brew-manual-sheet" id="brewManualSheet">
+        <div class="brew-manual-title">실제 물 투입량 입력</div>
+        <div class="brew-manual-row">
+          <input type="number" class="brew-manual-input" id="manualWaterInput"
+            placeholder="0" min="0" max="1000"
+            onkeydown="if(event.key==='Enter') submitManualWater()">
+          <span class="brew-manual-unit">ml</span>
+          <button class="brew-manual-confirm" onclick="submitManualWater()">확인</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="brew-progress-wrap">
+      <div class="brew-progress-track">
+        <div class="brew-progress-fill" id="brewProgressFill"></div>
+      </div>
+      <div class="brew-step-dots" id="brewStepDots"></div>
+    </div>
+
+    <div class="brew-timer-display">
+      <div class="brew-step-clock" id="brewStepClock">0:00</div>
+      <div class="brew-step-clock-label">이번 스텝 남은 시간</div>
+    </div>
+
+    <div class="brew-controls">
+      <button class="brew-btn-side" id="voiceBtn" onclick="triggerVoice()" title="음성 입력">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+        </svg>
+      </button>
+      <button class="brew-btn-play" id="playBtn" onclick="toggleBrewPlay()">
+        <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor">
+          <polygon points="5,3 19,12 5,21"/>
+        </svg>
+      </button>
+      <button class="brew-btn-side" onclick="skipStep()" title="다음 스텝으로">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5,4 15,12 5,20" fill="currentColor" stroke="none"/>
+          <line x1="19" y1="5" x2="19" y2="19"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- 리포트 뷰 (추출 완료 후) -->
+  <div id="reportView"></div>
+
+</div>
 
 <!-- ── 스크립트 ── -->
 <script src="common.js"></script>
