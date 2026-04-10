@@ -254,6 +254,97 @@ const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY"; // 예: eyJhbGciOi...
     },
 
     /**
+     * 레시피 저장 (upsert)
+     * recipe: recipe-register.js에서 생성된 정규화 객체
+     */
+    saveRecipe: async function (recipe) {
+      var client = getClient();
+      if (!client) return null;
+      var user = await SupaAuth.getUser();
+      if (!user) return null;
+
+      try {
+        var row = {
+          user_id:     user.id,
+          local_id:    recipe.id || null,
+          name:        recipe.name || recipe.title || '',
+          brew_method: recipe.brew_method || recipe.tool || '',
+          temp:        recipe.water_temp || recipe.temp || '',
+          water:       recipe.water || '',
+          dose:        recipe.dose || '',
+          grind:       recipe.grind_size || recipe.grind || '',
+          note:        recipe.note || '',
+          steps:       recipe.steps || [],
+          is_public:   recipe.is_public !== false,
+        };
+        var { data, error } = await client
+          .from('recipes')
+          .upsert(row, { onConflict: 'local_id,user_id' })
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      } catch (e) {
+        console.error('[CoffeeNote] 레시피 저장 오류:', e);
+        return null;
+      }
+    },
+
+    /**
+     * 공개 레시피 목록 조회 (커뮤니티 탭용)
+     * brewMethod: 추출법 필터 (선택)
+     */
+    getPublicRecipes: async function (brewMethod) {
+      var client = getClient();
+      if (!client) return [];
+      try {
+        var query = client
+          .from('recipes')
+          .select('*')
+          .eq('is_public', true)
+          .order('likes', { ascending: false })
+          .limit(20);
+        if (brewMethod) query = query.eq('brew_method', brewMethod);
+        var { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+      } catch (e) {
+        console.error('[CoffeeNote] 공개 레시피 조회 오류:', e);
+        return [];
+      }
+    },
+
+    /**
+     * 커뮤니티 추출법 분포 통계
+     * tastings 테이블의 brew_method 집계 (실제 추출 데이터 기반)
+     */
+    getMethodStats: async function () {
+      var client = getClient();
+      if (!client) return null;
+      try {
+        var { data, error } = await client
+          .from('tastings')
+          .select('brew_method')
+          .not('brew_method', 'is', null);
+        if (error || !data || !data.length) return null;
+        var counts = {};
+        data.forEach(function (r) {
+          var m = r.brew_method;
+          if (m) counts[m] = (counts[m] || 0) + 1;
+        });
+        var total = Object.values(counts).reduce(function (s, n) { return s + n; }, 0);
+        if (!total) return null;
+        return Object.entries(counts)
+          .sort(function (a, b) { return b[1] - a[1]; })
+          .slice(0, 8)
+          .map(function (e) { return { method: e[0], pct: Math.round(e[1] / total * 100) }; });
+      } catch (e) {
+        console.error('[CoffeeNote] 통계 조회 오류:', e);
+        return null;
+      }
+    },
+
+    /**
      * localStorage 데이터를 Supabase로 마이그레이션
      * 로그인 직후 1회 실행 → 기존 데이터를 클라우드에 업로드
      */

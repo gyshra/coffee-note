@@ -90,6 +90,40 @@ import { esc } from '../modules/utils.js';
 
   var arrowSvg='<svg class="dl-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 18 15 12 9 6"/></svg>';
 
+  // 브루 메트릭스 HTML 생성
+  function buildBrewMetricsHtml(bm) {
+    if (!bm) return '';
+    function fmtMs(ms) {
+      var s = Math.round(ms / 1000);
+      return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    }
+    var timeOk = (bm.timeVariancePct || 0) <= 10;
+    var timeColor = timeOk ? '#6fcf97' : '#f2994a';
+    var html = '<div style="margin-top:20px;padding:16px;background:var(--card);border-radius:12px;border:1px solid var(--border)">';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--text-sub);letter-spacing:0.08em;margin-bottom:12px">BREW METRICS</div>';
+    // 시간 요약
+    html += '<div style="display:flex;gap:12px;margin-bottom:12px">';
+    html += '<div style="flex:1;text-align:center"><div style="font-size:11px;color:var(--text-sub)">계획</div><div style="font-size:18px;font-weight:700">'+ fmtMs(bm.plannedTotalMs) +'</div></div>';
+    html += '<div style="flex:1;text-align:center"><div style="font-size:11px;color:var(--text-sub)">실제</div><div style="font-size:18px;font-weight:700;color:'+timeColor+'">'+ fmtMs(bm.totalElapsedMs) +'</div></div>';
+    html += '<div style="flex:1;text-align:center"><div style="font-size:11px;color:var(--text-sub)">시간 편차</div><div style="font-size:18px;font-weight:700;color:'+timeColor+'">'+ (bm.timeVariancePct != null ? bm.timeVariancePct + '%' : '—') +'</div></div>';
+    html += '</div>';
+    // 스텝별 물량 편차 바
+    if (bm.stepVariances && bm.stepVariances.length) {
+      html += '<div style="font-size:11px;color:var(--text-sub);margin-bottom:6px">스텝별 물량 편차</div>';
+      bm.stepVariances.forEach(function (sv) {
+        var pct = Math.min(sv.variancePct, 50); // 50% 이상은 최대 바로 클리핑
+        var barColor = sv.variancePct <= 10 ? '#6fcf97' : '#f2994a';
+        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
+        html += '<div style="width:80px;font-size:11px;color:var(--text-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(sv.action)+'</div>';
+        html += '<div style="flex:1;height:6px;background:var(--border);border-radius:3px"><div style="width:'+Math.round(pct/50*100)+'%;height:100%;background:'+barColor+';border-radius:3px"></div></div>';
+        html += '<div style="width:32px;font-size:11px;text-align:right;color:'+barColor+'">'+sv.variancePct+'%</div>';
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+    return html;
+  }
+
   var body=document.getElementById("detailBody");
   body.innerHTML=
     photosHtml+
@@ -106,7 +140,10 @@ import { esc } from '../modules/utils.js';
     '<div id="recipeInlineDetail" style="display:none"></div>'+
     '<button type="button" class="detail-link-item" id="linkLocation"><span class="dl-label">장소</span><span class="dl-preview">'+esc(locationPreview)+'</span>'+arrowSvg+'</button>'+
     '</div>'+
-    '<div style="display:flex;gap:10px;margin-top:24px">'+
+    buildBrewMetricsHtml(record.brewMetrics)+
+    ((record.recipe_id||record.brewMethod)?
+      '<button type="button" class="btn-secondary" id="btnRebrewNote" style="width:100%;margin-top:16px">▶ 이 레시피로 다시 브루</button>':'')+
+    '<div style="display:flex;gap:10px;margin-top:12px">'+
     '<button type="button" class="btn-primary" id="btnViewCard" style="flex:1">센서리 카드</button>'+
     '<button type="button" class="btn-secondary" id="btnEditNote" style="flex:1">수정</button>'+
     '<button type="button" id="btnDeleteNote" style="flex:0 0 auto;padding:16px 20px;background:none;border:1.5px solid #C04828;color:#C04828;font-family:Pretendard Variable,sans-serif;font-size:15px;font-weight:500;cursor:pointer">삭제</button>'+
@@ -194,6 +231,21 @@ import { esc } from '../modules/utils.js';
     document.getElementById("btnShareCard").onclick=function(){CardGenerator.share(cardUrl);};
     document.getElementById("btnCloseCard").onclick=function(){overlay.style.display="none";};
   });
+
+  // 다시 브루
+  var rebrewBtn=document.getElementById("btnRebrewNote");
+  if(rebrewBtn){
+    rebrewBtn.addEventListener("click",function(){
+      var rid=record.recipe_id||null;
+      if(rid){
+        sessionStorage.setItem("pending_brew_id",rid);
+        location.href="recipe.html";
+      } else {
+        // recipe_id 없음 → 브루메서드만 있는 경우: recipe.html로 이동 (방법 칩 선택은 수동)
+        location.href="recipe.html"+(record.brewMethod?"?method="+encodeURIComponent(record.brewMethod):"");
+      }
+    });
+  }
 
   // 수정 → tasting.html?editIdx=N
   document.getElementById("btnEditNote").addEventListener("click",function(){

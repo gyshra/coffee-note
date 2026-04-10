@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+  <link rel="manifest" href="/manifest.json">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Coffee Note. — 레시피</title>
   <link rel="stylesheet" href="common.css">
@@ -504,13 +505,19 @@
     .report-step-variance.ok { color: #6fcf97; }
     .report-step-variance.warn { color: #f2994a; }
     .report-chart-wrap { padding: 0 20px 20px; overflow-x: auto; }
+    .report-action-row { display: flex; gap: 8px; padding: 16px 20px 20px; }
     .report-close-btn {
-      margin: 20px; height: 48px;
+      flex: 1; height: 48px;
       background: rgba(240,237,232,0.08); border: 1px solid rgba(240,237,232,0.2);
       color: #F0EDE8; font-family: inherit; font-size: 14px; font-weight: 700;
       cursor: pointer; transition: background 0.15s;
     }
     .report-close-btn:active { background: rgba(240,237,232,0.15); }
+    .report-close-btn.primary {
+      background: rgba(240,237,232,0.18); border-color: rgba(240,237,232,0.5);
+    }
+    .report-close-btn.primary:active { background: rgba(240,237,232,0.28); }
+    .report-close-btn.secondary { flex: 0 0 auto; width: 72px; font-weight: 400; }
   </style>
   <link rel="stylesheet" href="common.css">
   <link rel="stylesheet" href="app-shell.css">

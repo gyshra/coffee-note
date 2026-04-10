@@ -211,6 +211,17 @@ function loadCoffee() {
   }
 
   renderRecipeList();
+
+  // recipe-detail "▶ 브루하기" 클릭 시 전달되는 레시피 ID 자동 실행
+  const pendingBrewId = sessionStorage.getItem('pending_brew_id');
+  if (pendingBrewId) {
+    sessionStorage.removeItem('pending_brew_id');
+    setTimeout(() => {
+      if ((window._brewStepsMap || {})[pendingBrewId]) {
+        openBrewPanel(pendingBrewId);
+      }
+    }, 150);
+  }
 }
 
 function getCoffeesLocal() {
@@ -382,15 +393,40 @@ window.selectMethod = function (method, el) {
 
 async function loadCommunityStats() {
   if (!currentCoffee) return;
-  const dummy = [
-    { method:'V60', pct:38 },
-    { method:'에어로프레스', pct:22 },
-    { method:'프렌치프레스', pct:15 },
-    { method:'에스프레소', pct:12 },
-    { method:'케멕스', pct:8 },
-    { method:'기타', pct:5 },
-  ];
-  renderMethodChart(dummy);
+
+  let data = null;
+
+  // 1순위: Supabase 전체 커뮤니티 통계 (설정된 경우)
+  if (window.SupaDB) {
+    data = await window.SupaDB.getMethodStats();
+  }
+
+  // 2순위: 내 로컬 테이스팅 기록 집계 (항상 실데이터)
+  if (!data || !data.length) {
+    try {
+      const records = JSON.parse(localStorage.getItem('coffee_note_tasting_records') || '[]');
+      const counts = {};
+      records.forEach(r => { if (r.brewMethod) counts[r.brewMethod] = (counts[r.brewMethod] || 0) + 1; });
+      const total = Object.values(counts).reduce((s, n) => s + n, 0);
+      if (total > 0) {
+        data = Object.entries(counts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 6)
+          .map(([method, count]) => ({ method, pct: Math.round(count / total * 100) }));
+      }
+    } catch (e) {}
+  }
+
+  // 3순위: 더미 (데이터 없을 때만)
+  if (!data || !data.length) {
+    data = [
+      { method:'V60', pct:38 }, { method:'에어로프레스', pct:22 },
+      { method:'프렌치프레스', pct:15 }, { method:'에스프레소', pct:12 },
+      { method:'케멕스', pct:8 }, { method:'기타', pct:5 },
+    ];
+  }
+
+  renderMethodChart(data);
   document.getElementById('methodStats').style.display = 'block';
 }
 
@@ -449,7 +485,7 @@ function getAllUserRecipes() {
 
 function getRecipesForMethod(method) {
   const saved = JSON.parse(localStorage.getItem('coffee_note_recipes') || '[]')
-    .filter(r => r.dripper === method || r.brew_method === method);
+    .filter(r => r.dripper === method || r.brew_method === method || r.tool === method);
 
   const process   = currentCoffee ? detectProcess(currentCoffee.process) : 'washed';
   const roast     = currentCoffee
@@ -820,6 +856,35 @@ let _brewTimer = null;
 let _voiceSync = null;
 let _auditLog = [];
 let _currentBrewSteps = [];
+let _lastBrewElapsedMs = 0;
+let _currentRecipeId = null;
+let _wakeLock = null;
+
+// Page Visibility: 화면이 다시 보이면 타이머 드리프트 보정
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible' && _brewTimer && _brewTimer.status === 'running') {
+    // _startWall을 현재 시각으로 재설정하여 숨겨진 동안의 elapsed를 흡수
+    const now = performance.now();
+    _brewTimer._startTotal = _brewTimer.totalElapsedMs;
+    _brewTimer._startWall = now;
+  }
+  // Wake Lock이 해제됐으면 재획득 시도
+  if (document.visibilityState === 'visible' && _wakeLock === null && _brewTimer && _brewTimer.status === 'running') {
+    _acquireWakeLock();
+  }
+});
+
+async function _acquireWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    _wakeLock = await navigator.wakeLock.request('screen');
+    _wakeLock.addEventListener('release', function () { _wakeLock = null; });
+  } catch (e) { /* 권한 거부 등 무시 */ }
+}
+
+function _releaseWakeLock() {
+  if (_wakeLock) { _wakeLock.release(); _wakeLock = null; }
+}
 
 // ─── 패널 열기/닫기 ─────────────────────────────────────────
 
@@ -829,6 +894,8 @@ window.openBrewPanel = function (recipeId) {
 
   _currentBrewSteps = steps;
   _auditLog = [];
+  _currentRecipeId = recipeId;
+  _lastBrewElapsedMs = 0;
 
   const nameEl = document.querySelector(`#recipe-${recipeId} .recipe-name`);
   const label = nameEl ? nameEl.textContent : currentMethod;
@@ -857,6 +924,7 @@ window.openBrewPanel = function (recipeId) {
   timerView.style.opacity = '1';
   panel.classList.add('open');
   document.body.style.overflow = 'hidden';
+  _acquireWakeLock();
 
   document.getElementById('brewMethodLabel').textContent = label;
   document.getElementById('brewTotalClock').textContent = '0:00';
@@ -870,6 +938,7 @@ window.openBrewPanel = function (recipeId) {
 window.closeBrewPanel = function () {
   if (_brewTimer) { _brewTimer.reset(); _brewTimer = null; }
   if (_voiceSync) { _voiceSync.stop(); _voiceSync = null; }
+  _releaseWakeLock();
   document.getElementById('brewPanel').classList.remove('open');
   document.getElementById('reportView').classList.remove('open');
   document.body.style.overflow = '';
@@ -958,6 +1027,7 @@ function _onBrewTick(state) {
 function _onBrewStepChange(idx) { _renderBrewStep(idx); }
 
 function _onBrewFinish(totalElapsedMs) {
+  _lastBrewElapsedMs = totalElapsedMs;
   _updatePlayBtn(false);
   const timerView = document.getElementById('timerView');
   timerView.style.transition = 'opacity 0.3s';
@@ -971,6 +1041,28 @@ function _onBrewFinish(totalElapsedMs) {
     reportView.classList.add('open');
   }, 320);
 }
+
+function _goToTasting() {
+  const coffeeId = new URLSearchParams(location.search).get('coffeeId');
+  const plannedMs = _brewTimer ? _brewTimer.plannedTotalMs : 0;
+  const brewResult = {
+    method:         recipeState.method,
+    beanG:          recipeState.beanG,
+    totalWater:     recipeState.totalWater,
+    ratio:          recipeState.ratio,
+    steps:          recipeState.steps,
+    totalElapsedMs: _lastBrewElapsedMs,
+    plannedTotalMs: plannedMs,
+    auditLog:       _auditLog.slice(),
+    coffeeId:       coffeeId,
+    recipeId:       _currentRecipeId,
+  };
+  sessionStorage.setItem('brew_result', JSON.stringify(brewResult));
+  location.href = coffeeId
+    ? `tasting.html?coffeeId=${coffeeId}&from=brew`
+    : 'tasting.html?from=brew';
+}
+window._goToTasting = _goToTasting;
 
 // ─── 스텝 렌더 ──────────────────────────────────────────────
 
@@ -1123,7 +1215,10 @@ function _buildReportHtml(totalElapsedMs) {
     <div class="report-section-label">스텝별 분석</div>
     ${stepRows}
     ${chartHtml}
-    <button class="report-close-btn" onclick="closeBrewPanel()">완료</button>
+    <div class="report-action-row">
+      <button class="report-close-btn secondary" onclick="closeBrewPanel()">닫기</button>
+      <button class="report-close-btn primary" onclick="window._goToTasting()">테이스팅 노트 작성 →</button>
+    </div>
   `;
 }
 

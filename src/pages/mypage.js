@@ -90,42 +90,55 @@ import { esc } from '../modules/utils.js';
   function renderStats() {
     var records = CN.getTastingRecords();
     var total = records.length;
-    var originCount = {};
-    var sumAvg = 0;
-    var countAvg = 0;
+    var originCount = {}, methodCount = {}, flavorCount = {};
+    var sumAvg = 0, countAvg = 0;
+
     records.forEach(function (r) {
-      var idx = r.coffeeIndex;
-      if (idx === undefined && r.coffeeId !== undefined) {
-        idx = Number(r.coffeeId);
-      }
+      // 산지
+      var idx = r.coffeeIndex !== undefined ? r.coffeeIndex : Number(r.coffeeId);
       var coffee = CN.getCoffeeByIndex(idx);
       var origin = coffee && (coffee.region || coffee.country) ? coffee.region || coffee.country : "기타";
       originCount[origin] = (originCount[origin] || 0) + 1;
-      // Task C: starRating(5점 만점) 기준으로 평균 계산
+
+      // 평점
       var star = Number(r.starRating || r.rating || 0);
-      if (star > 0) {
-        sumAvg += star;
-        countAvg++;
-      }
+      if (star > 0) { sumAvg += star; countAvg++; }
+
+      // 주 추출법
+      if (r.brewMethod) methodCount[r.brewMethod] = (methodCount[r.brewMethod] || 0) + 1;
+
+      // 향미 빈도
+      (r.flavorSelections || []).forEach(function (f) {
+        var label = (typeof f === "string" ? f : f.ko) || "";
+        if (label) flavorCount[label] = (flavorCount[label] || 0) + 1;
+      });
     });
-    var topOrigin = "—";
-    var maxC = 0;
-    for (var o in originCount) {
-      if (originCount[o] > maxC) {
-        maxC = originCount[o];
-        topOrigin = o;
-      }
+
+    function topKey(obj) {
+      var best = "—", max = 0;
+      for (var k in obj) { if (obj[k] > max) { max = obj[k]; best = k; } }
+      return best;
     }
-    // Score_avg = ΣScore / Count (5점 만점)
+
     var avgLabel = countAvg ? (sumAvg / countAvg).toFixed(1) + " / 5" : "—";
+    var topMethod = topKey(methodCount);
+    var topFlavor = topKey(flavorCount);
+
+    // 추출 정확도: brewMetrics가 있는 기록의 timeVariancePct 평균
+    var brewAccuracyLabel = "—";
+    var bmRecs = records.filter(function (r) { return r.brewMetrics && r.brewMetrics.timeVariancePct != null; });
+    if (bmRecs.length) {
+      var avgVariance = bmRecs.reduce(function (s, r) { return s + r.brewMetrics.timeVariancePct; }, 0) / bmRecs.length;
+      brewAccuracyLabel = Math.max(0, Math.round(100 - avgVariance)) + "%";
+    }
+
     document.getElementById("statsRow").innerHTML =
-      '<div class="statCard card"><div class="label caption">총 기록 수</div><div class="value">' +
-      total +
-      '</div></div><div class="statCard card"><div class="label caption">가장 많이 마신 산지</div><div class="value" style="font-size:15px">' +
-      esc(topOrigin) +
-      '</div></div><div class="statCard card"><div class="label caption">평균 평점</div><div class="value">' +
-      esc(avgLabel) +
-      "</div></div>";
+      '<div class="statCard card"><div class="label caption">총 기록 수</div><div class="value">' + total + '</div></div>' +
+      '<div class="statCard card"><div class="label caption">가장 많이 마신 산지</div><div class="value" style="font-size:15px">' + esc(topKey(originCount)) + '</div></div>' +
+      '<div class="statCard card"><div class="label caption">평균 평점</div><div class="value">' + esc(avgLabel) + '</div></div>' +
+      '<div class="statCard card"><div class="label caption">주 추출법</div><div class="value" style="font-size:15px">' + esc(topMethod) + '</div></div>' +
+      '<div class="statCard card"><div class="label caption">즐겨찾는 향미</div><div class="value" style="font-size:15px">' + esc(topFlavor) + '</div></div>' +
+      '<div class="statCard card"><div class="label caption">추출 정확도</div><div class="value" style="font-size:15px">' + esc(brewAccuracyLabel) + '</div></div>';
   }
 
   function formatYMD(dateStr) {
@@ -293,27 +306,52 @@ import { esc } from '../modules/utils.js';
         });
       });
     } else if (currentTab === "favorites") {
-      var favs = CN.getFavorites();
-      if (!favs.length) {
-        el.innerHTML = '<div class="empty">즐겨찾기한 원두가 없습니다.</div>';
-        return;
+      // 취향 프로파일 레이더 (baseScores 평균)
+      var allRecs = CN.getTastingRecords();
+      var AXES = ["아로마", "산미", "단맛", "바디감", "여운"];
+      var axisSum = {}, axisCount = {};
+      AXES.forEach(function (a) { axisSum[a] = 0; axisCount[a] = 0; });
+      allRecs.forEach(function (r) {
+        var s = r.baseScores || r.scores || {};
+        AXES.forEach(function (a) { if (s[a] != null) { axisSum[a] += Number(s[a]); axisCount[a]++; } });
+      });
+      var hasRadarData = AXES.some(function (a) { return axisCount[a] > 0; });
+      var radarHtml = "";
+      if (hasRadarData) {
+        radarHtml = '<div class="card" style="padding:16px;margin-bottom:12px">' +
+          '<div style="font-size:12px;font-weight:700;color:var(--text-sub);letter-spacing:0.08em;margin-bottom:12px">취향 프로파일</div>' +
+          '<div style="display:flex;justify-content:center"><svg id="mypageRadarSvg" xmlns="http://www.w3.org/2000/svg"></svg></div>' +
+          '</div>';
       }
-      el.innerHTML = favs
-        .map(function (idx) {
-          var c = CN.getCoffeeByIndex(idx);
-          if (!c) return "";
-          return (
-            '<div class="listCard" data-fav-idx="' +
-            idx +
-            '"><strong class="card-title" style="display:block">' +
-            esc(c.name) +
-            "</strong><span class='caption' style='display:block;margin-top:6px'>" +
-            esc(c.roaster) +
-            "</span></div>"
-          );
-        })
-        .filter(Boolean)
-        .join("");
+
+      var favs = CN.getFavorites();
+      var favsHtml = '';
+      if (!favs.length) {
+        favsHtml = '<div class="empty">즐겨찾기한 원두가 없습니다.</div>';
+      } else {
+        favsHtml = favs
+          .map(function (idx) {
+            var c = CN.getCoffeeByIndex(idx);
+            if (!c) return "";
+            return (
+              '<div class="listCard" data-fav-idx="' + idx + '"><strong class="card-title" style="display:block">' +
+              esc(c.name) + "</strong><span class='caption' style='display:block;margin-top:6px'>" +
+              esc(c.roaster) + "</span></div>"
+            );
+          })
+          .filter(Boolean)
+          .join("");
+      }
+      el.innerHTML = radarHtml + favsHtml;
+
+      if (hasRadarData) {
+        var avgScores = {};
+        AXES.forEach(function (a) { avgScores[a] = axisCount[a] ? Math.round(axisSum[a] / axisCount[a] * 10) / 10 : 5; });
+        if (window.CoffeeRadar) {
+          CoffeeRadar.createReadonly({ svgId: "mypageRadarSvg", size: 180, values: avgScores });
+        }
+      }
+
       el.querySelectorAll("[data-fav-idx]").forEach(function (node) {
         node.addEventListener("click", function () {
           var idx = node.getAttribute("data-fav-idx");

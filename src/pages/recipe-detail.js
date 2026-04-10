@@ -54,11 +54,25 @@ import { esc } from '../modules/utils.js';
   // 변수 그리드
   html+='<div class="recipe-detail-grid">'+cell("물 온도",recipe.temp)+cell("물 양",recipe.water)+cell("원두 양",recipe.dose)+cell("그라인딩",recipe.grind)+'</div>';
 
-  // 추출 단계
+  // 추출 단계 (신규 스키마: action/detail/waterMl | 구 스키마: time/amount/tip 호환)
   if(recipe.steps&&recipe.steps.length){
     html+='<h2 class="section-heading">추출 단계</h2>';
     html+=recipe.steps.map(function(s,i){
-      return'<div class="pour-step"><div class="pour-num">'+(i+1)+'</div><div class="pour-info"><div class="pour-time">'+esc(s.time||"")+(s.amount?" · "+esc(s.amount):"")+'</div>'+(s.tip?'<div class="pour-tip">'+esc(s.tip)+'</div>':'')+'</div></div>';
+      if(s.action!==undefined){
+        // 신규 스키마
+        var waterBadge=s.waterMl?' · <span style="color:var(--accent-warm)">'+s.waterMl+'ml</span>':'';
+        var timeLabel=s._timeRange||s.time||'';
+        return'<div class="pour-step"><div class="pour-num">'+(i+1)+'</div><div class="pour-info">'
+          +'<div class="pour-time">'+esc(s.action)+waterBadge+'</div>'
+          +(timeLabel?'<div class="pour-tip" style="color:var(--text-sub)">'+esc(timeLabel)+'</div>':'')
+          +(s.detail?'<div class="pour-tip">'+esc(s.detail)+'</div>':'')
+          +'</div></div>';
+      }
+      // 구 스키마
+      return'<div class="pour-step"><div class="pour-num">'+(i+1)+'</div><div class="pour-info">'
+        +'<div class="pour-time">'+esc(s.time||'')+(s.amount?' · '+esc(s.amount):'')+'</div>'
+        +(s.tip?'<div class="pour-tip">'+esc(s.tip)+'</div>':'')
+        +'</div></div>';
     }).join("");
   }
 
@@ -86,8 +100,14 @@ import { esc } from '../modules/utils.js';
     html+='<div class="caption" style="margin-top:8px">연결된 원두: '+esc(recipe.coffeeName)+'</div>';
   }
 
+  // 브루하기 버튼 (독립 레시피만, 타이머 호환 스텝 보유 시)
+  var hasBruwableSteps=recipe.steps&&recipe.steps.length>0&&(recipe.steps[0].action!==undefined&&recipe.steps[0].time!==undefined);
+  if(params.get("id")&&hasBruwableSteps){
+    html+='<button type="button" class="btn-primary" id="btnBrewRecipe" style="margin-top:20px;width:100%">▶ 이 레시피로 브루하기</button>';
+  }
+
   // 수정/삭제 버튼
-  html+='<div style="display:flex;gap:10px;margin-top:24px">';
+  html+='<div style="display:flex;gap:10px;margin-top:12px">';
   html+='<button type="button" class="btn-secondary" id="btnEditRecipe" style="flex:1">수정</button>';
   html+='<button type="button" id="btnDeleteRecipe" style="flex:0 0 auto;padding:16px 20px;background:none;border:1.5px solid #C04828;color:#C04828;font-family:Pretendard Variable,sans-serif;font-size:15px;font-weight:500;cursor:pointer">삭제</button>';
   html+='</div>';
@@ -97,6 +117,16 @@ import { esc } from '../modules/utils.js';
   if(noteRecord){
     document.getElementById("linkToNote").addEventListener("click",function(){
       location.href="note-detail.html?idx="+noteIdx;
+    });
+  }
+
+  // 브루하기 — pending_brew_id를 sessionStorage에 저장 후 recipe.html로 이동
+  var brewBtn=document.getElementById("btnBrewRecipe");
+  if(brewBtn){
+    brewBtn.addEventListener("click",function(){
+      sessionStorage.setItem("pending_brew_id", params.get("id"));
+      var coffeeId=params.get("coffeeId")||null;
+      location.href=coffeeId?"recipe.html?coffeeId="+coffeeId:"recipe.html";
     });
   }
 

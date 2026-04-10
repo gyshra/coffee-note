@@ -73,22 +73,53 @@
     var title=document.getElementById("rTitle").value.trim();
     if(!title){CN.showToast("제목을 입력하세요");return;}
     if(!selectedTool){CN.showToast("추출 도구를 선택하세요");return;}
-    var steps=[];
+
+    var rawSteps=[];
     stepsWrap.querySelectorAll(".pour-step-input").forEach(function(el){
-      steps.push({time:el.querySelector(".psi-time").value.trim(),amount:el.querySelector(".psi-amount").value.trim(),tip:el.querySelector(".psi-tip").value.trim()});
+      rawSteps.push({time:el.querySelector(".psi-time").value.trim(),amount:el.querySelector(".psi-amount").value.trim(),tip:el.querySelector(".psi-tip").value.trim()});
     });
+
+    // recipe.html 브루 패널이 기대하는 스키마로 스텝 정규화
+    var normalizedSteps=rawSteps.map(function(s,i){
+      var waterMl=parseFloat(s.amount)||null;
+      var timeEnd=s.time.includes('~')?s.time.split('~').pop().trim():(s.time||'—');
+      return{
+        action: s.amount?(s.amount+' 붓기'):('스텝 '+(i+1)),
+        detail: s.tip||'',
+        time:   timeEnd,
+        waterMl:waterMl,
+        _timeRange:s.time,  // 원본 보존 (recipe-detail용)
+      };
+    });
+
+    var isPublic=document.getElementById("rPublic")?document.getElementById("rPublic").checked:false;
+    var temp=document.getElementById("rTemp").value.trim();
+    var grind=document.getElementById("rGrind").value.trim();
+
     var data={
-      title:title,
-      coffeeName:document.getElementById("rCoffee").value.trim(),
-      tool:selectedTool,
-      temp:document.getElementById("rTemp").value.trim(),
-      water:document.getElementById("rWater").value.trim(),
-      dose:document.getElementById("rDose").value.trim(),
-      grind:document.getElementById("rGrind").value.trim(),
-      steps:steps,
-      note:document.getElementById("rNote").value.trim(),
-      source:"user_recipe"
+      // 원본 필드 (recipe-detail, 역호환)
+      title:   title,
+      coffeeName: document.getElementById("rCoffee").value.trim(),
+      tool:    selectedTool,
+      temp:    temp,
+      water:   document.getElementById("rWater").value.trim(),
+      dose:    document.getElementById("rDose").value.trim(),
+      grind:   grind,
+      note:    document.getElementById("rNote").value.trim(),
+      source:  "user_recipe",
+      // recipe.html 브루 패널 호환 별칭
+      name:       title,
+      brew_method:selectedTool,
+      dripper:    selectedTool,
+      water_temp: temp,
+      grind_size: grind,
+      by:         '나',
+      badge:      'mine',
+      is_public:  isPublic,
+      // 정규화된 스텝 (타이머 호환)
+      steps: normalizedSteps,
     };
+
     if(isEdit){
       CN.updateRecipe(editId,data);
       CN.showToast("레시피가 수정되었습니다!");
@@ -96,6 +127,12 @@
       CN.addRecipe(data);
       CN.showToast("레시피가 저장되었습니다!");
     }
+
+    // Supabase 클라우드 동기화 (설정된 경우에만, 실패해도 로컬 저장은 완료)
+    if(window.SupaDB){
+      window.SupaDB.saveRecipe(data).catch(function(){});
+    }
+
     setTimeout(function(){location.href="notes.html?tab=recipes";},600);
   });
 })();

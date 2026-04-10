@@ -1459,3 +1459,10 @@ function renderBottomNav(activeNav) {
     imageToBase64: imageToBase64,
   };
 })(typeof window !== "undefined" ? window : globalThis);
+
+// Service Worker 등록
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/service-worker.js').catch(function () {});
+  });
+}

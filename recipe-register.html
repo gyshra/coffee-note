@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="UTF-8">
+  <link rel="manifest" href="/manifest.json">
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>레시피 등록 — 커피 노트</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet"/>
@@ -50,7 +52,11 @@
         <textarea id="rNote" placeholder="전체적인 추출 팁이나 메모"></textarea>
       </div>
 
-      <button type="button" class="btn-primary" id="btnSave" style="margin-top:20px">레시피 저장</button>
+      <label style="display:flex;align-items:center;gap:10px;margin-top:20px;cursor:pointer;font-size:13px;color:var(--text-sub)">
+        <input type="checkbox" id="rPublic" checked style="width:16px;height:16px;cursor:pointer">
+        커뮤니티에 공개 (다른 사용자가 이 레시피를 볼 수 있습니다)
+      </label>
+      <button type="button" class="btn-primary" id="btnSave" style="margin-top:12px">레시피 저장</button>
     </div>
   </div>
   <div id="globalToast" class="toast"></div>

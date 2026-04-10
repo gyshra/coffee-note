@@ -35,8 +35,32 @@ import { esc } from '../modules/utils.js';
   var isEditMode = !!editRecord;
   var currentFlavors = [];
 
+  // 브루 타이머 완료 후 전달되는 추출 결과
+  var brewResult = (function () {
+    try {
+      var raw = sessionStorage.getItem('brew_result');
+      if (raw) {
+        sessionStorage.removeItem('brew_result');
+        return JSON.parse(raw);
+      }
+    } catch (e) {}
+    return null;
+  })();
+
   // 레시피 페이지에서 "이 레시피로 기록하기" 클릭 시 전달되는 Active Session 레시피
+  // brew_result가 있으면 그것을 activeRecipe로 변환해 배너에 표시
   var activeRecipe = (function () {
+    if (brewResult) {
+      return {
+        recipe_id: brewResult.recipeId || null,
+        name:      brewResult.method,
+        ratio:     brewResult.ratio,
+        water:     String(brewResult.totalWater) + 'ml',
+        dose:      String(brewResult.beanG) + 'g',
+        steps:     brewResult.steps || [],
+        _fromBrew: true,
+      };
+    }
     try {
       var raw = sessionStorage.getItem('tasting_recipe');
       if (raw) {
@@ -74,6 +98,25 @@ import { esc } from '../modules/utils.js';
           document.getElementById("activeSessionBanner").style.display = "none";
           console.log('[Session:Debug] activeRecipe cleared by user');
         });
+      }
+    }
+
+    // 브루 리포트에서 넘어온 경우 — 추출 방식 자동 선택 + 편차 요약 메모 입력
+    if (brewResult && !isEditMode) {
+      // 추출 방식 칩 자동 선택
+      if (brewResult.method) {
+        var chips = document.querySelectorAll('#brewChips .chip');
+        chips.forEach(function (chip) {
+          if (chip.textContent.trim() === brewResult.method) {
+            chips.forEach(function (c) { c.classList.remove('selected'); });
+            chip.classList.add('selected');
+          }
+        });
+      }
+      // 편차 요약 메모 자동 입력
+      var memoEl = document.getElementById('memo');
+      if (memoEl && !memoEl.value) {
+        memoEl.value = _buildDeviationSummary(brewResult);
       }
     }
 
@@ -234,9 +277,9 @@ import { esc } from '../modules/utils.js';
     var recipe = (function () {
       // activeRecipe(레시피 페이지에서 선택)가 있으면 우선 사용
       if (activeRecipe) {
-        console.log('[Session:Debug] saving with activeRecipe id:', activeRecipe.id);
+        console.log('[Session:Debug] saving with activeRecipe id:', activeRecipe.recipe_id || activeRecipe.id);
         return {
-          recipe_id: activeRecipe.id || null,
+          recipe_id: activeRecipe.recipe_id || activeRecipe.id || null,
           name: activeRecipe.name || activeRecipe.by || '',
           temp: activeRecipe.water_temp || activeRecipe.temp || '',
           water: activeRecipe.water || '',
@@ -256,6 +299,26 @@ import { esc } from '../modules/utils.js';
       return { recipe_id: null, temp, water, dose, grind };
     })();
 
+    // brew 플로우에서 온 경우 추출 정밀도 데이터 구조화 저장
+    var brewMetrics = (function () {
+      if (!brewResult || isEditMode) return undefined;
+      var planned = brewResult.plannedTotalMs || 0;
+      var actual  = brewResult.totalElapsedMs || 0;
+      var timeVariancePct = planned > 0
+        ? Math.round(Math.abs(actual - planned) / planned * 100) : null;
+      var stepVariances = (brewResult.auditLog || [])
+        .filter(function (r) { return r.expectedWaterMl && r.actualWaterMl != null; })
+        .map(function (r) {
+          return {
+            action:      r.action,
+            expected:    r.expectedWaterMl,
+            actual:      r.actualWaterMl,
+            variancePct: Math.round(Math.abs(r.actualWaterMl - r.expectedWaterMl) / r.expectedWaterMl * 100),
+          };
+        });
+      return { totalElapsedMs: actual, plannedTotalMs: planned, timeVariancePct: timeVariancePct, stepVariances: stepVariances };
+    })();
+
     var record = {
       coffeeIndex: idx,
       coffeeName: coffee.name || "",
@@ -267,6 +330,7 @@ import { esc } from '../modules/utils.js';
       memo: (document.getElementById("memo") || {}).value || "",
       location: (document.getElementById("locationInput") || {}).value || "",
       recipe: recipe || undefined,
+      brewMetrics: brewMetrics || undefined,
     };
 
     if (isEditMode) {
@@ -289,3 +353,40 @@ import { esc } from '../modules/utils.js';
     location.href = 'compare.html?coffeeId=' + (idx >= 0 ? idx : '');
   });
 })();
+
+// ─── 브루 리포트 편차 요약 생성기 ─────────────────────────────
+function _buildDeviationSummary(br) {
+  var lines = [];
+  var fmtMs = function (ms) {
+    var s = Math.round(ms / 1000);
+    return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  };
+
+  // 시간 편차
+  if (br.plannedTotalMs > 0) {
+    var timeDiff = Math.round((br.totalElapsedMs - br.plannedTotalMs) / 1000);
+    var timeVar = Math.round(Math.abs(br.totalElapsedMs - br.plannedTotalMs) / br.plannedTotalMs * 100);
+    if (timeVar > 5) {
+      lines.push('[추출 시간] 계획 ' + fmtMs(br.plannedTotalMs) + ' → 실제 ' + fmtMs(br.totalElapsedMs)
+        + ' (' + (timeDiff > 0 ? '+' : '') + timeDiff + '초, ' + timeVar + '%)');
+    }
+  }
+
+  // 스텝별 물량 편차
+  var steps = br.steps || [];
+  var auditLog = br.auditLog || [];
+  steps.forEach(function (step, i) {
+    if (step.waterMl === null || step.waterMl === undefined) return;
+    var rec = auditLog[i];
+    if (!rec || rec.actualWaterMl === null || rec.actualWaterMl === undefined) return;
+    var diff = Math.round(rec.actualWaterMl - step.waterMl);
+    var pct = Math.round(Math.abs(diff) / step.waterMl * 100);
+    if (pct > 10) {
+      lines.push('[' + step.action + '] 계획 ' + step.waterMl + 'ml → 실제 ' + rec.actualWaterMl + 'ml ('
+        + (diff > 0 ? '+' : '') + diff + 'ml, ' + pct + '%)');
+    }
+  });
+
+  if (lines.length === 0) return '';
+  return '=== 추출 편차 자동 기록 ===\n' + lines.join('\n');
+}
