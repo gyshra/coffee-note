@@ -195,6 +195,7 @@ function loadGear() {
 function loadCoffee() {
   const params = new URLSearchParams(location.search);
   const coffeeId = params.get('coffeeId');
+  const methodParam = params.get('method');
 
   const stored = sessionStorage.getItem('recipe_coffee');
   if (stored) {
@@ -208,6 +209,11 @@ function loadCoffee() {
     renderCoffeeBanner(currentCoffee);
     updateScaRecipe();
     loadCommunityStats();
+  }
+
+  // ?method= 파라미터로 추출법 칩 자동 선택 (note-detail 재추출 버튼 연동)
+  if (methodParam) {
+    selectMethod(methodParam);
   }
 
   renderRecipeList();

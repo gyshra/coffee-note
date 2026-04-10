@@ -347,9 +347,14 @@ import { esc } from '../modules/utils.js';
       if (hasRadarData) {
         var avgScores = {};
         AXES.forEach(function (a) { avgScores[a] = axisCount[a] ? Math.round(axisSum[a] / axisCount[a] * 10) / 10 : 5; });
-        if (window.CoffeeRadar) {
-          CoffeeRadar.createReadonly({ svgId: "mypageRadarSvg", size: 180, values: avgScores });
+        function drawRadar() {
+          if (window.CoffeeRadar) {
+            CoffeeRadar.createReadonly({ svgId: "mypageRadarSvg", size: 180, values: avgScores });
+          } else {
+            setTimeout(drawRadar, 50);
+          }
         }
+        drawRadar();
       }
 
       el.querySelectorAll("[data-fav-idx]").forEach(function (node) {

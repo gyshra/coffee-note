@@ -35,6 +35,7 @@ import { esc } from '../modules/utils.js';
     if(currentTab==="sensory") renderSensory();
     else if(currentTab==="beans") renderBeans();
     else if(currentTab==="recipes") renderRecipes();
+    else if(currentTab==="stats") renderStats();
   }
 
   function renderSensory(){
@@ -134,6 +135,101 @@ import { esc } from '../modules/utils.js';
     content.innerHTML=html;
   }
 
+  // ── 통계 탭 ──────────────────────────────────────────────
+  function renderStats() {
+    var records = CN.getTastingRecords();
+    if (!records.length) {
+      content.innerHTML = '<div class="empty">통계를 위한 기록이 없습니다.</div>';
+      return;
+    }
+
+    // 최근 6개월 초기화
+    var now = new Date();
+    var monthCount = {};
+    for (var m = 5; m >= 0; m--) {
+      var md = new Date(now.getFullYear(), now.getMonth() - m, 1);
+      var mk = md.getFullYear() + '-' + String(md.getMonth() + 1).padStart(2, '0');
+      monthCount[mk] = 0;
+    }
+
+    // 산지 집계
+    var originCount = {};
+    records.forEach(function(r) {
+      if (r.createdAt) {
+        var d = new Date(r.createdAt);
+        var k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        if (monthCount[k] !== undefined) monthCount[k]++;
+      }
+      var idx = r.coffeeIndex !== undefined ? r.coffeeIndex : Number(r.coffeeId);
+      var coffee = CN.getCoffeeByIndex(idx);
+      var origin = (coffee && (coffee.country || coffee.region)) ? (coffee.country || coffee.region) : '기타';
+      originCount[origin] = (originCount[origin] || 0) + 1;
+    });
+
+    content.innerHTML = buildMonthChart(monthCount) + buildOriginPie(originCount);
+  }
+
+  function buildMonthChart(monthCount) {
+    var entries = Object.keys(monthCount).map(function(k) { return [k, monthCount[k]]; });
+    var max = entries.reduce(function(m, e) { return Math.max(m, e[1]); }, 1);
+    var bars = entries.map(function(e) {
+      var pct = Math.round(e[1] / max * 100);
+      var label = String(parseInt(e[0].slice(5))) + '월';
+      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">' +
+        '<span style="font-size:11px;font-weight:700;color:var(--text);min-height:16px">' + (e[1] || '') + '</span>' +
+        '<div style="width:100%;height:80px;background:var(--border);position:relative;border-radius:3px 3px 0 0">' +
+        '<div style="position:absolute;bottom:0;left:0;right:0;height:' + pct + '%;background:var(--text);border-radius:3px 3px 0 0"></div>' +
+        '</div>' +
+        '<span style="font-size:10px;color:var(--text-sub)">' + label + '</span>' +
+        '</div>';
+    }).join('');
+    return '<div class="card" style="padding:16px;margin-bottom:12px">' +
+      '<div style="font-size:12px;font-weight:700;color:var(--text-sub);letter-spacing:0.08em;margin-bottom:16px">월별 기록</div>' +
+      '<div style="display:flex;gap:6px;align-items:flex-end">' + bars + '</div>' +
+      '</div>';
+  }
+
+  function buildOriginPie(originCount) {
+    var entries = Object.keys(originCount)
+      .map(function(k) { return [k, originCount[k]]; })
+      .sort(function(a, b) { return b[1] - a[1]; })
+      .slice(0, 5);
+    var total = entries.reduce(function(s, e) { return s + e[1]; }, 0);
+    if (!total) return '';
+
+    var colors = ['#121212', '#8C7355', '#C5B99A', '#AAAAAA', '#E0D8CF'];
+    var cx = 70, cy = 70, r = 58, ir = 28;
+    var angle = -Math.PI / 2;
+    var paths = entries.map(function(e, i) {
+      var sweep = (e[1] / total) * 2 * Math.PI;
+      var end = angle + sweep;
+      var x1 = (cx + r * Math.cos(angle)).toFixed(1);
+      var y1 = (cy + r * Math.sin(angle)).toFixed(1);
+      var x2 = (cx + r * Math.cos(end)).toFixed(1);
+      var y2 = (cy + r * Math.sin(end)).toFixed(1);
+      var large = sweep > Math.PI ? 1 : 0;
+      var d = 'M'+cx+' '+cy+' L'+x1+' '+y1+' A'+r+' '+r+' 0 '+large+' 1 '+x2+' '+y2+' Z';
+      angle = end;
+      return '<path d="'+d+'" fill="'+colors[i]+'"/>';
+    }).join('');
+    paths += '<circle cx="'+cx+'" cy="'+cy+'" r="'+ir+'" fill="var(--bg)"/>';
+
+    var legend = entries.map(function(e, i) {
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">' +
+        '<div style="width:10px;height:10px;border-radius:2px;background:'+colors[i]+';flex-shrink:0"></div>' +
+        '<span style="font-size:12px;flex:1">'+esc(e[0])+'</span>' +
+        '<span style="font-size:12px;font-weight:700;color:var(--text-sub)">'+Math.round(e[1]/total*100)+'%</span>' +
+        '</div>';
+    }).join('');
+
+    return '<div class="card" style="padding:16px;margin-bottom:12px">' +
+      '<div style="font-size:12px;font-weight:700;color:var(--text-sub);letter-spacing:0.08em;margin-bottom:16px">산지 분포</div>' +
+      '<div style="display:flex;align-items:center;gap:16px">' +
+      '<svg width="140" height="140" viewBox="0 0 140 140" style="flex-shrink:0">'+paths+'</svg>' +
+      '<div style="flex:1">'+legend+'</div>' +
+      '</div></div>';
+  }
+
   // 탭 전환
   document.getElementById("tabBar").querySelectorAll(".tabBtn").forEach(function(btn){
     btn.addEventListener("click",function(){
@@ -147,7 +243,7 @@ import { esc } from '../modules/utils.js';
   // URL 파라미터 탭
   var params=new URLSearchParams(location.search);
   var tabParam=params.get("tab");
-  if(tabParam&&["sensory","beans","recipes"].indexOf(tabParam)>=0){
+  if(tabParam&&["sensory","beans","recipes","stats"].indexOf(tabParam)>=0){
     currentTab=tabParam;
     document.getElementById("tabBar").querySelectorAll(".tabBtn").forEach(function(b){
       b.classList.toggle("active",b.getAttribute("data-tab")===currentTab);
