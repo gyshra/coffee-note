@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>내리기 — 커피 노트</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"/>
+  <link rel="stylesheet" href="common.css"/>
+  <style>
+    /* ── 상단 바 ── */
+    .brew-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #fff;
+      border-bottom: 0.5px solid #E0E0E0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px 10px;
+    }
+    .brew-back {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      flex-shrink: 0;
+      color: #121212;
+    }
+    /* ── 스텝 인디케이터 ── */
+    .brew-stepper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+    .brew-step-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      position: relative;
+    }
+    .brew-step-item:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      width: 100%;
+      height: 1px;
+      background: #E0E0E0;
+      z-index: 0;
+    }
+    .brew-step-item.done::after   { background: #121212; }
+    .brew-step-item.active::after { background: #E0E0E0; }
+    .brew-step-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1.5px solid #E0E0E0;
+      background: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      color: #CCC;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+      flex-shrink: 0;
+    }
+    .brew-step-item.active .brew-step-dot {
+      background: #121212;
+      border-color: #121212;
+      color: #fff;
+    }
+    .brew-step-item.done .brew-step-dot {
+      background: #121212;
+      border-color: #121212;
+      color: #fff;
+    }
+    .brew-step-label {
+      font-size: 9px;
+      color: #AAAAAA;
+      margin-top: 3px;
+      white-space: nowrap;
+      letter-spacing: .02em;
+    }
+    .brew-step-item.active .brew-step-label { color: #121212; font-weight: 600; }
+    .brew-step-item.done   .brew-step-label { color: #121212; }
+
+    /* ── 콘텐츠 ── */
+    .brew-content {
+      padding: 20px 16px 80px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .brew-step-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -.03em;
+      color: #121212;
+      margin-bottom: 6px;
+    }
+    .brew-step-sub {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    /* ── 원두 선택 카드 ── */
+    .bean-item {
+      border: 0.5px solid #E0E0E0;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: border-color .12s, background .12s;
+    }
+    .bean-item:active { background: #F7F5F2; border-color: #121212; }
+    .bean-item.selected { border-color: #121212; background: #FAFAFA; }
+    .bean-name { font-size: 14px; font-weight: 700; color: #121212; }
+    .bean-meta { font-size: 11px; color: #888; margin-top: 3px; }
+    .bean-brew-count { font-size: 11px; color: #8C7355; font-weight: 600; flex-shrink: 0; margin-left: 12px; }
+
+    /* ── 하단 버튼 ── */
+    .brew-btn-area {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 12px 16px 24px;
+      background: #fff;
+      border-top: 0.5px solid #E0E0E0;
+    }
+    .brew-btn-area .btn-primary {
+      width: 100%;
+      padding: 16px;
+      font-size: 15px;
+      font-weight: 700;
+      background: #121212;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      letter-spacing: .02em;
+    }
+    .brew-btn-area .btn-primary:disabled {
+      background: #E0E0E0;
+      color: #AAAAAA;
+      cursor: default;
+    }
+    .brew-btn-area .btn-secondary {
+      width: 100%;
+      padding: 12px;
+      font-size: 13px;
+      background: #fff;
+      color: #121212;
+      border: 1.5px solid #121212;
+      cursor: pointer;
+      font-family: inherit;
+      margin-top: 8px;
+    }
+
+    /* ── FlavorInput 컨테이너 ── */
+    #fiContainer, #fiActualContainer, #recipeContainer, #compContainer {
+      margin-bottom: 100px;
+    }
+
+    /* ── 완료 화면 ── */
+    .brew-done-box {
+      text-align: center;
+      padding: 40px 0 20px;
+    }
+    .brew-done-icon { font-size: 48px; margin-bottom: 16px; }
+    .brew-done-title { font-size: 22px; font-weight: 800; letter-spacing: -.03em; color: #121212; margin-bottom: 8px; }
+    .brew-done-sub { font-size: 13px; color: #888; line-height: 1.6; }
+
+    .empty-bean { text-align: center; padding: 40px 0; color: #AAAAAA; font-size: 14px; line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <!-- 상단 바: 뒤로가기 + 스텝 인디케이터 -->
+  <div class="brew-topbar">
+    <button class="brew-back" id="brewBack" aria-label="뒤로">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="brew-stepper" id="brewStepper"></div>
+  </div>
+
+  <!-- 단계별 콘텐츠 -->
+  <div class="brew-content" id="brewContent"></div>
+
+  <!-- 하단 버튼 (단계별로 동적 교체) -->
+  <div class="brew-btn-area" id="brewBtnArea" style="display:none"></div>
+
+  <div id="globalToast" class="toast"></div>
+
+  <script src="common.js"></script>
+  <script src="supabase.js"></script>
+  <script type="module" src="/src/pages/brew.js"></script>
+</body>
+</html>

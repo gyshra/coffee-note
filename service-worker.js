@@ -23,7 +23,7 @@ var STATIC_PRECACHE = [
   '/app-shell.css',
   '/common.js',
   '/supabase.js',
-  '/tasting-radar.js',
+  '/src/modules/tasting-radar.js',
   '/card-generator.js',
   '/manifest.json'
 ];

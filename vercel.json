@@ -1,6 +1,9 @@
 {
   "version": 2,
   "cleanUrls": false,
+  "rewrites": [
+    { "source": "/", "destination": "/home.html" }
+  ],
   "headers": [
     {
       "source": "/(.*\\.html)",

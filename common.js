@@ -342,12 +342,6 @@
       name: "에티오피아 예가체프 콩가 워시드",
       roaster: "Fritz Coffee Company",
       roasterUrl: "https://fritzcoffeecompany.com",
-      _community: {
-        count: 12,
-        avgRating: "4.3",
-        topFlavors: ["블루베리", "자스민", "꿀"],
-        topBrewMethods: [{method:"V60", count:7}, {method:"에어로프레스", count:3}]
-      },
       rating: 4.3,
       processCategory: "워시드",
       processDetail: "",
@@ -1164,10 +1158,6 @@ function renderBottomNav(activeNav) {
     openPhotoSearchSheet();
   }
 
-  function openCoffeeMap() {
-    showToast("커피맵은 준비 중입니다.");
-  }
-
   /** 페이지 로드 시 스캔 플래그 처리 */
   function consumeScanIntent() {
     if (sessionStorage.getItem("coffee_note_open_scan") === "1") {
@@ -1443,7 +1433,6 @@ function renderBottomNav(activeNav) {
     showToast: showToast,
     renderBottomNav: renderBottomNav,
     openCamera: openCamera,
-    openCoffeeMap: openCoffeeMap,
     openPhotoSearchSheet: openPhotoSearchSheet,
     closePhotoSearchSheet: closePhotoSearchSheet,
     consumeScanIntent: consumeScanIntent,

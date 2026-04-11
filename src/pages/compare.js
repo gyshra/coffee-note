@@ -29,20 +29,23 @@ function loadData() {
   // URL params
   const params = new URLSearchParams(location.search);
   const tastingId = params.get('tastingId');
-  const coffeeId = params.get('coffeeId');
+  const coffeeId  = params.get('coffeeId');
+
+  const CN = window.CoffeeNote;
+  const records = CN ? CN.getTastingRecords() : JSON.parse(localStorage.getItem('coffee_note_tastings') || '[]');
 
   // sessionStorage에서 테이스팅 기록 로드
   const stored = sessionStorage.getItem('last_tasting');
   if (stored) {
     tastingData = JSON.parse(stored);
+  } else if (tastingId) {
+    tastingData = records.find(r => r.id === tastingId) || records[0] || null;
+  } else if (coffeeId !== null) {
+    // coffeeId가 있으면 해당 원두의 가장 최근 기록 로드
+    const idx = parseInt(coffeeId, 10);
+    tastingData = records.find(r => r.coffeeIndex === idx) || records[0] || null;
   } else {
-    // localStorage에서 최신 기록 가져오기
-    const records = JSON.parse(localStorage.getItem('coffee_note_tastings') || '[]');
-    if (tastingId) {
-      tastingData = records.find(r => r.id === tastingId) || records[records.length - 1];
-    } else {
-      tastingData = records[records.length - 1];
-    }
+    tastingData = records[0] || null; // unshift 구조: records[0]이 최신
   }
 
   // 원두 데이터
@@ -50,10 +53,10 @@ function loadData() {
   if (coffeeStored) {
     coffeeData = JSON.parse(coffeeStored);
   } else if (coffeeId !== null) {
-    const coffees = JSON.parse(localStorage.getItem('coffee_note_coffees') || '[]');
+    const coffees = CN ? CN.getCoffees() : JSON.parse(localStorage.getItem('coffee_note_coffees') || '[]');
     coffeeData = coffees[parseInt(coffeeId)] || null;
   } else if (tastingData?.coffeeIndex !== undefined) {
-    const coffees = JSON.parse(localStorage.getItem('coffee_note_coffees') || '[]');
+    const coffees = CN ? CN.getCoffees() : JSON.parse(localStorage.getItem('coffee_note_coffees') || '[]');
     coffeeData = coffees[tastingData.coffeeIndex] || null;
   }
 
@@ -186,9 +189,16 @@ function hexToRgba(hex, alpha) {
 
 function getMineValues() {
   if (!tastingData) return [5,5,5,5,5];
-  const scores = tastingData.baseScores || {};
-  // baseScores는 한국어 키, AXES 순서대로 추출
-  return AXES.map(k => parseFloat(scores[k] || tastingData[AXIS_KEYS[AXES.indexOf(k)]] || 5));
+  const s = tastingData.baseScores || {};
+  // baseScores 키: acidity, bitterness, sweetness, body, finish (brew 흐름 기준)
+  // AXES 순서: 아로마, 산미, 단맛, 바디감, 여운
+  return [
+    parseFloat(s.aroma     ?? s.acidity    ?? 5),  // 아로마 (brew 흐름엔 없으면 산미로 대체)
+    parseFloat(s.acidity   ?? 5),
+    parseFloat(s.sweetness ?? 5),
+    parseFloat(s.body      ?? 5),
+    parseFloat(s.finish    ?? s.aftertaste ?? 5),  // 여운
+  ];
 }
 
 function getCommunityValues() {

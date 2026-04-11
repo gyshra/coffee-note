@@ -147,6 +147,13 @@ module.exports = async function handler(req, res) {
   // ── 후처리 ──────────────────────────────────────────────────
   coffee.source = "ocr_scan";
   coffee._model = usedModel;
+
+  // confidence: high=자동완성 / medium=확인요청 / low=직접입력 유도
+  const _hasOrigin  = !!(coffee.country || coffee.region);
+  const _hasProcess = !!(coffee.process);
+  coffee.confidence = (coffee.name && _hasOrigin && _hasProcess) ? "high"
+                    : (coffee.name && _hasOrigin)                 ? "medium"
+                    : "low";
   coffee.process = normalizeProcess(coffee.process);
   coffee.processCategory = coffee.process;
 

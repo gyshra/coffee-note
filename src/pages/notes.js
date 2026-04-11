@@ -4,13 +4,24 @@
  */
 
 import { esc } from '../modules/utils.js';
+import { TrendChart } from '../modules/trend-chart.js';
 
 (function(){
   var CN=window.CoffeeNote;
   CN.renderBottomNav("notes");
 
-  var currentTab="sensory";
+  var currentTab="bycoffee";
   var content=document.getElementById("tabContent");
+  var highlightLatest=new URLSearchParams(location.search).get("highlight")==="latest";
+  var _records=null; // 로그인: Supabase, 비로그인: localStorage
+
+  function _injectHighlightCSS(){
+    if(document.getElementById("cn-latest-style"))return;
+    var s=document.createElement("style");
+    s.id="cn-latest-style";
+    s.textContent='@keyframes cn-latest-pulse{0%{border-color:#8C7355;box-shadow:0 0 0 2px rgba(140,115,85,.25)}50%{border-color:#121212;box-shadow:0 0 0 3px rgba(18,18,18,.12)}100%{border-color:#8C7355;box-shadow:0 0 0 2px rgba(140,115,85,.25)}}.cn-card-latest{border-color:#8C7355!important;animation:cn-latest-pulse 1s ease 3}';
+    document.head.appendChild(s);
+  }
   var STAR_PTS="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26";
   function miniStar(type){
     if(type==="full") return '<svg width="12" height="12" viewBox="0 0 24 24"><polygon points="'+STAR_PTS+'" fill="#8C7355" stroke="#8C7355"/></svg>';
@@ -32,14 +43,116 @@ import { esc } from '../modules/utils.js';
   }
 
   function renderTab(){
-    if(currentTab==="sensory") renderSensory();
+    if(currentTab==="bycoffee") renderGroupedByCoffee();
+    else if(currentTab==="sensory") renderSensory();
     else if(currentTab==="beans") renderBeans();
     else if(currentTab==="recipes") renderRecipes();
     else if(currentTab==="stats") renderStats();
   }
 
+  // ── 원두별 묶음 뷰 ────────────────────────────────────
+  function renderGroupedByCoffee(){
+    var records=_records;
+    var coffees=CN.getCoffees();
+    var newBtn='<button class="btn-secondary" style="margin-bottom:16px;width:auto;padding:10px 18px;font-size:13px" onclick="location.href=\'bean-register.html\'">+ 새 원두 등록</button>';
+
+    if(!records.length){
+      content.innerHTML=newBtn+'<div class="empty">아직 추출 기록이 없습니다.<br/>새 원두를 등록하고 내려보세요.</div>';
+      return;
+    }
+
+    // coffeeIndex 기준 그룹화
+    var groups={};
+    records.forEach(function(r,idx){
+      var key=r.coffeeIndex!=null?String(r.coffeeIndex):"unknown";
+      if(!groups[key]) groups[key]={coffee:coffees[r.coffeeIndex]||null,records:[],indices:[]};
+      groups[key].records.push(r);
+      groups[key].indices.push(idx);
+    });
+
+    // 최신 기록 기준 정렬
+    var sortedGroups=Object.values(groups).sort(function(a,b){
+      var aTime=new Date(a.records[0].createdAt||0).getTime();
+      var bTime=new Date(b.records[0].createdAt||0).getTime();
+      return bTime-aTime;
+    });
+
+    content.innerHTML=newBtn;
+
+    if(highlightLatest) _injectHighlightCSS();
+
+    sortedGroups.forEach(function(group,gi){
+      var coffee=group.coffee;
+      var name=coffee?coffee.name:(group.records[0].coffeeName||"알 수 없는 원두");
+      var count=group.records.length;
+      var coffeeId=group.records[0].coffeeIndex;
+
+      // 그룹 컨테이너
+      var section=document.createElement("div");
+      section.style.cssText="margin-bottom:28px";
+
+      // 헤더
+      var header=document.createElement("div");
+      header.style.cssText="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:1.5px solid #121212";
+      header.innerHTML='<span style="font-size:15px;font-weight:700;color:#121212">'+esc(name)+'</span>'+
+        '<span style="font-size:11px;color:#888;letter-spacing:.04em">총 '+count+'회</span>';
+      section.appendChild(header);
+
+      // 카드 가로 스크롤 영역
+      var scroll=document.createElement("div");
+      scroll.style.cssText="display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;-webkit-overflow-scrolling:touch";
+
+      group.records.forEach(function(r,i){
+        var date=r.createdAt?new Date(r.createdAt).toLocaleDateString("ko-KR",{month:"2-digit",day:"2-digit"}).replace(/\. /g,".").replace(/\.$/,""):"";
+        var flavors=(r.flavorSelections||r.tasteTags||[]).slice(0,3).map(function(f){return typeof f==="string"?f:f.ko;}).join("·");
+        var method=r.brewMethod||r.recipe?.method||"";
+        var temp=(r.recipe&&r.recipe.temp)||"";
+        var recipeStr=[method,temp?temp+"°C":""].filter(Boolean).join(" ");
+        var ridx=group.indices[i];
+
+        var card=document.createElement("div");
+        card.style.cssText="min-width:148px;max-width:148px;border:0.5px solid #E0E0E0;padding:12px;flex-shrink:0;box-sizing:border-box;cursor:pointer";
+        if(highlightLatest&&gi===0&&i===0) card.classList.add("cn-card-latest");
+        card.innerHTML=
+          '<div style="font-size:10px;color:#AAA;margin-bottom:6px">'+esc(date)+' &nbsp;'+esc((i+1)+'회차')+'</div>'+
+          starsHtml(r.starRating)+
+          (recipeStr?'<div style="font-size:11px;color:#888;margin-top:6px">'+esc(recipeStr)+'</div>':"")+
+          (flavors?'<div style="font-size:11px;color:#5C3D1A;margin-top:4px">'+esc(flavors)+'</div>':"")+
+          (r.memo?'<div style="font-size:11px;color:#AAAAAA;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.memo)+'</div>':"")+
+          '<button style="margin-top:8px;width:100%;padding:6px 0;background:#121212;color:#fff;border:none;font-size:11px;font-family:inherit;cursor:pointer" data-rebrew="'+esc(String(coffeeId))+'">다시내리기</button>';
+
+        card.addEventListener("click",function(e){
+          if(e.target.dataset.rebrew!=null) return;
+          location.href="note-detail.html?idx="+ridx;
+        });
+        card.querySelector("[data-rebrew]").addEventListener("click",function(e){
+          e.stopPropagation();
+          location.href="brew.html"+(coffeeId!=null?"?coffeeId="+coffeeId:"");
+        });
+
+        scroll.appendChild(card);
+      });
+      section.appendChild(scroll);
+
+      // 트렌드 차트 (3회차 이상)
+      if(count>=3){
+        var chartEl=document.createElement("div");
+        section.appendChild(chartEl);
+        var tc=new TrendChart({container:chartEl,records:group.records});
+        tc.render();
+      }
+
+      content.appendChild(section);
+    });
+
+    if(highlightLatest){
+      var latestCard=content.querySelector(".cn-card-latest");
+      if(latestCard) setTimeout(function(){ latestCard.scrollIntoView({behavior:"smooth",block:"nearest"}); },150);
+    }
+  }
+
   function renderSensory(){
-    var records=CN.getTastingRecords();
+    var records=_records;
     var newBtn='<button class="btn-secondary" style="margin-bottom:16px;width:auto;padding:10px 18px;font-size:13px" onclick="location.href=\'tasting.html\'">+ 새 노트 작성</button>';
     if(!records.length){content.innerHTML=newBtn+'<div class="empty">아직 센서리 기록이 없습니다.<br/>새 노트를 작성해보세요.</div>';return;}
     content.innerHTML=newBtn+records.map(function(r,i){
@@ -115,7 +228,7 @@ import { esc } from '../modules/utils.js';
 
   function renderRecipes(){
     var standalone=CN.getRecipes().map(function(r){return{id:r.id,title:r.title,tool:r.tool,temp:r.temp,water:r.water,dose:r.dose,coffeeName:r.coffeeName,createdAt:r.createdAt,source:"standalone",href:"recipe-detail.html?id="+encodeURIComponent(r.id)};});
-    var allRecords=CN.getTastingRecords();
+    var allRecords=_records;
     var fromNotes=allRecords.filter(function(r){return r.recipe&&(r.recipe.temp||r.recipe.water||r.recipe.dose||r.recipe.steps);}).map(function(r){
       var idx=allRecords.indexOf(r);
       return{id:"note_"+idx,title:(r.brewMethod||"레시피")+" — "+(r.coffeeName||""),tool:r.brewMethod,temp:r.recipe.temp,water:r.recipe.water,dose:r.recipe.dose,coffeeName:r.coffeeName,createdAt:r.createdAt,source:"from_note",href:"recipe-detail.html?noteIdx="+idx};
@@ -137,7 +250,7 @@ import { esc } from '../modules/utils.js';
 
   // ── 통계 탭 ──────────────────────────────────────────────
   function renderStats() {
-    var records = CN.getTastingRecords();
+    var records = _records;
     if (!records.length) {
       content.innerHTML = '<div class="empty">통계를 위한 기록이 없습니다.</div>';
       return;
@@ -243,12 +356,27 @@ import { esc } from '../modules/utils.js';
   // URL 파라미터 탭
   var params=new URLSearchParams(location.search);
   var tabParam=params.get("tab");
-  if(tabParam&&["sensory","beans","recipes","stats"].indexOf(tabParam)>=0){
+  if(tabParam&&["bycoffee","sensory","beans","recipes","stats"].indexOf(tabParam)>=0){
     currentTab=tabParam;
     document.getElementById("tabBar").querySelectorAll(".tabBtn").forEach(function(b){
       b.classList.toggle("active",b.getAttribute("data-tab")===currentTab);
     });
   }
 
-  renderTab();
+  // ── 초기 기록 로드 (Supabase 우선, 비로그인 시 localStorage) ──
+  (async function initRecords(){
+    try {
+      var user = window.SupaDB && window.SupaAuth
+        ? await SupaAuth.getUser().catch(function(){ return null; })
+        : null;
+      if (user) {
+        var supaRecords = await SupaDB.getTastings().catch(function(){ return null; });
+        if (supaRecords && supaRecords.length > 0) {
+          _records = supaRecords;
+        }
+      }
+    } catch(e) {}
+    if (!_records) _records = CN.getTastingRecords();
+    renderTab();
+  })();
 })();
